@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-function handleLogin(e) {
+async function handleLogin(e) {
     e.preventDefault();
     
     const username = document.getElementById('username').value;
@@ -25,15 +25,27 @@ function handleLogin(e) {
         return;
     }
     
-    // Get users from localStorage
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    // Try Supabase first, fallback to localStorage for backward compatibility
+    let user = null;
     
-    // Find user
-    const user = users.find(u => 
-        u.username === username && 
-        u.password === password && 
-        u.role === userType
-    );
+    // Check if Supabase is available
+    if (typeof getUserFromSupabase === 'function') {
+        try {
+            user = await getUserFromSupabase(username, password, userType);
+        } catch (err) {
+            console.error('Supabase login error:', err);
+        }
+    }
+    
+    // Fallback to localStorage if Supabase fails or not available
+    if (!user) {
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        user = users.find(u => 
+            u.username === username && 
+            u.password === password && 
+            u.role === userType
+        );
+    }
     
     if (user) {
         // Set current user
