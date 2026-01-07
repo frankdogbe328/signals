@@ -663,8 +663,19 @@ function updateCategoryFilter(materials) {
 }
 
 // Make functions globally accessible
-window.editMaterial = function(materialId) {
-    const materials = JSON.parse(localStorage.getItem('materials') || '[]');
+window.editMaterial = async function(materialId) {
+    // Try Supabase first, fallback to localStorage
+    let materials = [];
+    if (typeof getMaterialsFromSupabase === 'function') {
+        try {
+            materials = await getMaterialsFromSupabase({});
+        } catch (err) {
+            materials = JSON.parse(localStorage.getItem('materials') || '[]');
+        }
+    } else {
+        materials = JSON.parse(localStorage.getItem('materials') || '[]');
+    }
+    
     const material = materials.find(m => m.id === materialId);
     
     if (!material) {
