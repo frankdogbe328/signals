@@ -445,16 +445,16 @@ function loadClassProgress(materials, students, progress) {
                         <div class="progress-bar" style="width: ${classCompletionRate}%"></div>
                     </div>
                 </div>
-                <div class="officer-list" style="margin-top: 15px;">
-                    <strong>Officer Progress:</strong>
-                    ${classOfficers.length === 0 ? '<p class="empty-state">No officers in this class</p>' : ''}
-                    ${classOfficers.map(officer => {
+                <div class="student-list" style="margin-top: 15px;">
+                    <strong>Student Progress:</strong>
+                    ${classStudents.length === 0 ? '<p class="empty-state">No students in this class</p>' : ''}
+                    ${classStudents.map(student => {
                         // Support both old format (course) and new format (courses array)
-                        const officerCourses = officer.courses || (officer.course ? [officer.course] : []);
-                        const officerMaterials = classMaterials.filter(m => officerCourses.includes(m.course));
-                        const officerProgress = progress[officer.id] || {};
-                        const completed = officerMaterials.filter(m => officerProgress[m.id]).length;
-                        const total = officerMaterials.length;
+                        const studentCourses = student.courses || (student.course ? [student.course] : []);
+                        const studentMaterials = classMaterials.filter(m => studentCourses.includes(m.course));
+                        const studentProgress = progress[student.id] || {};
+                        const completed = studentMaterials.filter(m => studentProgress[m.id]).length;
+                        const total = studentMaterials.length;
                         const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
                         return `
                             <div class="student-progress-item">

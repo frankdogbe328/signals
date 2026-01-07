@@ -15,7 +15,7 @@
 3. Select **"role"** column
 4. Choose filter:
    - **Equals** → `lecturer` (to see only lecturers)
-   - **Equals** → `officer` (to see only officers)
+   - **Equals** → `student` (to see only students)
 5. Click **Apply**
 
 ## Method 2: Using SQL Editor (More Control)
