@@ -74,36 +74,54 @@ We need to create tables for:
 1. In Storage, click on your bucket (e.g., `materials` or `learning-materials`)
 2. Go to **"Policies"** tab
 3. Click **"New Policy"**
-4. Select **"For full customization"**
-5. **Policy name:** `Allow authenticated uploads`
-6. **Allowed operation:** Select all (SELECT, INSERT, UPDATE, DELETE)
-7. **Policy definition:** Use this SQL (replace `materials` with your bucket name):
-   ```sql
-   bucket_id = 'materials'
-   ```
-8. **WITH CHECK expression:** Use this:
-   ```sql
-   bucket_id = 'materials' AND auth.role() = 'authenticated'
-   ```
-9. Click **"Review"** then **"Save policy"**
+4. Select **"Create a policy from scratch"** or **"For full customization"**
 
-**OR use the simpler method:**
-1. In Storage → Policies
-2. Click **"New Policy"**
-3. Select **"Create a policy from scratch"**
-4. **Policy name:** `Allow authenticated users`
-5. **Allowed operation:** Check all boxes (SELECT, INSERT, UPDATE, DELETE)
-6. **Policy definition:** 
-   ```sql
-   bucket_id = 'materials'
-   ```
-7. **WITH CHECK:**
-   ```sql
-   bucket_id = 'materials' AND auth.role() = 'authenticated'
-   ```
-8. Click **"Save policy"**
+### For Bucket Named `materials`:
 
-**Note:** Replace `'materials'` with your actual bucket name (e.g., `'learning-materials'` if that's what you named it)
+**Policy name:** `Allow authenticated users`
+
+**Allowed operation:** Check all boxes ✅
+- SELECT
+- INSERT
+- UPDATE
+- DELETE
+
+**Policy definition (USING):** Copy and paste this:
+```sql
+bucket_id = 'materials'
+```
+
+**WITH CHECK:** Copy and paste this:
+```sql
+bucket_id = 'materials' AND auth.role() = 'authenticated'
+```
+
+### For Bucket Named `learning-materials`:
+
+**Policy name:** `Allow authenticated users`
+
+**Allowed operation:** Check all boxes ✅
+- SELECT
+- INSERT
+- UPDATE
+- DELETE
+
+**Policy definition (USING):** Copy and paste this:
+```sql
+bucket_id = 'learning-materials'
+```
+
+**WITH CHECK:** Copy and paste this:
+```sql
+bucket_id = 'learning-materials' AND auth.role() = 'authenticated'
+```
+
+5. Click **"Save policy"** or **"Review"** then **"Save policy"**
+
+**Important:** 
+- Use the SQL that matches your bucket name
+- If your bucket has a different name, replace `'materials'` or `'learning-materials'` with your actual bucket name
+- Make sure the bucket name matches exactly (including hyphens and case)
 
 ## Next Steps
 
