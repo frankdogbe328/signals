@@ -3,14 +3,35 @@
 
 // Wait for Supabase to be available
 function getSupabaseClient() {
+    // Check if Supabase library is loaded
     if (typeof window.supabase === 'undefined') {
-        console.error('Supabase library not loaded');
+        console.warn('Supabase library not loaded yet');
         return null;
     }
+    
+    // Initialize if not already done
     if (!supabase) {
-        // Re-initialize if needed
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        try {
+            // Access SUPABASE_URL and SUPABASE_ANON_KEY from global scope
+            if (typeof SUPABASE_URL !== 'undefined' && typeof SUPABASE_ANON_KEY !== 'undefined') {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                console.log('Supabase client initialized in helper');
+            } else {
+                console.error('Supabase config variables not found');
+                return null;
+            }
+        } catch (err) {
+            console.error('Error initializing Supabase client:', err);
+            return null;
+        }
     }
+    
+    // Verify client has the 'from' method
+    if (!supabase || typeof supabase.from !== 'function') {
+        console.error('Supabase client not properly initialized - from method missing');
+        return null;
+    }
+    
     return supabase;
 }
 
