@@ -49,43 +49,16 @@ CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 CREATE INDEX IF NOT EXISTS idx_progress_user ON progress(user_id);
 
--- 5. Enable Row Level Security (RLS)
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE materials ENABLE ROW LEVEL SECURITY;
-ALTER TABLE progress ENABLE ROW LEVEL SECURITY;
+-- 5. DISABLE Row Level Security (RLS) for custom authentication
+-- Since we're using custom username/password auth (not Supabase Auth),
+-- we'll disable RLS and handle security at the application level
+ALTER TABLE users DISABLE ROW LEVEL SECURITY;
+ALTER TABLE materials DISABLE ROW LEVEL SECURITY;
+ALTER TABLE progress DISABLE ROW LEVEL SECURITY;
 
--- 6. Create RLS Policies for users table
--- Users can read their own data
-CREATE POLICY "Users can read own data" ON users
-    FOR SELECT USING (auth.uid()::text = id::text);
-
--- Users can update their own data
-CREATE POLICY "Users can update own data" ON users
-    FOR UPDATE USING (auth.uid()::text = id::text);
-
--- Anyone can insert (for registration)
-CREATE POLICY "Anyone can register" ON users
-    FOR INSERT WITH CHECK (true);
-
--- 7. Create RLS Policies for materials table
--- Authenticated users can read materials
-CREATE POLICY "Authenticated users can read materials" ON materials
-    FOR SELECT USING (auth.role() = 'authenticated');
-
--- Only lecturers can insert/update/delete materials
-CREATE POLICY "Lecturers can manage materials" ON materials
-    FOR ALL USING (
-        EXISTS (
-            SELECT 1 FROM users 
-            WHERE users.id::text = auth.uid()::text 
-            AND users.role = 'lecturer'
-        )
-    );
-
--- 8. Create RLS Policies for progress table
--- Users can read/write their own progress
-CREATE POLICY "Users can manage own progress" ON progress
-    FOR ALL USING (auth.uid()::text = user_id::text);
+-- Note: RLS is disabled because we're using custom authentication.
+-- Security is handled at the application level in JavaScript.
+-- For production, consider implementing proper authentication or enabling Supabase Auth.
 
 -- 9. Create function to update updated_at timestamp
 CREATE OR REPLACE FUNCTION update_updated_at_column()
