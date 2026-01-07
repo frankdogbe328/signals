@@ -124,10 +124,12 @@ async function checkUsernameExists(username) {
             .from('users')
             .select('id')
             .eq('username', username)
-            .single();
+            .limit(1)
+            .maybeSingle(); // Use maybeSingle to avoid 406 error if username doesn't exist
         
-        return data !== null;
+        return data !== null && !error;
     } catch (err) {
+        console.error('Error checking username:', err);
         return false;
     }
 }
