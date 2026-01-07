@@ -44,7 +44,11 @@
    - **DO NOT** choose Enterprise (that's for large organizations)
    - Standard/Spark Plan is free and perfect for this project
 4. Select "Start in test mode" (for now)
-5. Choose a location (choose closest to Ghana, e.g., `europe-west` or `us-central`)
+5. **Choose a location** - Since Ghana isn't available, select the **closest region**:
+   - **Best option for Ghana:** `europe-west1` (Belgium) or `europe-west` (Belgium)
+   - **Alternative:** `europe-west3` (Belgium) or `europe-west4` (Netherlands)
+   - **If Europe not available:** `us-central1` (Iowa, USA) or `asia-south1` (Mumbai, India)
+   - **Note:** Once set, you cannot change the location later. Europe is closest to Ghana.
 6. Click "Enable"
 
 ## Step 4: Get Firebase Config
