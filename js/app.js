@@ -178,7 +178,7 @@ function initializeDemoData() {
                 role: 'officer',
                 name: 'Lt. Sarah Adjei',
                 class: 'signal-basic-beginner',
-                courses: ['cyber-security-fundamentals', 'network-security', 'cyber-defense-operations'] // Cyber courses for testing
+                courses: [] // Start with no courses - officers will register for courses
             },
             {
                 id: 'officer2',
@@ -187,7 +187,7 @@ function initializeDemoData() {
                 role: 'officer',
                 name: 'Capt. Kwame Asante',
                 class: 'regimental-basic-beginner',
-                courses: ['cyber-security-fundamentals', 'information-security-management'] // Cyber courses for testing
+                courses: [] // Start with no courses - officers will register for courses
             }
         ];
         localStorage.setItem('users', JSON.stringify(users));
@@ -198,12 +198,59 @@ function initializeDemoData() {
         localStorage.setItem('materials', JSON.stringify([]));
     } else {
         // Clear any existing sample materials created by the system
+        // Also remove materials with example/cyber courses
+        const exampleCourses = [
+            'cyber-security-fundamentals',
+            'network-security',
+            'cyber-defense-operations',
+            'information-security-management',
+            'cyber-threat-intelligence',
+            'course1'
+        ];
+        
         const materials = JSON.parse(localStorage.getItem('materials') || '[]');
         const filteredMaterials = materials.filter(m => {
             // Remove materials uploaded by 'System' or with sample IDs
-            return m.uploadedBy !== 'System' && !m.id.startsWith('sample_');
+            // Also remove materials with example courses
+            return m.uploadedBy !== 'System' && 
+                   !m.id.startsWith('sample_') &&
+                   !exampleCourses.includes(m.course);
         });
         localStorage.setItem('materials', JSON.stringify(filteredMaterials));
+    }
+    
+    // Clean up existing users - remove example courses from their registrations
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const exampleCourses = [
+        'cyber-security-fundamentals',
+        'network-security',
+        'cyber-defense-operations',
+        'information-security-management',
+        'cyber-threat-intelligence',
+        'course1'
+    ];
+    
+    let usersUpdated = false;
+    users.forEach(user => {
+        if (user.role === 'officer' && user.courses && Array.isArray(user.courses)) {
+            const originalLength = user.courses.length;
+            user.courses = user.courses.filter(course => !exampleCourses.includes(course));
+            if (user.courses.length !== originalLength) {
+                usersUpdated = true;
+            }
+        }
+        // Also handle old single 'course' field
+        if (user.role === 'officer' && user.course && exampleCourses.includes(user.course)) {
+            delete user.course;
+            if (!user.courses) {
+                user.courses = [];
+            }
+            usersUpdated = true;
+        }
+    });
+    
+    if (usersUpdated) {
+        localStorage.setItem('users', JSON.stringify(users));
     }
     
     // Initialize progress if not exists
