@@ -29,13 +29,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
     }
     
-    // Display lecturer name
-    document.getElementById('lecturerName').textContent = currentUser.name;
+    // Display lecturer name with Welcome
+    document.getElementById('lecturerName').textContent = `Welcome, ${currentUser.name}`;
     
-    // Update mobile menu name
+    // Update mobile menu name with Welcome
     const mobileLecturerName = document.getElementById('mobileLecturerName');
     if (mobileLecturerName) {
-        mobileLecturerName.textContent = currentUser.name;
+        mobileLecturerName.textContent = `Welcome, ${currentUser.name}`;
     }
     
     // Load materials

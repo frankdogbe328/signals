@@ -24,26 +24,22 @@ document.addEventListener('DOMContentLoaded', function() {
         currentUser = getCurrentUser();
     }
     
-    // Display student name and info (set once, no repeated updates)
+    // Display student name with Welcome
     const studentNameEl = document.getElementById('studentName');
     if (studentNameEl) {
-        studentNameEl.textContent = currentUser.name;
+        studentNameEl.textContent = `Welcome, ${currentUser.name}`;
     }
     
-    // Update mobile menu name
+    // Update mobile menu name with Welcome
     const mobileStudentName = document.getElementById('mobileStudentName');
     if (mobileStudentName) {
-        mobileStudentName.textContent = currentUser.name;
+        mobileStudentName.textContent = `Welcome, ${currentUser.name}`;
     }
     
-    // Update student info text directly (with check to prevent blinking)
+    // Update student info text (just Welcome and name)
     const studentInfoEl = document.getElementById('studentInfo');
     if (studentInfoEl) {
-        const courses = currentUser.courses || [];
-        const coursesText = courses.length > 0 
-            ? `Registered Courses: ${courses.length}` 
-            : 'No courses registered yet';
-        const newText = `Welcome, ${currentUser.name}. Class: ${currentUser.class || 'N/A'} | ${coursesText}`;
+        const newText = `Welcome, ${currentUser.name}`;
         
         // Only update if text changed
         if (studentInfoEl.textContent !== newText) {
@@ -115,12 +111,7 @@ function updateStudentInfo() {
     const currentUser = getCurrentUser();
     if (!currentUser) return;
     
-    const courses = currentUser.courses || [];
-    const coursesText = courses.length > 0 
-        ? `Registered Courses: ${courses.length}` 
-        : 'No courses registered yet';
-    
-    const newText = `Welcome, ${currentUser.name}. Class: ${currentUser.class || 'N/A'} | ${coursesText}`;
+    const newText = `Welcome, ${currentUser.name}`;
     
     // Only update if text actually changed
     if (newText === lastStudentInfoText) return;
@@ -317,15 +308,10 @@ window.registerForCourse = async function() {
     loadMaterials();
     updateProgress();
     
-    // Update student info text directly (not via function to prevent repeated calls)
-    // Update student info text directly (with check to prevent blinking)
+    // Update student info text (just Welcome and name)
     const studentInfoEl = document.getElementById('studentInfo');
     if (studentInfoEl) {
-        const courses = currentUser.courses || [];
-        const coursesText = courses.length > 0 
-            ? `Registered Courses: ${courses.length}` 
-            : 'No courses registered yet';
-        const newText = `Welcome, ${currentUser.name}. Class: ${currentUser.class || 'N/A'} | ${coursesText}`;
+        const newText = `Welcome, ${currentUser.name}`;
         
         // Only update if text changed
         if (studentInfoEl.textContent !== newText) {
@@ -361,15 +347,10 @@ function unregisterFromCourse(course) {
     loadRegisteredCourses();
     loadMaterials();
     updateProgress();
-    // Update student info text only once, not repeatedly
-    // Update student info text directly (with check to prevent blinking)
+    // Update student info text (just Welcome and name)
     const studentInfoEl = document.getElementById('studentInfo');
     if (studentInfoEl) {
-        const courses = currentUser.courses || [];
-        const coursesText = courses.length > 0 
-            ? `Registered Courses: ${courses.length}` 
-            : 'No courses registered yet';
-        const newText = `Welcome, ${currentUser.name}. Class: ${currentUser.class || 'N/A'} | ${coursesText}`;
+        const newText = `Welcome, ${currentUser.name}`;
         
         // Only update if text changed
         if (studentInfoEl.textContent !== newText) {

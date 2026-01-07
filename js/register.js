@@ -82,7 +82,12 @@ async function handleRegistration(e) {
     const classSelect = document.getElementById('regClass').value;
     const course = document.getElementById('regCourse').value;
     const errorMessage = document.getElementById('registerErrorMessage');
-    const role = document.getElementById('registerForm').dataset.role || 'student';
+    let role = document.getElementById('registerForm').dataset.role || 'student';
+    
+    // Validate and normalize role (ensure it's either 'lecturer' or 'student')
+    if (role !== 'lecturer' && role !== 'student') {
+        role = 'student'; // Default to student if invalid
+    }
     
     // Clear previous errors
     errorMessage.classList.remove('show');
@@ -226,14 +231,14 @@ async function handleRegistration(e) {
     setCurrentUser(createdUser);
     
     // Show success message
-    const roleText = role === 'lecturer' ? 'Lecturer' : 'Officer';
+    const roleText = role === 'lecturer' ? 'Lecturer' : 'Student';
     alert(`${roleText} registration successful! Redirecting to your dashboard...`);
     
     // Redirect to appropriate dashboard based on role
     if (role === 'lecturer') {
         window.location.href = 'lecturer-dashboard.html';
     } else {
-        window.location.href = 'officer-dashboard.html';
+        window.location.href = 'student-dashboard.html';
     }
 }
 

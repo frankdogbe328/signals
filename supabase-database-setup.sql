@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
     password TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('lecturer', 'student')),
     name TEXT NOT NULL,
+    email TEXT,
     class TEXT,
     courses JSONB DEFAULT '[]'::jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -47,6 +48,7 @@ CREATE INDEX IF NOT EXISTS idx_materials_class ON materials(class);
 CREATE INDEX IF NOT EXISTS idx_materials_course ON materials(course);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_progress_user ON progress(user_id);
 
 -- 5. DISABLE Row Level Security (RLS) for custom authentication

@@ -12,7 +12,9 @@
 
 -- 2. Create storage policy to allow public access for downloads
 -- This allows anyone with the URL to download files (students can access materials)
-CREATE POLICY IF NOT EXISTS "Public Access for Learning Materials"
+-- Drop policy if it exists first
+DROP POLICY IF EXISTS "Public Access for Learning Materials" ON storage.objects;
+CREATE POLICY "Public Access for Learning Materials"
 ON storage.objects
 FOR SELECT
 USING (bucket_id = 'learning-materials');
@@ -21,14 +23,18 @@ USING (bucket_id = 'learning-materials');
 -- This allows lecturers to upload files (we'll handle auth at app level)
 -- Since we're using custom auth, we'll use a policy that allows all inserts
 -- For better security, you can restrict this further based on your needs
-CREATE POLICY IF NOT EXISTS "Allow Uploads to Learning Materials"
+-- Drop policy if it exists first
+DROP POLICY IF EXISTS "Allow Uploads to Learning Materials" ON storage.objects;
+CREATE POLICY "Allow Uploads to Learning Materials"
 ON storage.objects
 FOR INSERT
 WITH CHECK (bucket_id = 'learning-materials');
 
 -- 4. Create storage policy to allow authenticated users to delete
 -- This allows lecturers to delete files
-CREATE POLICY IF NOT EXISTS "Allow Deletes from Learning Materials"
+-- Drop policy if it exists first
+DROP POLICY IF EXISTS "Allow Deletes from Learning Materials" ON storage.objects;
+CREATE POLICY "Allow Deletes from Learning Materials"
 ON storage.objects
 FOR DELETE
 USING (bucket_id = 'learning-materials');

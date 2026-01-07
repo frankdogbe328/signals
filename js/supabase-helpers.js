@@ -122,18 +122,42 @@ async function createUserInSupabase(userData) {
         throw new Error('Supabase client not available');
     }
     
+    // Validate and normalize role - must be 'lecturer' or 'student'
+    let role = userData.role;
+    console.log('Original role from userData:', userData.role, 'Type:', typeof userData.role);
+    
+    if (role !== 'lecturer' && role !== 'student') {
+        console.error('Invalid role:', role, 'Type:', typeof role);
+        throw new Error('Invalid role. Must be "lecturer" or "student"');
+    }
+    
+    // Ensure role is a string (in case it's something else)
+    role = String(role).trim().toLowerCase();
+    
+    // Final check
+    if (role !== 'lecturer' && role !== 'student') {
+        console.error('Invalid role after normalization:', role);
+        throw new Error('Invalid role. Must be "lecturer" or "student"');
+    }
+    
+    console.log('Validated role to insert:', role);
+    
     try {
+        const insertData = {
+            username: userData.username,
+            password: userData.password,
+            role: role, // Use validated role
+            name: userData.name,
+            class: userData.class || null,
+            courses: userData.courses || [],
+            email: userData.email || null // Include email
+        };
+        
+        console.log('Inserting user data:', { ...insertData, password: '[HIDDEN]' });
+        
         const { data, error } = await client
             .from('users')
-            .insert([{
-                username: userData.username,
-                password: userData.password,
-                role: userData.role,
-                name: userData.name,
-                class: userData.class || null,
-                courses: userData.courses || [],
-                email: userData.email || null // Include email
-            }])
+            .insert([insertData])
             .select()
             .single();
         
