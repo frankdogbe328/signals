@@ -42,7 +42,7 @@ function initializeDemoData() {
                 password: 'password123',
                 role: 'officer',
                 name: 'Lt. Sarah Adjei',
-                class: 'class-a',
+                class: 'signal-basic-beginner',
                 courses: ['cyber-security-fundamentals', 'network-security', 'cyber-defense-operations'] // Cyber courses for testing
             },
             {
@@ -51,7 +51,7 @@ function initializeDemoData() {
                 password: 'password123',
                 role: 'officer',
                 name: 'Capt. Kwame Asante',
-                class: 'class-b',
+                class: 'regimental-basic-beginner',
                 courses: ['cyber-security-fundamentals', 'information-security-management'] // Cyber courses for testing
             }
         ];

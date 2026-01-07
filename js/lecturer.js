@@ -297,7 +297,12 @@ function loadAnalytics() {
 
 function loadClassProgress(materials, officers, progress) {
     const classProgressContent = document.getElementById('classProgressContent');
-    const classes = ['class-a', 'class-b', 'class-c'];
+    const classes = [
+        'signal-basic-beginner', 'signal-basic-ii-intermediate', 'signal-basic-i-advanced',
+        'regimental-basic-beginner', 'regimental-basic-ii-intermediate', 'regimental-basic-i-advanced',
+        'electronic-warfare',
+        'upgrading-telecom', 'upgrading-rf'
+    ];
     
     let html = '<div class="class-progress-grid">';
     
@@ -308,7 +313,7 @@ function loadClassProgress(materials, officers, progress) {
         if (classMaterials.length === 0 && classOfficers.length === 0) {
             html += `
                 <div class="class-progress-card">
-                    <h4>${classId.replace('class-', '').toUpperCase()}</h4>
+                    <h4>${formatClassName(classId)}</h4>
                     <p class="empty-state">No materials or officers</p>
                 </div>
             `;
@@ -333,7 +338,7 @@ function loadClassProgress(materials, officers, progress) {
         
         html += `
             <div class="class-progress-card">
-                <h4>${classId.replace('class-', '').toUpperCase()}</h4>
+                <h4>${formatClassName(classId)}</h4>
                 <div class="progress-details">
                     <div class="progress-stat">
                         <span class="stat-label">Materials:</span>
