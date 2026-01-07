@@ -61,6 +61,14 @@ function initializeDemoData() {
     // Initialize materials if not exists (empty array - no sample data)
     if (!localStorage.getItem('materials')) {
         localStorage.setItem('materials', JSON.stringify([]));
+    } else {
+        // Clear any existing sample materials created by the system
+        const materials = JSON.parse(localStorage.getItem('materials') || '[]');
+        const filteredMaterials = materials.filter(m => {
+            // Remove materials uploaded by 'System' or with sample IDs
+            return m.uploadedBy !== 'System' && !m.id.startsWith('sample_');
+        });
+        localStorage.setItem('materials', JSON.stringify(filteredMaterials));
     }
     
     // Initialize progress if not exists
