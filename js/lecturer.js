@@ -520,8 +520,8 @@ function loadMaterials() {
                 <strong>Uploaded by:</strong> ${material.uploadedBy}
             </div>
             <div class="material-actions">
-                <button onclick="editMaterial('${material.id}')" class="btn btn-secondary">Edit</button>
-                <button onclick="deleteMaterial('${material.id}')" class="btn btn-danger">Delete</button>
+                <button onclick="window.editMaterial('${material.id}')" class="btn btn-secondary">Edit</button>
+                <button onclick="window.deleteMaterial('${material.id}')" class="btn btn-danger">Delete</button>
             </div>
         </div>
     `).join('');
@@ -542,7 +542,8 @@ function updateCategoryFilter(materials) {
     }
 }
 
-function editMaterial(materialId) {
+// Make functions globally accessible
+window.editMaterial = function(materialId) {
     const materials = JSON.parse(localStorage.getItem('materials') || '[]');
     const material = materials.find(m => m.id === materialId);
     
@@ -582,9 +583,10 @@ function editMaterial(materialId) {
     
     // Scroll to form
     document.querySelector('.card').scrollIntoView({ behavior: 'smooth' });
-}
+};
 
-function cancelEdit() {
+window.cancelEdit = function() {
+
     // Reset form
     document.getElementById('uploadForm').reset();
     
@@ -596,9 +598,9 @@ function cancelEdit() {
     const cancelBtn = document.getElementById('cancelBtn');
     submitBtn.textContent = 'Upload Material';
     cancelBtn.style.display = 'none';
-}
+};
 
-function deleteMaterial(materialId) {
+window.deleteMaterial = function(materialId) {
     if (!confirm('Are you sure you want to delete this material?')) {
         return;
     }
@@ -620,7 +622,7 @@ function deleteMaterial(materialId) {
     if (document.getElementById('analyticsContent')) {
         loadAnalytics();
     }
-}
+};
 
 function formatDate(dateString) {
     const date = new Date(dateString);

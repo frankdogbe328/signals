@@ -58,64 +58,9 @@ function initializeDemoData() {
         localStorage.setItem('users', JSON.stringify(users));
     }
     
-    // Initialize materials if not exists
+    // Initialize materials if not exists (empty array - no sample data)
     if (!localStorage.getItem('materials')) {
-        // Add some sample cyber course materials for testing
-        const sampleMaterials = [
-            {
-                id: 'sample_1',
-                course: 'cyber-security-fundamentals',
-                class: 'class-a',
-                title: 'Introduction to Cyber Security',
-                type: 'text',
-                content: 'Cyber security is the practice of protecting systems, networks, and programs from digital attacks. This module covers the basics of cyber threats, vulnerabilities, and defense mechanisms.',
-                description: 'Learn the fundamental concepts of cyber security',
-                category: 'Cyber Security Basics',
-                sequence: 1,
-                uploadedBy: 'System',
-                uploadedAt: new Date().toISOString()
-            },
-            {
-                id: 'sample_2',
-                course: 'network-security',
-                class: 'class-a',
-                title: 'Network Security Protocols',
-                type: 'text',
-                content: 'Network security involves implementing measures to protect network infrastructure and data. Topics include firewalls, VPNs, intrusion detection systems, and secure network design.',
-                description: 'Understanding network security protocols and implementation',
-                category: 'Network Defense',
-                sequence: 1,
-                uploadedBy: 'System',
-                uploadedAt: new Date().toISOString()
-            },
-            {
-                id: 'sample_3',
-                course: 'cyber-defense-operations',
-                class: 'class-a',
-                title: 'Defensive Cyber Operations',
-                type: 'text',
-                content: 'Defensive cyber operations focus on protecting military networks and systems from cyber attacks. This includes monitoring, detection, response, and recovery procedures.',
-                description: 'Military cyber defense strategies and operations',
-                category: 'Defense Operations',
-                sequence: 1,
-                uploadedBy: 'System',
-                uploadedAt: new Date().toISOString()
-            },
-            {
-                id: 'sample_4',
-                course: 'cyber-security-fundamentals',
-                class: 'class-b',
-                title: 'Threat Landscape Analysis',
-                type: 'text',
-                content: 'Understanding the current cyber threat landscape is crucial for effective defense. This module covers common attack vectors, threat actors, and attack methodologies.',
-                description: 'Analyzing current cyber threats and attack patterns',
-                category: 'Threat Analysis',
-                sequence: 2,
-                uploadedBy: 'System',
-                uploadedAt: new Date().toISOString()
-            }
-        ];
-        localStorage.setItem('materials', JSON.stringify(sampleMaterials));
+        localStorage.setItem('materials', JSON.stringify([]));
     }
     
     // Initialize progress if not exists
