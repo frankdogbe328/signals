@@ -64,9 +64,9 @@ async function getUserFromSupabase(username, password, role) {
                 password: data.password,
                 role: data.role,
                 name: data.name,
-                email: data.email,
                 class: data.class,
-                courses: data.courses || []
+                courses: data.courses || [],
+                email: data.email || null // Include email
             };
         }
         return null;
@@ -76,12 +76,50 @@ async function getUserFromSupabase(username, password, role) {
     }
 }
 
+// Get user by email and role
+async function getUserByEmailFromSupabase(email, role) {
+    const client = getSupabaseClient();
+    if (!client) return null;
+    
+    try {
+        const { data, error } = await client
+            .from('users')
+            .select('*')
+            .eq('email', email)
+            .eq('role', role)
+            .maybeSingle();
+        
+        if (error) {
+            console.error('Supabase query error (by email):', error);
+            return null;
+        }
+        
+        if (!data) {
+            return null;
+        }
+        
+        return {
+            id: data.id,
+            username: data.username,
+            password: data.password,
+            role: data.role,
+            name: data.name,
+            class: data.class,
+            courses: data.courses || [],
+            email: data.email || null
+        };
+    } catch (err) {
+        console.error('Error getting user by email:', err);
+        return null;
+    }
+}
+
 // Create new user
 async function createUserInSupabase(userData) {
     const client = getSupabaseClient();
     if (!client) {
         console.error('Supabase client not available');
-        return null;
+        throw new Error('Supabase client not available');
     }
     
     try {
@@ -92,9 +130,9 @@ async function createUserInSupabase(userData) {
                 password: userData.password,
                 role: userData.role,
                 name: userData.name,
-                email: userData.email || null,
                 class: userData.class || null,
-                courses: userData.courses || []
+                courses: userData.courses || [],
+                email: userData.email || null // Include email
             }])
             .select()
             .single();
@@ -119,12 +157,46 @@ async function createUserInSupabase(userData) {
             role: data.role,
             name: data.name,
             class: data.class,
-            courses: data.courses || []
+            courses: data.courses || [],
+            email: data.email || null
         };
     } catch (err) {
-        console.error('Error creating user in Supabase:', err);
-        // Re-throw so caller can handle it
-        throw err;
+        console.error('Error creating user:', err);
+        throw err; // Re-throw the error for handling in calling function
+    }
+}
+
+// Update user
+async function updateUserInSupabase(userId, updates) {
+    const client = getSupabaseClient();
+    if (!client) return null;
+    
+    try {
+        const { data, error } = await client
+            .from('users')
+            .update(updates)
+            .eq('id', userId)
+            .select()
+            .single();
+        
+        if (error) {
+            console.error('Error updating user:', error);
+            return null;
+        }
+        
+        return {
+            id: data.id,
+            username: data.username,
+            password: data.password,
+            role: data.role,
+            name: data.name,
+            class: data.class,
+            courses: data.courses || [],
+            email: data.email || null
+        };
+    } catch (err) {
+        console.error('Error updating user:', err);
+        return null;
     }
 }
 
@@ -138,37 +210,54 @@ async function checkUsernameExists(username) {
             .from('users')
             .select('id')
             .eq('username', username)
-            .limit(1)
-            .maybeSingle(); // Use maybeSingle to avoid 406 error if username doesn't exist
+            .maybeSingle(); // Use maybeSingle to avoid 406 if no record
         
-        return data !== null && !error;
+        if (error) {
+            console.error('Supabase check username error:', error);
+            return false;
+        }
+        
+        return data !== null;
     } catch (err) {
-        console.error('Error checking username:', err);
+        console.error('Error checking username existence:', err);
         return false;
     }
 }
 
-// Update user (for course registration, etc.)
-async function updateUserInSupabase(userId, updates) {
+// Get all users (for analytics)
+async function getAllUsersFromSupabase() {
     const client = getSupabaseClient();
-    if (!client) return false;
+    if (!client) return [];
     
     try {
-        const { error } = await client
+        const { data, error } = await client
             .from('users')
-            .update(updates)
-            .eq('id', userId);
+            .select('*');
         
-        return !error;
+        if (error) {
+            console.error('Error getting users:', error);
+            return [];
+        }
+        
+        return (data || []).map(u => ({
+            id: u.id,
+            username: u.username,
+            password: u.password,
+            role: u.role,
+            name: u.name,
+            class: u.class,
+            courses: u.courses || [],
+            email: u.email || null
+        }));
     } catch (err) {
-        console.error('Error updating user:', err);
-        return false;
+        console.error('Error getting all users:', err);
+        return [];
     }
 }
 
 // ========== MATERIAL OPERATIONS ==========
 
-// Get all materials (with optional filters)
+// Get materials from Supabase
 async function getMaterialsFromSupabase(filters = {}) {
     const client = getSupabaseClient();
     if (!client) return [];
@@ -176,6 +265,7 @@ async function getMaterialsFromSupabase(filters = {}) {
     try {
         let query = client.from('materials').select('*');
         
+        // Apply filters
         if (filters.class) {
             query = query.eq('class', filters.class);
         }
@@ -186,14 +276,19 @@ async function getMaterialsFromSupabase(filters = {}) {
             query = query.eq('category', filters.category);
         }
         
-        const { data, error } = await query.order('sequence', { ascending: true });
+        // Order by sequence, then uploaded_at
+        query = query.order('sequence', { ascending: true })
+                     .order('uploaded_at', { ascending: false });
+        
+        const { data, error } = await query;
         
         if (error) {
             console.error('Error getting materials:', error);
             return [];
         }
         
-        return data.map(m => ({
+        // Convert to format expected by app
+        return (data || []).map(m => ({
             id: m.id,
             course: m.course,
             class: m.class,
@@ -202,13 +297,13 @@ async function getMaterialsFromSupabase(filters = {}) {
             content: m.content,
             description: m.description,
             category: m.category,
-            sequence: m.sequence,
+            sequence: m.sequence || 999,
             uploadedBy: m.uploaded_by,
             uploadedAt: m.uploaded_at,
-            isFile: m.is_file,
+            isFile: m.is_file || false,
             fileName: m.file_name,
             fileType: m.file_type,
-            fileUrl: m.file_url
+            file_url: m.file_url // Include file URL from storage
         }));
     } catch (err) {
         console.error('Error getting materials:', err);
@@ -216,7 +311,7 @@ async function getMaterialsFromSupabase(filters = {}) {
     }
 }
 
-// Create material
+// Create material in Supabase
 async function createMaterialInSupabase(materialData) {
     const client = getSupabaseClient();
     if (!client) return null;
@@ -237,7 +332,7 @@ async function createMaterialInSupabase(materialData) {
                 is_file: materialData.isFile || false,
                 file_name: materialData.fileName || null,
                 file_type: materialData.fileType || null,
-                file_url: materialData.fileUrl || null
+                file_url: materialData.file_url || null // Store file URL from storage
             }])
             .select()
             .single();
@@ -262,7 +357,7 @@ async function createMaterialInSupabase(materialData) {
             isFile: data.is_file,
             fileName: data.file_name,
             fileType: data.file_type,
-            fileUrl: data.file_url
+            file_url: data.file_url
         };
     } catch (err) {
         console.error('Error creating material:', err);
@@ -270,31 +365,52 @@ async function createMaterialInSupabase(materialData) {
     }
 }
 
-// Update material
-async function updateMaterialInSupabase(materialId, updates) {
+// Update material in Supabase
+async function updateMaterialInSupabase(materialId, materialData) {
     const client = getSupabaseClient();
     if (!client) return false;
     
     try {
-        const updateData = {};
-        if (updates.course !== undefined) updateData.course = updates.course;
-        if (updates.class !== undefined) updateData.class = updates.class;
-        if (updates.title !== undefined) updateData.title = updates.title;
-        if (updates.type !== undefined) updateData.type = updates.type;
-        if (updates.content !== undefined) updateData.content = updates.content;
-        if (updates.description !== undefined) updateData.description = updates.description;
-        if (updates.category !== undefined) updateData.category = updates.category;
-        if (updates.sequence !== undefined) updateData.sequence = updates.sequence;
-        if (updates.fileName !== undefined) updateData.file_name = updates.fileName;
-        if (updates.fileType !== undefined) updateData.file_type = updates.fileType;
-        if (updates.fileUrl !== undefined) updateData.file_url = updates.fileUrl;
+        const updateData = {
+            course: materialData.course,
+            class: materialData.class,
+            title: materialData.title,
+            type: materialData.type,
+            description: materialData.description || null,
+            category: materialData.category || null,
+            sequence: materialData.sequence || 999
+        };
+        
+        // Only update content if provided
+        if (materialData.content !== undefined) {
+            updateData.content = materialData.content;
+        }
+        
+        // Update file-related fields if provided
+        if (materialData.fileName !== undefined) {
+            updateData.file_name = materialData.fileName;
+        }
+        if (materialData.fileType !== undefined) {
+            updateData.file_type = materialData.fileType;
+        }
+        if (materialData.file_url !== undefined) {
+            updateData.file_url = materialData.file_url;
+        }
+        if (materialData.isFile !== undefined) {
+            updateData.is_file = materialData.isFile;
+        }
         
         const { error } = await client
             .from('materials')
             .update(updateData)
             .eq('id', materialId);
         
-        return !error;
+        if (error) {
+            console.error('Error updating material:', error);
+            return false;
+        }
+        
+        return true;
     } catch (err) {
         console.error('Error updating material:', err);
         return false;
@@ -307,12 +423,35 @@ async function deleteMaterialFromSupabase(materialId) {
     if (!client) return false;
     
     try {
+        // First, get the material to check if it has a file in storage
+        const { data: material, error: fetchError } = await client
+            .from('materials')
+            .select('file_url')
+            .eq('id', materialId)
+            .maybeSingle();
+        
+        if (!fetchError && material && material.file_url) {
+            // Extract file path from URL and delete from storage
+            try {
+                const filePath = material.file_url.split('/').slice(-2).join('/'); // Get last two parts (bucket/path)
+                await deleteSupabaseFile('learning-materials', filePath);
+            } catch (storageError) {
+                console.warn('Could not delete file from storage (file may not exist):', storageError);
+            }
+        }
+        
+        // Delete from database
         const { error } = await client
             .from('materials')
             .delete()
             .eq('id', materialId);
         
-        return !error;
+        if (error) {
+            console.error('Error deleting material:', error);
+            return false;
+        }
+        
+        return true;
     } catch (err) {
         console.error('Error deleting material:', err);
         return false;
@@ -365,10 +504,46 @@ async function markMaterialCompletedInSupabase(userId, materialId) {
                 completed_at: new Date().toISOString()
             });
         
-        return !error;
+        if (error) {
+            console.error('Error marking progress:', error);
+            return false;
+        }
+        
+        return true;
     } catch (err) {
         console.error('Error marking progress:', err);
         return false;
+    }
+}
+
+// Get all progress (for analytics)
+async function getAllProgressFromSupabase() {
+    const client = getSupabaseClient();
+    if (!client) return {};
+    
+    try {
+        const { data, error } = await client
+            .from('progress')
+            .select('user_id, material_id, completed')
+            .eq('completed', true);
+        
+        if (error) {
+            console.error('Error getting all progress:', error);
+            return {};
+        }
+        
+        const progress = {};
+        data.forEach(p => {
+            if (!progress[p.user_id]) {
+                progress[p.user_id] = {};
+            }
+            progress[p.user_id][p.material_id] = true;
+        });
+        
+        return progress;
+    } catch (err) {
+        console.error('Error getting all progress:', err);
+        return {};
     }
 }
 
@@ -383,10 +558,102 @@ async function deleteProgressForMaterial(materialId) {
             .delete()
             .eq('material_id', materialId);
         
-        return !error;
+        if (error) {
+            console.error('Error deleting progress:', error);
+            return false;
+        }
+        
+        return true;
     } catch (err) {
         console.error('Error deleting progress:', err);
         return false;
     }
 }
 
+// ========== SUPABASE STORAGE OPERATIONS ==========
+
+// Upload file to Supabase Storage
+async function uploadSupabaseFile(file, fileName, folder = 'learning-materials') {
+    const client = getSupabaseClient();
+    if (!client) {
+        throw new Error('Supabase client not available');
+    }
+    
+    try {
+        // Generate unique file name to avoid conflicts
+        const timestamp = Date.now();
+        const sanitizedFileName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_');
+        const uniqueFileName = `${timestamp}_${sanitizedFileName}`;
+        const filePath = `${folder}/${uniqueFileName}`;
+        
+        // Upload file to storage
+        const { data, error } = await client.storage
+            .from(folder)
+            .upload(filePath, file, {
+                cacheControl: '3600',
+                upsert: false // Don't overwrite existing files
+            });
+        
+        if (error) {
+            console.error('Error uploading file to storage:', error);
+            throw new Error(error.message || 'Failed to upload file to storage');
+        }
+        
+        // Get public URL for the uploaded file
+        const { data: urlData } = client.storage
+            .from(folder)
+            .getPublicUrl(filePath);
+        
+        if (!urlData || !urlData.publicUrl) {
+            throw new Error('Failed to get file URL from storage');
+        }
+        
+        return {
+            path: filePath,
+            url: urlData.publicUrl,
+            fileName: sanitizedFileName // Return sanitized name
+        };
+    } catch (err) {
+        console.error('Error uploading file:', err);
+        throw err;
+    }
+}
+
+// Get public URL for a file in Supabase Storage
+function getSupabaseFileUrl(filePath, bucket = 'learning-materials') {
+    const client = getSupabaseClient();
+    if (!client) return null;
+    
+    try {
+        const { data } = client.storage
+            .from(bucket)
+            .getPublicUrl(filePath);
+        
+        return data?.publicUrl || null;
+    } catch (err) {
+        console.error('Error getting file URL:', err);
+        return null;
+    }
+}
+
+// Delete file from Supabase Storage
+async function deleteSupabaseFile(bucket = 'learning-materials', filePath) {
+    const client = getSupabaseClient();
+    if (!client) return false;
+    
+    try {
+        const { error } = await client.storage
+            .from(bucket)
+            .remove([filePath]);
+        
+        if (error) {
+            console.error('Error deleting file from storage:', error);
+            return false;
+        }
+        
+        return true;
+    } catch (err) {
+        console.error('Error deleting file:', err);
+        return false;
+    }
+}

@@ -108,7 +108,7 @@ function previewFile() {
     }
 }
 
-function handleMaterialUpload(e) {
+async function handleMaterialUpload(e) {
     e.preventDefault();
     
     const course = document.getElementById('courseSelect').value;
@@ -118,47 +118,111 @@ function handleMaterialUpload(e) {
     const description = document.getElementById('materialDescription').value;
     const category = document.getElementById('materialCategory').value;
     const sequence = parseInt(document.getElementById('materialSequence').value) || 999;
+    const submitBtn = document.getElementById('submitBtn');
+    const originalBtnText = submitBtn.textContent;
+    
+    // Show loading state
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Uploading...';
     
     // Handle file upload
     const materialFile = document.getElementById('materialFile');
     let content = '';
     let fileName = '';
     let fileType = '';
-    let fileData = null;
     
     if (type === 'file' && materialFile.files.length > 0) {
         const file = materialFile.files[0];
         
-        // Check file size (10MB limit)
-        if (file.size > 10 * 1024 * 1024) {
-            alert('File size exceeds 10MB limit. Please choose a smaller file.');
+        // Check file size (50MB limit for Supabase Storage)
+        if (file.size > 50 * 1024 * 1024) {
+            alert('File size exceeds 50MB limit. Please choose a smaller file.');
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalBtnText;
             return;
         }
         
         fileName = file.name;
         fileType = file.type || getFileTypeFromName(fileName);
         
-        // Read file as base64
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            fileData = e.target.result;
-            saveMaterialWithFile(course, classSelect, title, type, description, category, sequence, fileData, fileName, fileType);
-        };
-        reader.onerror = function() {
-            alert('Error reading file. Please try again.');
-        };
-        reader.readAsDataURL(file);
-        return; // Exit early, will continue in callback
+        // Upload file to Supabase Storage
+        try {
+            submitBtn.textContent = 'Uploading file to storage...';
+            
+            if (typeof uploadSupabaseFile === 'function') {
+                const uploadResult = await uploadSupabaseFile(file, fileName);
+                
+                if (uploadResult && uploadResult.url) {
+                    // File uploaded successfully, save material with storage URL
+                    await saveMaterialWithFile(
+                        course, 
+                        classSelect, 
+                        title, 
+                        type, 
+                        description, 
+                        category, 
+                        sequence, 
+                        null, // No base64 data needed
+                        uploadResult.fileName, 
+                        fileType,
+                        uploadResult.url // Storage URL
+                    );
+                    
+                    // Reset button state
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalBtnText;
+                    return;
+                } else {
+                    throw new Error('Failed to get file URL from storage');
+                }
+            } else {
+                // Fallback to base64 if Supabase Storage functions not available
+                console.warn('Supabase Storage functions not available, falling back to base64 storage');
+                submitBtn.textContent = 'Reading file...';
+                
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    const fileData = e.target.result;
+                    await saveMaterialWithFile(course, classSelect, title, type, description, category, sequence, fileData, fileName, fileType, null);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalBtnText;
+                };
+                reader.onerror = function() {
+                    alert('Error reading file. Please try again.');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalBtnText;
+                };
+                reader.readAsDataURL(file);
+                return; // Exit early, will continue in callback
+            }
+        } catch (error) {
+            console.error('Error uploading file:', error);
+            alert(`Error uploading file: ${error.message || 'Please check your internet connection and try again.'}`);
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalBtnText;
+            return;
+        }
     } else {
         content = document.getElementById('materialContent').value;
         if (!content && type !== 'file') {
             alert('Please provide content or upload a file');
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalBtnText;
             return;
         }
+        
+        // Continue with normal upload (non-file)
+        try {
+            await saveMaterial(course, classSelect, title, type, content, description, category, sequence);
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalBtnText;
+        } catch (error) {
+            console.error('Error saving material:', error);
+            alert(`Error saving material: ${error.message || 'Please try again.'}`);
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalBtnText;
+        }
     }
-    
-    // Continue with normal upload (non-file)
-    saveMaterial(course, classSelect, title, type, content, description, category, sequence);
 }
 
 function getFileTypeFromName(fileName) {
@@ -178,51 +242,86 @@ function getFileTypeFromName(fileName) {
     return typeMap[ext] || 'application/octet-stream';
 }
 
-async function saveMaterialWithFile(course, classSelect, title, type, description, category, sequence, fileData, fileName, fileType) {
+async function saveMaterialWithFile(course, classSelect, title, type, description, category, sequence, fileData, fileName, fileType, fileUrl) {
     const currentUser = getCurrentUser();
     const editingId = document.getElementById('uploadForm').dataset.editingId;
     
-    // For now, store file as base64 in content field
-    // TODO: Upload to Supabase Storage and store URL
+    // Use Supabase Storage URL if available, otherwise fall back to base64
     const materialData = {
         course: course,
         class: classSelect,
         title: title,
         type: type,
-        content: fileData, // Store base64 file data
+        content: fileUrl ? null : fileData, // Only store base64 if no storage URL
         description: description,
         category: category,
         sequence: sequence,
         uploadedBy: currentUser.name,
         isFile: true,
         fileName: fileName,
-        fileType: fileType
+        fileType: fileType,
+        file_url: fileUrl || null // Store Supabase Storage URL
     };
     
     let success = false;
+    let errorMessage = '';
     
     // Try Supabase first
     if (typeof createMaterialInSupabase === 'function' && typeof updateMaterialInSupabase === 'function') {
         try {
             if (editingId) {
+                // If editing, delete old file from storage if it exists
+                if (fileUrl) {
+                    // Get old material to check for old file URL
+                    const oldMaterials = await getMaterialsFromSupabase({});
+                    const oldMaterial = oldMaterials.find(m => m.id === editingId);
+                    if (oldMaterial && oldMaterial.file_url && typeof deleteSupabaseFile === 'function') {
+                        try {
+                            // Extract path from URL
+                            const urlParts = oldMaterial.file_url.split('/');
+                            const filePath = urlParts.slice(-2).join('/'); // Get bucket/file path
+                            await deleteSupabaseFile('learning-materials', filePath);
+                        } catch (deleteError) {
+                            console.warn('Could not delete old file from storage:', deleteError);
+                        }
+                    }
+                }
+                
                 success = await updateMaterialInSupabase(editingId, materialData);
                 if (success) {
-                    alert('Material updated successfully!');
+                    alert('✅ Material updated successfully!');
+                } else {
+                    errorMessage = 'Failed to update material in database';
                 }
             } else {
                 const created = await createMaterialInSupabase(materialData);
                 if (created) {
                     success = true;
-                    alert('File uploaded successfully!');
+                    alert('✅ File uploaded successfully to Supabase Storage!');
+                } else {
+                    errorMessage = 'Failed to save material to database';
                 }
             }
         } catch (err) {
             console.error('Supabase file save error:', err);
+            errorMessage = err.message || 'Database error occurred';
+            
+            // If upload succeeded but save failed, try to delete the uploaded file
+            if (fileUrl && typeof deleteSupabaseFile === 'function') {
+                try {
+                    const urlParts = fileUrl.split('/');
+                    const filePath = urlParts.slice(-2).join('/');
+                    await deleteSupabaseFile('learning-materials', filePath);
+                } catch (deleteError) {
+                    console.warn('Could not clean up uploaded file:', deleteError);
+                }
+            }
         }
     }
     
-    // Fallback to localStorage
-    if (!success) {
+    // Fallback to localStorage only if Supabase completely fails
+    if (!success && !fileUrl) {
+        console.warn('Falling back to localStorage storage');
         const materials = JSON.parse(localStorage.getItem('materials') || '[]');
         const newMaterial = {
             id: editingId || Date.now().toString(),
@@ -235,7 +334,8 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
             if (index !== -1) {
                 materials[index] = { ...materials[index], ...newMaterial, id: editingId };
                 localStorage.setItem('materials', JSON.stringify(materials));
-                alert('Material updated successfully!');
+                alert('⚠️ Material updated (stored locally - Supabase unavailable)');
+                success = true;
             }
             delete document.getElementById('uploadForm').dataset.editingId;
             document.getElementById('submitBtn').textContent = 'Upload Material';
@@ -243,27 +343,33 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
         } else {
             materials.push(newMaterial);
             localStorage.setItem('materials', JSON.stringify(materials));
-            alert('File uploaded successfully!');
+            alert('⚠️ File uploaded (stored locally - Supabase unavailable)');
+            success = true;
         }
-    } else {
-        // Clear editing state if Supabase succeeded
+    } else if (!success) {
+        // Supabase failed but we tried to upload to storage
+        alert(`❌ Error: ${errorMessage || 'Failed to save material. Please try again.'}`);
+    }
+    
+    if (success) {
+        // Clear editing state if succeeded
         if (editingId) {
             delete document.getElementById('uploadForm').dataset.editingId;
             document.getElementById('submitBtn').textContent = 'Upload Material';
             document.getElementById('cancelBtn').style.display = 'none';
         }
-    }
-    
-    // Reset form
-    document.getElementById('uploadForm').reset();
-    document.getElementById('fileUploadGroup').style.display = 'none';
-    document.getElementById('contentGroup').style.display = 'block';
-    document.getElementById('filePreview').innerHTML = '';
-    
-    // Reload materials and analytics
-    loadMaterials();
-    if (document.getElementById('analyticsContent')) {
-        loadAnalytics();
+        
+        // Reset form
+        document.getElementById('uploadForm').reset();
+        document.getElementById('fileUploadGroup').style.display = 'none';
+        document.getElementById('contentGroup').style.display = 'block';
+        document.getElementById('filePreview').innerHTML = '';
+        
+        // Reload materials and analytics
+        loadMaterials();
+        if (document.getElementById('analyticsContent')) {
+            loadAnalytics();
+        }
     }
 }
 
