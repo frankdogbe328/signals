@@ -66,12 +66,29 @@ A Learning Management System (LMS) for the Ghana Armed Forces Signal Training Sc
 
 ## Data Storage
 
-The system uses browser localStorage to store:
+The system currently uses browser **localStorage** to store:
 - User accounts
 - Learning materials
 - Progress tracking
 
-**Note:** Data persists in the browser. To reset, clear browser localStorage.
+### ⚠️ Important Limitation
+
+**localStorage is browser/device-specific:**
+- ✅ Accounts created on Device A work on Device A
+- ❌ Accounts created on Device A **DO NOT** work on Device B or Mobile
+- Each device has its own separate database
+
+### 🔧 Backend Required for Cross-Device Access
+
+To make accounts work across all devices (laptop, mobile, tablet), you need a **backend server with a shared database**.
+
+See `BACKEND_SETUP.md` for setup options including:
+- Firebase (easiest, free)
+- Supabase (free alternative)
+- Node.js + Express (custom backend)
+- PHP backend (if you have web hosting)
+
+**Note:** For single-device use, localStorage works fine. To reset, clear browser localStorage.
 
 ## Course Structure
 
