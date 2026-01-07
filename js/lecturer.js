@@ -1,3 +1,25 @@
+// Update courses dropdown for lecturer based on selected class
+function updateCoursesForLecturer() {
+    const classSelect = document.getElementById('classSelect').value;
+    const courseSelect = document.getElementById('courseSelect');
+    
+    if (!classSelect) {
+        courseSelect.innerHTML = '<option value="">Select Class First</option>';
+        courseSelect.disabled = true;
+        return;
+    }
+    
+    const courses = getCoursesForClass(classSelect);
+    if (courses.length === 0) {
+        courseSelect.innerHTML = '<option value="">No courses available for this class</option>';
+        courseSelect.disabled = true;
+    } else {
+        courseSelect.innerHTML = '<option value="">Select Course</option>' +
+            courses.map(course => `<option value="${course}">${course}</option>`).join('');
+        courseSelect.disabled = false;
+    }
+}
+
 // Lecturer dashboard functionality
 document.addEventListener('DOMContentLoaded', function() {
     // Check authentication
@@ -301,7 +323,8 @@ function loadClassProgress(materials, officers, progress) {
         'signal-basic-beginner', 'signal-basic-ii-intermediate', 'signal-basic-i-advanced',
         'regimental-basic-beginner', 'regimental-basic-ii-intermediate', 'regimental-basic-i-advanced',
         'electronic-warfare',
-        'upgrading-telecom', 'upgrading-rf'
+        'upgrading-telecom', 'upgrading-rf',
+        'drone-operators'
     ];
     
     let html = '<div class="class-progress-grid">';
@@ -648,7 +671,8 @@ function formatClassName(classId) {
         'regimental-basic-i-advanced': 'Regimental Basic I - Advanced',
         'electronic-warfare': 'Electronic Warfare',
         'upgrading-telecom': 'Upgrading - Telecom',
-        'upgrading-rf': 'Upgrading - RF'
+        'upgrading-rf': 'Upgrading - RF',
+        'drone-operators': 'Practical Drone Operators Course'
     };
     return classNames[classId] || classId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 }

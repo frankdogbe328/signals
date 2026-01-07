@@ -52,6 +52,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // Populate course registration dropdown
+    populateCourseRegistrationDropdown();
+    
     // Load registered courses first
     loadRegisteredCourses();
     
@@ -127,6 +130,24 @@ function updateOfficerInfo() {
     if (officerInfoEl) {
         officerInfoEl.textContent = newText;
     }
+}
+
+// Populate course registration dropdown based on officer's class
+function populateCourseRegistrationDropdown() {
+    const currentUser = getCurrentUser();
+    if (!currentUser || !currentUser.class) return;
+    
+    const courseSelect = document.getElementById('registerCourseSelect');
+    if (!courseSelect) return;
+    
+    const availableCourses = getCoursesForClass(currentUser.class);
+    const registeredCourses = currentUser.courses || [];
+    
+    // Filter out already registered courses
+    const unregisteredCourses = availableCourses.filter(course => !registeredCourses.includes(course));
+    
+    courseSelect.innerHTML = '<option value="">Select a course</option>' +
+        unregisteredCourses.map(course => `<option value="${course}">${course}</option>`).join('');
 }
 
 function loadRegisteredCourses() {
@@ -223,8 +244,9 @@ function registerForCourse() {
         setCurrentUser(currentUser);
     }
     
-    // Reset dropdown
+    // Reset dropdown and repopulate
     courseSelect.value = '';
+    populateCourseRegistrationDropdown();
     
     // Reload UI (update officer info directly to prevent blinking)
     loadRegisteredCourses();

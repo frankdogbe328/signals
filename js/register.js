@@ -34,10 +34,28 @@ function showRegisterForm(role) {
         classGroup.style.display = 'block';
         courseGroup.style.display = 'block';
         regClass.setAttribute('required', 'required');
+        
+        // Add event listener for class change to update courses
+        regClass.addEventListener('change', updateCoursesForClass);
     }
     
     // Reset form
     document.getElementById('registerForm').reset();
+}
+
+// Update courses dropdown based on selected class
+function updateCoursesForClass() {
+    const classSelect = document.getElementById('regClass').value;
+    const courseSelect = document.getElementById('regCourse');
+    
+    if (!classSelect) {
+        courseSelect.innerHTML = '<option value="">Skip - Register later</option>';
+        return;
+    }
+    
+    const courses = getCoursesForClass(classSelect);
+    courseSelect.innerHTML = '<option value="">Skip - Register later</option>' +
+        courses.map(course => `<option value="${course}">${course}</option>`).join('');
 }
 
 function showLoginForm() {

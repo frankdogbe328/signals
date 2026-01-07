@@ -24,6 +24,141 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+// Course mapping - maps class IDs to their available courses
+function getCoursesForClass(classId) {
+    const courseMap = {
+        // Telecom Technician (Upgrading - Telecom)
+        'upgrading-telecom': [
+            'Telecom',
+            'Exchanges',
+            'Electronics',
+            'Antenna',
+            'Basic maths',
+            'Communication skills',
+            'Fibre optics',
+            'Power management',
+            'Information Technology (Networking)'
+        ],
+        // Radio Technicians (Upgrading - RF)
+        'upgrading-rf': [
+            'Electronics',
+            'Physics',
+            'Antenna',
+            'Basic math',
+            'Communication skills',
+            'Power management',
+            'Information Technology (Networking)'
+        ],
+        // Signal Basic (all levels)
+        'signal-basic-beginner': [
+            'Voice procedure',
+            'Telegraphy procedure',
+            'Antenna theory',
+            'Communication centre management',
+            'Power management',
+            'Front desk management',
+            'Exchanges',
+            'Information Technology',
+            'Communication skills',
+            'Basic physics',
+            'Basic maths',
+            'Cable networking',
+            'Signal tactics'
+        ],
+        'signal-basic-ii-intermediate': [
+            'Voice procedure',
+            'Telegraphy procedure',
+            'Antenna theory',
+            'Communication centre management',
+            'Power management',
+            'Front desk management',
+            'Exchanges',
+            'Information Technology',
+            'Communication skills',
+            'Basic physics',
+            'Basic maths',
+            'Cable networking',
+            'Signal tactics'
+        ],
+        'signal-basic-i-advanced': [
+            'Voice procedure',
+            'Telegraphy procedure',
+            'Antenna theory',
+            'Communication centre management',
+            'Power management',
+            'Front desk management',
+            'Exchanges',
+            'Information Technology',
+            'Communication skills',
+            'Basic physics',
+            'Basic maths',
+            'Cable networking',
+            'Signal tactics'
+        ],
+        // Regimental Basic (all levels)
+        'regimental-basic-beginner': [
+            'Voice procedure',
+            'Telegraphy procedure',
+            'Antenna theory',
+            'Basic math',
+            'Communication skills',
+            'Field cable networking',
+            'Communication centre management',
+            'Power management',
+            'Information Technology',
+            'Signal tactics'
+        ],
+        'regimental-basic-ii-intermediate': [
+            'Voice procedure',
+            'Telegraphy procedure',
+            'Antenna theory',
+            'Basic math',
+            'Communication skills',
+            'Field cable networking',
+            'Communication centre management',
+            'Power management',
+            'Information Technology',
+            'Signal tactics'
+        ],
+        'regimental-basic-i-advanced': [
+            'Voice procedure',
+            'Telegraphy procedure',
+            'Antenna theory',
+            'Basic math',
+            'Communication skills',
+            'Field cable networking',
+            'Communication centre management',
+            'Power management',
+            'Information Technology',
+            'Signal tactics'
+        ],
+        // Electronic Warfare (System Operators)
+        'electronic-warfare': [
+            'Voice procedure',
+            'Telegraphy procedure',
+            'Antenna theory',
+            'Front desk management',
+            'Basic math',
+            'Communication skills',
+            'Power management',
+            'Information Technology',
+            'Communication centre management',
+            'Signal tactics'
+        ],
+        // Practical Drone Operators Course
+        'drone-operators': [
+            'UAS Fundamentals',
+            'UAS Control',
+            'UAS Systems',
+            'UAS Operations',
+            'Flight safety',
+            'Payloads and Anti-Drone Systems'
+        ]
+    };
+    
+    return courseMap[classId] || [];
+}
+
 // Initialize demo data
 function initializeDemoData() {
     // Initialize users if not exists
