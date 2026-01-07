@@ -193,9 +193,8 @@ function loadRegisteredCourses() {
         newHTML = '<p class="empty-state" style="padding: 10px;">No courses registered. Register for a course above.</p>';
     } else {
         newHTML = validRegisteredCourses.map(course => `
-            <div class="registered-course-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 5px; margin-bottom: 10px;">
+            <div class="registered-course-item" style="display: flex; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 5px; margin-bottom: 10px;">
                 <span style="font-weight: 600;">${course}</span>
-                <button onclick="unregisterFromCourse('${course}')" class="btn btn-danger" style="width: auto; padding: 5px 15px; font-size: 12px;">Unregister</button>
             </div>
         `).join('');
     }
