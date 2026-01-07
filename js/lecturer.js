@@ -638,3 +638,18 @@ function formatDate(dateString) {
     });
 }
 
+function formatClassName(classId) {
+    const classNames = {
+        'signal-basic-beginner': 'Signal Basic - Beginner',
+        'signal-basic-ii-intermediate': 'Signal Basic II - Intermediate',
+        'signal-basic-i-advanced': 'Signal Basic I - Advanced',
+        'regimental-basic-beginner': 'Regimental Basic - Beginner',
+        'regimental-basic-ii-intermediate': 'Regimental Basic II - Intermediate',
+        'regimental-basic-i-advanced': 'Regimental Basic I - Advanced',
+        'electronic-warfare': 'Electronic Warfare',
+        'upgrading-telecom': 'Upgrading - Telecom',
+        'upgrading-rf': 'Upgrading - RF'
+    };
+    return classNames[classId] || classId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
