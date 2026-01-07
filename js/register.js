@@ -168,35 +168,47 @@ async function handleRegistration(e) {
         };
     }
     
-    // Try Supabase first, fallback to localStorage
+    // Try Supabase first - REQUIRED for cross-device access
     let createdUser = null;
+    let supabaseError = null;
     
     if (typeof createUserInSupabase === 'function') {
         try {
             createdUser = await createUserInSupabase(newUser);
+            if (!createdUser) {
+                supabaseError = 'Failed to create user in Supabase';
+            }
         } catch (err) {
             console.error('Supabase registration error:', err);
+            supabaseError = err.message || 'Supabase error';
         }
+    } else {
+        supabaseError = 'Supabase functions not available';
     }
     
-    // Fallback to localStorage
+    // If Supabase failed, show error - don't silently fallback to localStorage
+    // This ensures users are saved to Supabase for cross-device access
     if (!createdUser) {
-        // Create with ID for localStorage
-        if (role === 'lecturer') {
-            createdUser = {
-                id: 'lecturer_' + Date.now().toString(),
-                ...newUser
-            };
-        } else {
-            createdUser = {
-                id: 'officer_' + Date.now().toString(),
-                ...newUser
-            };
-        }
-        
+        errorMessage.textContent = `Registration failed: ${supabaseError || 'Unable to connect to database. Please check your connection and try again.'}`;
+        errorMessage.classList.add('show');
+        console.error('Registration failed - user not saved to Supabase:', supabaseError);
+        return; // Don't continue if Supabase save failed
+    }
+    
+    // Also save to localStorage as backup (but Supabase is primary)
+    try {
         const users = JSON.parse(localStorage.getItem('users') || '[]');
-        users.push(createdUser);
+        // Remove old entry if exists
+        const existingIndex = users.findIndex(u => u.username === createdUser.username);
+        if (existingIndex !== -1) {
+            users[existingIndex] = createdUser;
+        } else {
+            users.push(createdUser);
+        }
         localStorage.setItem('users', JSON.stringify(users));
+    } catch (err) {
+        console.warn('Failed to save to localStorage backup:', err);
+        // Don't fail registration if localStorage backup fails
     }
     
     // Automatically log in the newly registered user
