@@ -78,7 +78,10 @@ async function getUserFromSupabase(username, password, role) {
 // Create new user
 async function createUserInSupabase(userData) {
     const client = getSupabaseClient();
-    if (!client) return null;
+    if (!client) {
+        console.error('Supabase client not available');
+        return null;
+    }
     
     try {
         const { data, error } = await client
@@ -95,9 +98,17 @@ async function createUserInSupabase(userData) {
             .single();
         
         if (error) {
-            console.error('Error creating user:', error);
-            return null;
+            console.error('Supabase error creating user:', error);
+            // Throw error so caller knows it failed
+            throw new Error(error.message || 'Failed to create user in database');
         }
+        
+        if (!data) {
+            console.error('No data returned from Supabase insert');
+            throw new Error('No data returned from database');
+        }
+        
+        console.log('User successfully created in Supabase:', data.username);
         
         return {
             id: data.id,
@@ -109,8 +120,9 @@ async function createUserInSupabase(userData) {
             courses: data.courses || []
         };
     } catch (err) {
-        console.error('Error creating user:', err);
-        return null;
+        console.error('Error creating user in Supabase:', err);
+        // Re-throw so caller can handle it
+        throw err;
     }
 }
 
