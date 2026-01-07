@@ -41,10 +41,10 @@ WHERE role = 'lecturer'
 ORDER BY name ASC;
 ```
 
-### **View Only Officers:**
+### **View Only Students:**
 ```sql
 SELECT * FROM users
-WHERE role = 'officer'
+WHERE role = 'student'
 ORDER BY class, name ASC;
 ```
 

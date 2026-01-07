@@ -10,7 +10,7 @@ A Learning Management System (LMS) for the Ghana Armed Forces Signal Training Sc
 - View and manage all uploaded materials
 - Delete materials when needed
 
-### Officer Portal
+### Student Portal
 - View learning materials assigned to their class
 - Track learning progress
 - Mark materials as completed
@@ -27,8 +27,8 @@ A Learning Management System (LMS) for the Ghana Armed Forces Signal Training Sc
 - Username: `lecturer1`
 - Password: `password123`
 
-**Officer:**
-- Username: `officer1`
+**Student:**
+- Username: `student1`
 - Password: `password123`
 
 ## System Structure
@@ -36,14 +36,14 @@ A Learning Management System (LMS) for the Ghana Armed Forces Signal Training Sc
 ```
 ├── index.html                 # Login page
 ├── lecturer-dashboard.html    # Lecturer portal
-├── officer-dashboard.html     # Officer portal
+├── student-dashboard.html     # Student portal
 ├── css/
 │   └── style.css             # All styling
 ├── js/
 │   ├── app.js                # Core app functionality
 │   ├── auth.js               # Authentication handling
 │   ├── lecturer.js           # Lecturer dashboard logic
-│   └── officer.js            # Officer dashboard logic
+│   └── student.js            # Student dashboard logic
 └── README.md                 # This file
 ```
 
@@ -57,8 +57,8 @@ A Learning Management System (LMS) for the Ghana Armed Forces Signal Training Sc
 5. Click "Upload Material"
 6. Materials will be visible to officers in the selected class
 
-### For Officers:
-1. Login with officer credentials
+### For Students:
+1. Login with student credentials
 2. View available materials for your class
 3. Click "View Material" to access content
 4. Mark materials as completed after studying

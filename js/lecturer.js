@@ -350,20 +350,20 @@ function loadAnalytics() {
     const users = JSON.parse(localStorage.getItem('users') || '[]');
     const progress = JSON.parse(localStorage.getItem('progress') || '{}');
     
-    const officers = users.filter(u => u.role === 'officer');
+    const students = users.filter(u => u.role === 'student');
     const activeClasses = [...new Set(materials.map(m => m.class))];
     
     // Calculate overall completion rate
     let totalCompletions = 0;
     let totalPossible = 0;
     
-    officers.forEach(officer => {
-        const officerMaterials = materials.filter(m => 
-            m.class === officer.class && m.course === officer.course
+    students.forEach(student => {
+        const studentMaterials = materials.filter(m => 
+            m.class === student.class && student.courses && student.courses.includes(m.course)
         );
-        totalPossible += officerMaterials.length;
-        const officerProgress = progress[officer.id] || {};
-        totalCompletions += officerMaterials.filter(m => officerProgress[m.id]).length;
+        totalPossible += studentMaterials.length;
+        const studentProgress = progress[student.id] || {};
+        totalCompletions += studentMaterials.filter(m => studentProgress[m.id]).length;
     });
     
     const overallCompletion = totalPossible > 0 
@@ -372,7 +372,7 @@ function loadAnalytics() {
     
     // Update overview
     document.getElementById('totalMaterialsCount').textContent = materials.length;
-    document.getElementById('totalOfficersCount').textContent = officers.length;
+    document.getElementById('totalStudentsCount').textContent = students.length;
     document.getElementById('overallCompletion').textContent = overallCompletion + '%';
     document.getElementById('activeClassesCount').textContent = activeClasses.length;
     
@@ -383,7 +383,7 @@ function loadAnalytics() {
     loadMaterialStats(materials, officers, progress);
 }
 
-function loadClassProgress(materials, officers, progress) {
+function loadClassProgress(materials, students, progress) {
     const classProgressContent = document.getElementById('classProgressContent');
     const classes = [
         'signal-basic-beginner', 'signal-basic-ii-intermediate', 'signal-basic-i-advanced',
@@ -397,13 +397,13 @@ function loadClassProgress(materials, officers, progress) {
     
     classes.forEach(classId => {
         const classMaterials = materials.filter(m => m.class === classId);
-        const classOfficers = officers.filter(o => o.class === classId);
+        const classStudents = students.filter(s => s.class === classId);
         
-        if (classMaterials.length === 0 && classOfficers.length === 0) {
+        if (classMaterials.length === 0 && classStudents.length === 0) {
             html += `
                 <div class="class-progress-card">
                     <h4>${formatClassName(classId)}</h4>
-                    <p class="empty-state">No materials or officers</p>
+                    <p class="empty-state">No materials or students</p>
                 </div>
             `;
             return;
@@ -434,8 +434,8 @@ function loadClassProgress(materials, officers, progress) {
                         <span class="stat-value">${classMaterials.length}</span>
                     </div>
                     <div class="progress-stat">
-                        <span class="stat-label">Officers:</span>
-                        <span class="stat-value">${classOfficers.length}</span>
+                        <span class="stat-label">Students:</span>
+                        <span class="stat-value">${classStudents.length}</span>
                     </div>
                     <div class="progress-stat">
                         <span class="stat-label">Completion:</span>
@@ -457,8 +457,8 @@ function loadClassProgress(materials, officers, progress) {
                         const total = officerMaterials.length;
                         const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
                         return `
-                            <div class="officer-progress-item">
-                                <span>${officer.name}</span>
+                            <div class="student-progress-item">
+                                <span>${student.name}</span>
                                 <span>${completed}/${total} (${rate}%)</span>
                             </div>
                         `;
@@ -472,7 +472,7 @@ function loadClassProgress(materials, officers, progress) {
     classProgressContent.innerHTML = html;
 }
 
-function loadMaterialStats(materials, officers, progress) {
+function loadMaterialStats(materials, students, progress) {
     const materialStatsContent = document.getElementById('materialStatsContent');
     
     if (materials.length === 0) {
@@ -483,7 +483,7 @@ function loadMaterialStats(materials, officers, progress) {
     // Calculate stats for each material
     const materialStats = materials.map(material => {
         // Support both old format (course) and new format (courses array)
-        const relevantOfficers = officers.filter(o => 
+        const relevantStudents = students.filter(s => 
             o.class === material.class && 
             (o.courses ? o.courses.includes(material.course) : (o.course === material.course))
         );
@@ -529,7 +529,7 @@ function loadMaterialStats(materials, officers, progress) {
                     <div class="progress-bar" style="width: ${stat.completionRate}%"></div>
                 </div>
                 <div class="material-stat-footer">
-                    <span>${stat.completedOfficers}/${stat.totalOfficers} officers completed</span>
+                    <span>${stat.completedStudents}/${stat.totalStudents} students completed</span>
                 </div>
             </div>
         `;
@@ -757,9 +757,9 @@ window.deleteMaterial = async function(materialId) {
         
         // Also remove from progress tracking
         const progress = JSON.parse(localStorage.getItem('progress') || '{}');
-        Object.keys(progress).forEach(officerId => {
-            if (progress[officerId][materialId]) {
-                delete progress[officerId][materialId];
+        Object.keys(progress).forEach(studentId => {
+            if (progress[studentId][materialId]) {
+                delete progress[studentId][materialId];
             }
         });
         localStorage.setItem('progress', JSON.stringify(progress));

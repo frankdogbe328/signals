@@ -38,7 +38,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Update student info text directly (with check to prevent blinking)
     const studentInfoEl = document.getElementById('studentInfo');
-    if (officerInfoEl) {
+    if (studentInfoEl) {
         const courses = currentUser.courses || [];
         const coursesText = courses.length > 0 
             ? `Registered Courses: ${courses.length}` 
@@ -46,9 +46,9 @@ document.addEventListener('DOMContentLoaded', function() {
         const newText = `Welcome, ${currentUser.name}. Class: ${currentUser.class || 'N/A'} | ${coursesText}`;
         
         // Only update if text changed
-        if (officerInfoEl.textContent !== newText) {
-            officerInfoEl.textContent = newText;
-            lastOfficerInfoText = newText;
+        if (studentInfoEl.textContent !== newText) {
+            studentInfoEl.textContent = newText;
+            lastStudentInfoText = newText;
         }
     }
     
