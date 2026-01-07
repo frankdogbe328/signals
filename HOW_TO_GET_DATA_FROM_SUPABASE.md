@@ -35,9 +35,9 @@
 SELECT * FROM users;
 ```
 
-#### Get All Officers:
+#### Get All Students:
 ```sql
-SELECT * FROM users WHERE role = 'officer';
+SELECT * FROM users WHERE role = 'student';
 ```
 
 #### Get All Materials:

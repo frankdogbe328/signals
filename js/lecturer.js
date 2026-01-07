@@ -377,10 +377,10 @@ function loadAnalytics() {
     document.getElementById('activeClassesCount').textContent = activeClasses.length;
     
     // Load class progress
-    loadClassProgress(materials, officers, progress);
+    loadClassProgress(materials, students, progress);
     
     // Load material statistics
-    loadMaterialStats(materials, officers, progress);
+    loadMaterialStats(materials, students, progress);
 }
 
 function loadClassProgress(materials, students, progress) {
@@ -412,13 +412,13 @@ function loadClassProgress(materials, students, progress) {
         let classCompletions = 0;
         let classTotal = 0;
         
-        classOfficers.forEach(officer => {
+        classStudents.forEach(student => {
             // Support both old format (course) and new format (courses array)
-            const officerCourses = officer.courses || (officer.course ? [officer.course] : []);
-            const officerMaterials = classMaterials.filter(m => officerCourses.includes(m.course));
-            classTotal += officerMaterials.length;
-            const officerProgress = progress[officer.id] || {};
-            classCompletions += officerMaterials.filter(m => officerProgress[m.id]).length;
+            const studentCourses = student.courses || (student.course ? [student.course] : []);
+            const studentMaterials = classMaterials.filter(m => studentCourses.includes(m.course));
+            classTotal += studentMaterials.length;
+            const studentProgress = progress[student.id] || {};
+            classCompletions += studentMaterials.filter(m => studentProgress[m.id]).length;
         });
         
         const classCompletionRate = classTotal > 0 
