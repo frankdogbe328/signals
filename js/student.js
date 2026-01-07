@@ -624,26 +624,45 @@ async function viewMaterial(materialId) {
             `;
         }
     } else if (material.type === 'pdf') {
+        // Legacy PDF type (text content) - provide download option
         contentHtml = `
+            <div style="margin-bottom: 15px;">
+                <button onclick="downloadTextMaterial('${materialId}', 'pdf')" class="btn btn-primary" style="padding: 8px 20px; font-size: 14px;">
+                    📥 Download as PDF
+                </button>
+            </div>
             <p><strong>PDF Document:</strong></p>
-            <p>${material.content}</p>
-            <p class="material-description">Note: In a production system, this would display or download the PDF file.</p>
+            <div style="white-space: pre-wrap; line-height: 1.8; padding: 15px; background: #f9f9f9; border-radius: 5px;">${material.content}</div>
         `;
     } else if (material.type === 'video') {
         contentHtml = `
+            <div style="margin-bottom: 15px;">
+                <button onclick="downloadTextMaterial('${materialId}', 'txt')" class="btn btn-primary" style="padding: 8px 20px; font-size: 14px;">
+                    📥 Download Video Info as Text
+                </button>
+            </div>
             <p><strong>Video Content:</strong></p>
-            <p>${material.content}</p>
-            <p class="material-description">Note: In a production system, this would embed or link to the video.</p>
+            <div style="white-space: pre-wrap; line-height: 1.8; padding: 15px; background: #f9f9f9; border-radius: 5px;">${material.content}</div>
         `;
     } else if (material.type === 'link') {
         contentHtml = `
+            <div style="margin-bottom: 15px;">
+                <button onclick="downloadTextMaterial('${materialId}', 'txt')" class="btn btn-primary" style="padding: 8px 20px; font-size: 14px;">
+                    📥 Download Link Info as Text
+                </button>
+            </div>
             <p><strong>External Link:</strong></p>
-            <p><a href="${material.content}" target="_blank">${material.content}</a></p>
-            <p class="material-description">Click the link above to open in a new tab.</p>
+            <p><a href="${material.content}" target="_blank" style="color: var(--primary-color); font-size: 16px; word-break: break-all;">${material.content}</a></p>
+            <p class="material-description">Click the link above to open in a new tab, or download the link information using the button above.</p>
         `;
     } else if (material.type === 'text') {
         contentHtml = `
-            <div style="white-space: pre-wrap; line-height: 1.8;">${material.content}</div>
+            <div style="margin-bottom: 15px;">
+                <button onclick="downloadTextMaterial('${materialId}')" class="btn btn-primary" style="padding: 8px 20px; font-size: 14px;">
+                    📥 Download as Text File
+                </button>
+            </div>
+            <div style="white-space: pre-wrap; line-height: 1.8; padding: 15px; background: #f9f9f9; border-radius: 5px;">${material.content}</div>
         `;
     }
     
@@ -812,8 +831,33 @@ async function downloadFile(materialId) {
     
     const material = materials.find(m => m.id === materialId);
     
-    if (!material || !material.isFile || !material.content) {
-        alert('File not found');
+    if (!material) {
+        alert('Material not found');
+        return;
+    }
+    
+    // Check if file is stored in Supabase Storage (has file_url)
+    if (material.file_url) {
+        // Download from Supabase Storage URL
+        try {
+            const link = document.createElement('a');
+            link.href = material.file_url;
+            link.download = material.fileName || material.title || 'download';
+            link.target = '_blank'; // Open in new tab if download fails
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            return;
+        } catch (err) {
+            console.error('Error downloading from Supabase Storage:', err);
+            // Fall through to try content-based download
+        }
+    }
+    
+    // If not a file or no content, can't download
+    if (!material.isFile || !material.content) {
+        alert('File content not available for download');
         return;
     }
     
@@ -855,6 +899,56 @@ async function downloadFile(materialId) {
     link.click();
     document.body.removeChild(link);
 }
+
+// Download text-based materials as text files
+async function downloadTextMaterial(materialId, fileExtension = 'txt') {
+    // Try Supabase first, fallback to localStorage
+    let materials = [];
+    if (typeof getMaterialsFromSupabase === 'function') {
+        try {
+            materials = await getMaterialsFromSupabase({});
+        } catch (err) {
+            materials = JSON.parse(localStorage.getItem('materials') || '[]');
+        }
+    } else {
+        materials = JSON.parse(localStorage.getItem('materials') || '[]');
+    }
+    
+    const material = materials.find(m => m.id === materialId);
+    
+    if (!material || !material.content) {
+        alert('Material content not found');
+        return;
+    }
+    
+    // Create text content with material details
+    let textContent = `Material: ${material.title}\n`;
+    if (material.description) {
+        textContent += `Description: ${material.description}\n`;
+    }
+    textContent += `Course: ${material.course}\n`;
+    textContent += `Class: ${material.class}\n`;
+    if (material.category) {
+        textContent += `Category: ${material.category}\n`;
+    }
+    textContent += `\n--- Content ---\n\n${material.content}`;
+    
+    // Create blob and download
+    const blob = new Blob([textContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${material.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.${fileExtension}`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+// Make download functions globally accessible
+window.downloadFile = downloadFile;
+window.downloadTextMaterial = downloadTextMaterial;
 
 // Close modal when clicking outside
 window.onclick = function(event) {
