@@ -145,15 +145,18 @@ function handleRegistration(e) {
     users.push(newUser);
     localStorage.setItem('users', JSON.stringify(users));
     
+    // Automatically log in the newly registered user
+    setCurrentUser(newUser);
+    
     // Show success message
     const roleText = role === 'lecturer' ? 'Lecturer' : 'Officer';
-    alert(`${roleText} registration successful! You can now login with your credentials.`);
+    alert(`${roleText} registration successful! Redirecting to your dashboard...`);
     
-    // Clear form and show login
-    showLoginForm();
-    
-    // Pre-fill username in login form
-    document.getElementById('username').value = username;
-    document.getElementById('userType').value = role;
+    // Redirect to appropriate dashboard based on role
+    if (role === 'lecturer') {
+        window.location.href = 'lecturer-dashboard.html';
+    } else {
+        window.location.href = 'officer-dashboard.html';
+    }
 }
 
