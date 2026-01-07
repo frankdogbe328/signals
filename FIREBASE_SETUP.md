@@ -1,13 +1,24 @@
 # Firebase Setup Guide for Signal Training School LMS
 
+## Step 0: Create Firebase Account (If you don't have one)
+
+1. **Go to:** https://firebase.google.com
+2. Click **"Get started"** or **"Go to console"** button (top right)
+3. You'll be asked to sign in with a **Google account**
+   - If you have Gmail, use that
+   - If not, create a Google account first at https://accounts.google.com/signup
+4. Once signed in, you'll be taken to the Firebase Console
+
 ## Step 1: Create Firebase Project
 
-1. Go to https://console.firebase.google.com
-2. Click "Add project" or "Create a project"
-3. Enter project name: `signal-training-school-lms`
-4. Disable Google Analytics (optional, not needed)
-5. Click "Create project"
-6. Wait for project to be created
+1. **Go to Firebase Console:** https://console.firebase.google.com
+2. Click **"Add project"** or **"Create a project"** button
+3. Enter project name: `signal-training-school-lms` (or any name you prefer)
+4. Click **"Continue"**
+5. **Google Analytics:** Choose "Disable" (not needed for this project)
+6. Click **"Create project"**
+7. Wait 30-60 seconds for project to be created
+8. Click **"Continue"** when ready
 
 ## Step 2: Enable Authentication
 
