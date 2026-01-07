@@ -91,6 +91,7 @@ async function createUserInSupabase(userData) {
                 password: userData.password,
                 role: userData.role,
                 name: userData.name,
+                email: userData.email || null,
                 class: userData.class || null,
                 courses: userData.courses || []
             }])

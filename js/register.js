@@ -76,6 +76,7 @@ async function handleRegistration(e) {
     
     const name = document.getElementById('regName').value.trim();
     const username = document.getElementById('regUsername').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
     const password = document.getElementById('regPassword').value;
     const confirmPassword = document.getElementById('regConfirmPassword').value;
     const classSelect = document.getElementById('regClass').value;
@@ -88,8 +89,16 @@ async function handleRegistration(e) {
     errorMessage.textContent = '';
     
     // Validate inputs based on role
-    if (!name || !username || !password || !confirmPassword) {
+    if (!name || !username || !email || !password || !confirmPassword) {
         errorMessage.textContent = 'Please fill in all required fields';
+        errorMessage.classList.add('show');
+        return;
+    }
+    
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        errorMessage.textContent = 'Please enter a valid email address';
         errorMessage.classList.add('show');
         return;
     }
@@ -154,7 +163,8 @@ async function handleRegistration(e) {
             username: username,
             password: password,
             role: 'lecturer',
-            name: name
+            name: name,
+            email: email
         };
     } else {
         // Create officer account
@@ -163,6 +173,7 @@ async function handleRegistration(e) {
             password: password,
             role: 'officer',
             name: name,
+            email: email,
             class: classSelect,
             courses: course ? [course] : [] // Store as array for multiple courses (can be empty)
         };

@@ -65,6 +65,12 @@
                 </div>
                 
                 <div class="form-group">
+                    <label for="regEmail">Email Address</label>
+                    <input type="email" id="regEmail" name="email" placeholder="your.email@example.com" required>
+                    <small style="color: #666; font-size: 12px;">Used for password reset and notifications</small>
+                </div>
+                
+                <div class="form-group">
                     <label for="regPassword">Password</label>
                     <input type="password" id="regPassword" name="password" placeholder="Choose a password" required>
                     <small style="color: #666; font-size: 12px;">Minimum 6 characters</small>
@@ -128,13 +134,35 @@
                     <label for="resetMethod">Reset Method</label>
                     <select id="resetMethod" name="resetMethod" required onchange="handleResetMethodChange()">
                         <option value="">Select Method</option>
+                        <option value="email">Reset via Email (Recommended)</option>
                         <option value="verify">Verify with Username & Full Name</option>
                         <option value="admin">Contact Admin/Lecturer</option>
                         <option value="manual">Manual Reset Instructions</option>
                     </select>
                 </div>
                 
-                <!-- Method 1: Verify with Username & Name -->
+                <!-- Method 1: Email Reset -->
+                <div id="emailMethod" style="display: none;">
+                    <div class="form-group">
+                        <label for="resetEmail">Email Address</label>
+                        <input type="email" id="resetEmail" name="email" placeholder="Enter your registered email">
+                        <small style="color: #666; font-size: 12px;">We'll send a reset link to this email</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="resetEmailRole">Your Role</label>
+                        <select id="resetEmailRole" name="role">
+                            <option value="">Select Role</option>
+                            <option value="lecturer">Lecturer</option>
+                            <option value="officer">Officer</option>
+                        </select>
+                    </div>
+                    
+                    <button type="button" class="btn btn-success" onclick="handleEmailReset()">Send Reset Link</button>
+                    <div id="emailResetStatus" style="margin-top: 15px;"></div>
+                </div>
+                
+                <!-- Method 2: Verify with Username & Name -->
                 <div id="verifyMethod" style="display: none;">
                     <div class="form-group">
                         <label for="resetUsername">Username</label>
@@ -169,7 +197,7 @@
                     <button type="button" class="btn btn-success" onclick="handlePasswordReset()">Reset Password</button>
                 </div>
                 
-                <!-- Method 2: Contact Admin -->
+                <!-- Method 3: Contact Admin -->
                 <div id="adminMethod" style="display: none;">
                     <div style="background: #fff3cd; padding: 20px; border-radius: 5px; border-left: 4px solid #ffc107;">
                         <h4 style="margin-top: 0; color: #856404;">Contact Administrator</h4>
@@ -189,7 +217,7 @@
                     <button type="button" class="btn btn-secondary" onclick="showLoginForm()" style="margin-top: 15px;">Back to Login</button>
                 </div>
                 
-                <!-- Method 3: Manual Instructions -->
+                <!-- Method 4: Manual Instructions -->
                 <div id="manualMethod" style="display: none;">
                     <div style="background: #d1ecf1; padding: 20px; border-radius: 5px; border-left: 4px solid #0c5460;">
                         <h4 style="margin-top: 0; color: #0c5460;">Manual Password Reset</h4>
