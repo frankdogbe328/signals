@@ -12,13 +12,13 @@
 
 window.EMAILJS_CONFIG = {
     // Your EmailJS Public Key (User ID)
-    PUBLIC_KEY: 'YOUR_PUBLIC_KEY_HERE',
+    PUBLIC_KEY: 'Ty9vLZOIvabQ9tnvG',
     
     // Your EmailJS Service ID
-    SERVICE_ID: 'YOUR_SERVICE_ID_HERE',
+    SERVICE_ID: 'service_du0l5sv',
     
     // Your EmailJS Template ID
-    TEMPLATE_ID: 'YOUR_TEMPLATE_ID_HERE'
+    TEMPLATE_ID: 'template_8b16l8p'
 };
 
 // Load EmailJS library if configured
