@@ -36,6 +36,10 @@
                 
                 <button type="submit" class="btn btn-primary">Login</button>
                 
+                <div style="text-align: center; margin-top: 15px;">
+                    <a href="#" onclick="showForgotPasswordForm(); return false;" style="color: var(--primary-color); font-size: 14px; text-decoration: none;">Forgot Password?</a>
+                </div>
+                
                 <div id="errorMessage" class="error-message"></div>
             </form>
             
@@ -112,6 +116,114 @@
                 <div id="registerErrorMessage" class="error-message"></div>
             </form>
             
+            <!-- Forgot Password Form -->
+            <form id="forgotPasswordForm" class="login-form" style="display: none;">
+                <h3 style="text-align: center; color: var(--primary-color); margin-bottom: 20px;">Reset Password</h3>
+                
+                <div style="background: #f0f8ff; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 4px solid var(--primary-color);">
+                    <p style="margin: 0; font-size: 14px; color: #333;"><strong>Choose a reset method:</strong></p>
+                </div>
+                
+                <div class="form-group">
+                    <label for="resetMethod">Reset Method</label>
+                    <select id="resetMethod" name="resetMethod" required onchange="handleResetMethodChange()">
+                        <option value="">Select Method</option>
+                        <option value="verify">Verify with Username & Full Name</option>
+                        <option value="admin">Contact Admin/Lecturer</option>
+                        <option value="manual">Manual Reset Instructions</option>
+                    </select>
+                </div>
+                
+                <!-- Method 1: Verify with Username & Name -->
+                <div id="verifyMethod" style="display: none;">
+                    <div class="form-group">
+                        <label for="resetUsername">Username</label>
+                        <input type="text" id="resetUsername" name="username" placeholder="Enter your username">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="resetName">Full Name</label>
+                        <input type="text" id="resetName" name="name" placeholder="Enter your full name as registered">
+                        <small style="color: #666; font-size: 12px;">Must match exactly with your registration</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="resetRole">Your Role</label>
+                        <select id="resetRole" name="role">
+                            <option value="">Select Role</option>
+                            <option value="lecturer">Lecturer</option>
+                            <option value="officer">Officer</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword" name="newPassword" placeholder="Enter new password (min 6 characters)">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmNewPassword">Confirm New Password</label>
+                        <input type="password" id="confirmNewPassword" name="confirmNewPassword" placeholder="Re-enter new password">
+                    </div>
+                    
+                    <button type="button" class="btn btn-success" onclick="handlePasswordReset()">Reset Password</button>
+                </div>
+                
+                <!-- Method 2: Contact Admin -->
+                <div id="adminMethod" style="display: none;">
+                    <div style="background: #fff3cd; padding: 20px; border-radius: 5px; border-left: 4px solid #ffc107;">
+                        <h4 style="margin-top: 0; color: #856404;">Contact Administrator</h4>
+                        <p style="color: #856404; margin-bottom: 15px;">To reset your password, please contact:</p>
+                        <ul style="color: #856404; margin-left: 20px;">
+                            <li><strong>System Administrator</strong> - For technical support</li>
+                            <li><strong>Your Lecturer</strong> - If you're an officer</li>
+                            <li><strong>Training School Office</strong> - For account issues</li>
+                        </ul>
+                        <p style="color: #856404; margin-top: 15px; font-size: 14px;">
+                            <strong>Provide them with:</strong><br>
+                            • Your username<br>
+                            • Your full name<br>
+                            • Your role (Lecturer/Officer)
+                        </p>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="showLoginForm()" style="margin-top: 15px;">Back to Login</button>
+                </div>
+                
+                <!-- Method 3: Manual Instructions -->
+                <div id="manualMethod" style="display: none;">
+                    <div style="background: #d1ecf1; padding: 20px; border-radius: 5px; border-left: 4px solid #0c5460;">
+                        <h4 style="margin-top: 0; color: #0c5460;">Manual Password Reset</h4>
+                        <p style="color: #0c5460; margin-bottom: 15px;"><strong>Option 1: Through Supabase Dashboard</strong></p>
+                        <ol style="color: #0c5460; margin-left: 20px; margin-bottom: 20px;">
+                            <li>Go to <a href="https://app.supabase.com" target="_blank" style="color: var(--primary-color);">Supabase Dashboard</a></li>
+                            <li>Login to your Supabase account</li>
+                            <li>Select your project</li>
+                            <li>Go to <strong>Table Editor</strong> → <strong>users</strong> table</li>
+                            <li>Find your username</li>
+                            <li>Click to edit the password field</li>
+                            <li>Enter your new password</li>
+                            <li>Save changes</li>
+                        </ol>
+                        
+                        <p style="color: #0c5460; margin-bottom: 15px;"><strong>Option 2: Contact Database Administrator</strong></p>
+                        <p style="color: #0c5460; font-size: 14px;">
+                            If you have database access, you can run this SQL query in Supabase SQL Editor:
+                        </p>
+                        <pre style="background: #fff; padding: 10px; border-radius: 3px; overflow-x: auto; font-size: 12px; color: #333;">
+UPDATE users 
+SET password = 'your_new_password' 
+WHERE username = 'your_username';
+                        </pre>
+                    </div>
+                    <button type="button" class="btn btn-secondary" onclick="showLoginForm()" style="margin-top: 15px;">Back to Login</button>
+                </div>
+                
+                <button type="button" class="btn btn-secondary" onclick="showLoginForm()" style="margin-top: 15px; display: none;" id="backToLoginBtn">Back to Login</button>
+                
+                <div id="resetErrorMessage" class="error-message"></div>
+                <div id="resetSuccessMessage" style="display: none; background: #d4edda; color: #155724; padding: 12px; border-radius: 5px; margin-top: 15px; border: 1px solid #c3e6cb;"></div>
+            </form>
+            
             <div class="demo-credentials">
                 <h3>Demo Credentials:</h3>
                 <p><strong>Lecturer:</strong> lecturer1 / password123</p>
@@ -127,6 +239,7 @@
     <script src="js/app.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/register.js"></script>
+    <script src="js/password-reset.js"></script>
 </body>
 </html>
 
