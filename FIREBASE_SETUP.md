@@ -40,9 +40,12 @@
 
 1. Click "Firestore Database" in left menu
 2. Click "Create database"
-3. Select "Start in test mode" (for now)
-4. Choose a location (choose closest to Ghana, e.g., `europe-west`)
-5. Click "Enable"
+3. **Choose plan:** Select **"Standard"** (Spark Plan - Free tier) ✅
+   - **DO NOT** choose Enterprise (that's for large organizations)
+   - Standard/Spark Plan is free and perfect for this project
+4. Select "Start in test mode" (for now)
+5. Choose a location (choose closest to Ghana, e.g., `europe-west` or `us-central`)
+6. Click "Enable"
 
 ## Step 4: Get Firebase Config
 
