@@ -484,26 +484,26 @@ function loadMaterialStats(materials, students, progress) {
     const materialStats = materials.map(material => {
         // Support both old format (course) and new format (courses array)
         const relevantStudents = students.filter(s => 
-            o.class === material.class && 
-            (o.courses ? o.courses.includes(material.course) : (o.course === material.course))
+            s.class === material.class && 
+            (s.courses ? s.courses.includes(material.course) : (s.course === material.course))
         );
         
         let completed = 0;
-        relevantOfficers.forEach(officer => {
-            const officerProgress = progress[officer.id] || {};
-            if (officerProgress[material.id]) {
+        relevantStudents.forEach(student => {
+            const studentProgress = progress[student.id] || {};
+            if (studentProgress[material.id]) {
                 completed++;
             }
         });
         
-        const completionRate = relevantOfficers.length > 0 
-            ? Math.round((completed / relevantOfficers.length) * 100) 
+        const completionRate = relevantStudents.length > 0 
+            ? Math.round((completed / relevantStudents.length) * 100) 
             : 0;
         
         return {
             ...material,
-            totalOfficers: relevantOfficers.length,
-            completedOfficers: completed,
+            totalStudents: relevantStudents.length,
+            completedStudents: completed,
             completionRate: completionRate
         };
     });

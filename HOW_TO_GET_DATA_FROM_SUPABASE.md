@@ -192,7 +192,7 @@ SELECT * FROM materials WHERE uploaded_by = 'Lecturer Name';
 ### 3. See which officers completed which materials:
 ```sql
 SELECT 
-    u.name as officer_name,
+    u.name as student_name,
     m.title as material_title,
     p.completed_at
 FROM progress p
