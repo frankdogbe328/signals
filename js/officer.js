@@ -520,10 +520,21 @@ function updateCategoryFilter(materials) {
     }
 }
 
-function viewMaterial(materialId) {
+async function viewMaterial(materialId) {
     currentMaterialId = materialId; // Store for markAsCompleted function
     
-    const materials = JSON.parse(localStorage.getItem('materials') || '[]');
+    // Try Supabase first, fallback to localStorage
+    let materials = [];
+    if (typeof getMaterialsFromSupabase === 'function') {
+        try {
+            materials = await getMaterialsFromSupabase({});
+        } catch (err) {
+            materials = JSON.parse(localStorage.getItem('materials') || '[]');
+        }
+    } else {
+        materials = JSON.parse(localStorage.getItem('materials') || '[]');
+    }
+    
     const material = materials.find(m => m.id === materialId);
     
     if (!material) {
@@ -546,31 +557,68 @@ function viewMaterial(materialId) {
         const fileType = material.fileType || '';
         const fileName = material.fileName || 'download';
         
-        if (fileType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf')) {
-            // Display PDF inline
+        // Detect file type from extension if MIME type is missing
+        let detectedType = fileType;
+        if (!detectedType && fileName) {
+            const ext = fileName.split('.').pop().toLowerCase();
+            const typeMap = {
+                'pdf': 'application/pdf',
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'png': 'image/png',
+                'gif': 'image/gif',
+                'bmp': 'image/bmp',
+                'webp': 'image/webp',
+                'doc': 'application/msword',
+                'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'ppt': 'application/vnd.ms-powerpoint',
+                'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'txt': 'text/plain'
+            };
+            detectedType = typeMap[ext] || 'application/octet-stream';
+        }
+        
+        // Ensure content is a valid data URL
+        let fileDataUrl = material.content;
+        if (!fileDataUrl.startsWith('data:')) {
+            // If it's base64 without prefix, add the appropriate prefix
+            if (detectedType) {
+                fileDataUrl = `data:${detectedType};base64,${material.content}`;
+            } else {
+                fileDataUrl = `data:application/octet-stream;base64,${material.content}`;
+            }
+        }
+        
+        // Display based on exact file type
+        if (detectedType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf')) {
+            // Display PDF inline in iframe
             contentHtml = `
                 <div style="margin-bottom: 15px;">
-                    <strong>📄 File:</strong> ${fileName}
-                    <button onclick="downloadFile('${materialId}')" class="btn btn-secondary" style="margin-left: 10px; padding: 5px 15px; font-size: 14px;">Download</button>
+                    <strong>📄 PDF Document:</strong> ${fileName}
+                    <button onclick="downloadFile('${materialId}')" class="btn btn-secondary" style="margin-left: 10px; padding: 5px 15px; font-size: 14px;">Download PDF</button>
                 </div>
-                <iframe src="${material.content}" style="width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 5px;" frameborder="0"></iframe>
+                <iframe src="${fileDataUrl}" type="application/pdf" style="width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 5px;" frameborder="0"></iframe>
+                <p style="margin-top: 10px; color: #666; font-size: 12px;">If PDF doesn't display, click Download PDF button above.</p>
             `;
-        } else if (fileType.startsWith('image/')) {
-            // Display images inline
+        } else if (detectedType.startsWith('image/')) {
+            // Display images inline - preserve exact image format
             contentHtml = `
                 <div style="margin-bottom: 15px;">
-                    <strong>🖼️ Image:</strong> ${fileName}
-                    <button onclick="downloadFile('${materialId}')" class="btn btn-secondary" style="margin-left: 10px; padding: 5px 15px; font-size: 14px;">Download</button>
+                    <strong>🖼️ Image (${detectedType}):</strong> ${fileName}
+                    <button onclick="downloadFile('${materialId}')" class="btn btn-secondary" style="margin-left: 10px; padding: 5px 15px; font-size: 14px;">Download Image</button>
                 </div>
-                <img src="${material.content}" alt="${fileName}" style="max-width: 100%; height: auto; border-radius: 5px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                <div style="text-align: center; margin: 20px 0;">
+                    <img src="${fileDataUrl}" alt="${fileName}" style="max-width: 100%; height: auto; border-radius: 5px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" />
+                </div>
             `;
         } else {
-            // For other file types, provide download link
+            // For other file types (Word, PowerPoint, etc.), provide download link
             contentHtml = `
                 <div style="text-align: center; padding: 40px;">
                     <div style="font-size: 48px; margin-bottom: 20px;">📎</div>
                     <h3>${fileName}</h3>
-                    <p class="material-description">File Type: ${fileType || 'Unknown'}</p>
+                    <p class="material-description"><strong>File Type:</strong> ${detectedType || 'Unknown'}</p>
+                    <p class="material-description" style="margin-top: 10px;">Click the button below to download the file in its original format.</p>
                     <button onclick="downloadFile('${materialId}')" class="btn btn-primary" style="margin-top: 20px;">Download File</button>
                 </div>
             `;
@@ -748,9 +796,20 @@ function formatDate(dateString) {
     });
 }
 
-// Download file function
-function downloadFile(materialId) {
-    const materials = JSON.parse(localStorage.getItem('materials') || '[]');
+// Download file function - preserves exact file format
+async function downloadFile(materialId) {
+    // Try Supabase first, fallback to localStorage
+    let materials = [];
+    if (typeof getMaterialsFromSupabase === 'function') {
+        try {
+            materials = await getMaterialsFromSupabase({});
+        } catch (err) {
+            materials = JSON.parse(localStorage.getItem('materials') || '[]');
+        }
+    } else {
+        materials = JSON.parse(localStorage.getItem('materials') || '[]');
+    }
+    
     const material = materials.find(m => m.id === materialId);
     
     if (!material || !material.isFile || !material.content) {
@@ -759,12 +818,39 @@ function downloadFile(materialId) {
     }
     
     const fileName = material.fileName || 'download';
-    const fileData = material.content;
+    const fileType = material.fileType || '';
+    let fileData = material.content;
     
-    // Create download link
+    // Ensure data URL format is correct
+    if (!fileData.startsWith('data:')) {
+        // If it's base64 without prefix, add the appropriate prefix
+        if (fileType) {
+            fileData = `data:${fileType};base64,${material.content}`;
+        } else {
+            // Detect from file extension
+            const ext = fileName.split('.').pop().toLowerCase();
+            const typeMap = {
+                'pdf': 'application/pdf',
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'png': 'image/png',
+                'gif': 'image/gif',
+                'doc': 'application/msword',
+                'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'ppt': 'application/vnd.ms-powerpoint',
+                'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                'txt': 'text/plain'
+            };
+            const detectedType = typeMap[ext] || 'application/octet-stream';
+            fileData = `data:${detectedType};base64,${material.content}`;
+        }
+    }
+    
+    // Create download link with proper file name and type
     const link = document.createElement('a');
     link.href = fileData;
-    link.download = fileName;
+    link.download = fileName; // Preserve original file name
+    link.style.display = 'none';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
