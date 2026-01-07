@@ -69,7 +69,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- 10. Create trigger to auto-update updated_at
+-- 10. Drop trigger if exists, then create trigger to auto-update updated_at
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at
     BEFORE UPDATE ON users
     FOR EACH ROW
