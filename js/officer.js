@@ -241,7 +241,7 @@ function loadRegisteredCourses() {
 }
 
 // Make registerForCourse globally accessible
-window.registerForCourse = function() {
+window.registerForCourse = async function() {
     const courseSelect = document.getElementById('registerCourseSelect');
     if (!courseSelect) {
         alert('Course selection dropdown not found');
@@ -281,16 +281,31 @@ window.registerForCourse = function() {
     courses.push(selectedCourse);
     currentUser.courses = courses;
     
-    // Update in localStorage
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const userIndex = users.findIndex(u => u.id === currentUser.id);
-    if (userIndex !== -1) {
-        users[userIndex] = currentUser;
-        localStorage.setItem('users', JSON.stringify(users));
-        setCurrentUser(currentUser);
-    } else {
-        alert('Error: User not found in system');
-        return;
+    // Update in Supabase first, fallback to localStorage
+    let updated = false;
+    if (typeof updateUserInSupabase === 'function') {
+        try {
+            updated = await updateUserInSupabase(currentUser.id, { courses: courses });
+            if (updated) {
+                setCurrentUser(currentUser);
+            }
+        } catch (err) {
+            console.error('Supabase update error:', err);
+        }
+    }
+    
+    // Fallback to localStorage
+    if (!updated) {
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const userIndex = users.findIndex(u => u.id === currentUser.id);
+        if (userIndex !== -1) {
+            users[userIndex] = currentUser;
+            localStorage.setItem('users', JSON.stringify(users));
+            setCurrentUser(currentUser);
+        } else {
+            alert('Error: User not found in system');
+            return;
+        }
     }
     
     // Reset dropdown and repopulate
@@ -366,7 +381,7 @@ function unregisterFromCourse(course) {
     alert('Unregistered from ' + course);
 }
 
-function loadMaterials() {
+async function loadMaterials() {
     if (isUpdating) return; // Prevent concurrent updates
     isUpdating = true;
     
@@ -379,9 +394,34 @@ function loadMaterials() {
         return;
     }
     
-    const allMaterials = JSON.parse(localStorage.getItem('materials') || '[]');
-    const progress = JSON.parse(localStorage.getItem('progress') || '{}');
-    const userProgress = progress[currentUser.id] || {};
+    // Try Supabase first, fallback to localStorage
+    let allMaterials = [];
+    if (typeof getMaterialsFromSupabase === 'function') {
+        try {
+            allMaterials = await getMaterialsFromSupabase({ class: currentUser.class });
+        } catch (err) {
+            console.error('Supabase load error:', err);
+        }
+    }
+    
+    // Fallback to localStorage
+    if (allMaterials.length === 0) {
+        allMaterials = JSON.parse(localStorage.getItem('materials') || '[]');
+    }
+    
+    // Get progress (try Supabase first)
+    let userProgress = {};
+    if (typeof getUserProgressFromSupabase === 'function') {
+        try {
+            userProgress = await getUserProgressFromSupabase(currentUser.id);
+        } catch (err) {
+            const progress = JSON.parse(localStorage.getItem('progress') || '{}');
+            userProgress = progress[currentUser.id] || {};
+        }
+    } else {
+        const progress = JSON.parse(localStorage.getItem('progress') || '{}');
+        userProgress = progress[currentUser.id] || {};
+    }
     
     // Filter materials for this officer's class and registered courses
     let materials = allMaterials.filter(m => 
@@ -586,7 +626,7 @@ function viewMaterial(materialId) {
     modal.style.display = 'block';
 }
 
-function markAsCompleted() {
+async function markAsCompleted() {
     if (!currentMaterialId) {
         alert('Error: No material selected');
         return;
@@ -594,14 +634,26 @@ function markAsCompleted() {
     
     const materialId = currentMaterialId;
     const currentUser = getCurrentUser();
-    const progress = JSON.parse(localStorage.getItem('progress') || '{}');
     
-    if (!progress[currentUser.id]) {
-        progress[currentUser.id] = {};
+    // Try Supabase first
+    let success = false;
+    if (typeof markMaterialCompletedInSupabase === 'function') {
+        try {
+            success = await markMaterialCompletedInSupabase(currentUser.id, materialId);
+        } catch (err) {
+            console.error('Supabase progress error:', err);
+        }
     }
     
-    progress[currentUser.id][materialId] = true;
-    localStorage.setItem('progress', JSON.stringify(progress));
+    // Fallback to localStorage
+    if (!success) {
+        const progress = JSON.parse(localStorage.getItem('progress') || '{}');
+        if (!progress[currentUser.id]) {
+            progress[currentUser.id] = {};
+        }
+        progress[currentUser.id][materialId] = true;
+        localStorage.setItem('progress', JSON.stringify(progress));
+    }
     
     // Update UI
     loadMaterials();
@@ -623,14 +675,37 @@ function filterMaterials() {
 // Store last progress values to prevent unnecessary updates
 let lastProgress = { total: -1, completed: -1, percentage: -1 };
 
-function updateProgress() {
+async function updateProgress() {
     const currentUser = getCurrentUser();
     if (!currentUser) return;
     
     const registeredCourses = currentUser.courses || [];
-    const allMaterials = JSON.parse(localStorage.getItem('materials') || '[]');
-    const progress = JSON.parse(localStorage.getItem('progress') || '{}');
-    const userProgress = progress[currentUser.id] || {};
+    
+    // Get materials (try Supabase first)
+    let allMaterials = [];
+    if (typeof getMaterialsFromSupabase === 'function') {
+        try {
+            allMaterials = await getMaterialsFromSupabase({ class: currentUser.class });
+        } catch (err) {
+            allMaterials = JSON.parse(localStorage.getItem('materials') || '[]');
+        }
+    } else {
+        allMaterials = JSON.parse(localStorage.getItem('materials') || '[]');
+    }
+    
+    // Get progress (try Supabase first)
+    let userProgress = {};
+    if (typeof getUserProgressFromSupabase === 'function') {
+        try {
+            userProgress = await getUserProgressFromSupabase(currentUser.id);
+        } catch (err) {
+            const progress = JSON.parse(localStorage.getItem('progress') || '{}');
+            userProgress = progress[currentUser.id] || {};
+        }
+    } else {
+        const progress = JSON.parse(localStorage.getItem('progress') || '{}');
+        userProgress = progress[currentUser.id] || {};
+    }
     
     // Filter materials for this officer's registered courses
     const materials = allMaterials.filter(m => 

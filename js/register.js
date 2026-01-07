@@ -71,7 +71,7 @@ function showLoginForm() {
     errorMsg.textContent = '';
 }
 
-function handleRegistration(e) {
+async function handleRegistration(e) {
     e.preventDefault();
     
     const name = document.getElementById('regName').value.trim();
@@ -122,11 +122,23 @@ function handleRegistration(e) {
         return;
     }
     
-    // Get existing users
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    // Check if username already exists (try Supabase first, fallback to localStorage)
+    let usernameExists = false;
     
-    // Check if username already exists
-    const usernameExists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
+    if (typeof checkUsernameExists === 'function') {
+        try {
+            usernameExists = await checkUsernameExists(username);
+        } catch (err) {
+            console.error('Supabase check error:', err);
+        }
+    }
+    
+    // Fallback to localStorage check
+    if (!usernameExists) {
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        usernameExists = users.some(u => u.username.toLowerCase() === username.toLowerCase());
+    }
+    
     if (usernameExists) {
         errorMessage.textContent = 'Username already exists. Please choose a different username.';
         errorMessage.classList.add('show');
@@ -139,7 +151,6 @@ function handleRegistration(e) {
     if (role === 'lecturer') {
         // Create lecturer account
         newUser = {
-            id: 'lecturer_' + Date.now().toString(),
             username: username,
             password: password,
             role: 'lecturer',
@@ -147,9 +158,7 @@ function handleRegistration(e) {
         };
     } else {
         // Create officer account
-        // Store courses as an array to support multiple course registrations
         newUser = {
-            id: 'officer_' + Date.now().toString(),
             username: username,
             password: password,
             role: 'officer',
@@ -159,12 +168,39 @@ function handleRegistration(e) {
         };
     }
     
-    // Add to users array
-    users.push(newUser);
-    localStorage.setItem('users', JSON.stringify(users));
+    // Try Supabase first, fallback to localStorage
+    let createdUser = null;
+    
+    if (typeof createUserInSupabase === 'function') {
+        try {
+            createdUser = await createUserInSupabase(newUser);
+        } catch (err) {
+            console.error('Supabase registration error:', err);
+        }
+    }
+    
+    // Fallback to localStorage
+    if (!createdUser) {
+        // Create with ID for localStorage
+        if (role === 'lecturer') {
+            createdUser = {
+                id: 'lecturer_' + Date.now().toString(),
+                ...newUser
+            };
+        } else {
+            createdUser = {
+                id: 'officer_' + Date.now().toString(),
+                ...newUser
+            };
+        }
+        
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        users.push(createdUser);
+        localStorage.setItem('users', JSON.stringify(users));
+    }
     
     // Automatically log in the newly registered user
-    setCurrentUser(newUser);
+    setCurrentUser(createdUser);
     
     // Show success message
     const roleText = role === 'lecturer' ? 'Lecturer' : 'Officer';

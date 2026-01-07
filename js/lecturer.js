@@ -178,43 +178,80 @@ function getFileTypeFromName(fileName) {
     return typeMap[ext] || 'application/octet-stream';
 }
 
-function saveMaterialWithFile(course, classSelect, title, type, description, category, sequence, fileData, fileName, fileType) {
-    const materials = JSON.parse(localStorage.getItem('materials') || '[]');
+async function saveMaterialWithFile(course, classSelect, title, type, description, category, sequence, fileData, fileName, fileType) {
+    const currentUser = getCurrentUser();
+    const editingId = document.getElementById('uploadForm').dataset.editingId;
     
-    const newMaterial = {
-        id: Date.now().toString(),
+    // For now, store file as base64 in content field
+    // TODO: Upload to Supabase Storage and store URL
+    const materialData = {
         course: course,
         class: classSelect,
         title: title,
         type: type,
         content: fileData, // Store base64 file data
-        fileName: fileName,
-        fileType: fileType,
         description: description,
         category: category,
         sequence: sequence,
-        uploadedBy: getCurrentUser().name,
-        uploadedAt: new Date().toISOString(),
-        isFile: true // Flag to indicate this is an uploaded file
+        uploadedBy: currentUser.name,
+        isFile: true,
+        fileName: fileName,
+        fileType: fileType
     };
     
-    // Check if editing
-    const editingId = document.getElementById('uploadForm').dataset.editingId;
+    let success = false;
     
-    if (editingId) {
-        const index = materials.findIndex(m => m.id === editingId);
-        if (index !== -1) {
-            materials[index] = { ...materials[index], ...newMaterial, id: editingId };
-            localStorage.setItem('materials', JSON.stringify(materials));
-            alert('Material updated successfully!');
+    // Try Supabase first
+    if (typeof createMaterialInSupabase === 'function' && typeof updateMaterialInSupabase === 'function') {
+        try {
+            if (editingId) {
+                success = await updateMaterialInSupabase(editingId, materialData);
+                if (success) {
+                    alert('Material updated successfully!');
+                }
+            } else {
+                const created = await createMaterialInSupabase(materialData);
+                if (created) {
+                    success = true;
+                    alert('File uploaded successfully!');
+                }
+            }
+        } catch (err) {
+            console.error('Supabase file save error:', err);
         }
-        delete document.getElementById('uploadForm').dataset.editingId;
-        document.getElementById('submitBtn').textContent = 'Upload Material';
-        document.getElementById('cancelBtn').style.display = 'none';
+    }
+    
+    // Fallback to localStorage
+    if (!success) {
+        const materials = JSON.parse(localStorage.getItem('materials') || '[]');
+        const newMaterial = {
+            id: editingId || Date.now().toString(),
+            ...materialData,
+            uploadedAt: new Date().toISOString()
+        };
+        
+        if (editingId) {
+            const index = materials.findIndex(m => m.id === editingId);
+            if (index !== -1) {
+                materials[index] = { ...materials[index], ...newMaterial, id: editingId };
+                localStorage.setItem('materials', JSON.stringify(materials));
+                alert('Material updated successfully!');
+            }
+            delete document.getElementById('uploadForm').dataset.editingId;
+            document.getElementById('submitBtn').textContent = 'Upload Material';
+            document.getElementById('cancelBtn').style.display = 'none';
+        } else {
+            materials.push(newMaterial);
+            localStorage.setItem('materials', JSON.stringify(materials));
+            alert('File uploaded successfully!');
+        }
     } else {
-        materials.push(newMaterial);
-        localStorage.setItem('materials', JSON.stringify(materials));
-        alert('File uploaded successfully!');
+        // Clear editing state if Supabase succeeded
+        if (editingId) {
+            delete document.getElementById('uploadForm').dataset.editingId;
+            document.getElementById('submitBtn').textContent = 'Upload Material';
+            document.getElementById('cancelBtn').style.display = 'none';
+        }
     }
     
     // Reset form
@@ -230,11 +267,11 @@ function saveMaterialWithFile(course, classSelect, title, type, description, cat
     }
 }
 
-function saveMaterial(course, classSelect, title, type, content, description, category, sequence) {
-    const materials = JSON.parse(localStorage.getItem('materials') || '[]');
+async function saveMaterial(course, classSelect, title, type, content, description, category, sequence) {
+    const currentUser = getCurrentUser();
+    const editingId = document.getElementById('uploadForm').dataset.editingId;
     
-    const newMaterial = {
-        id: Date.now().toString(),
+    const materialData = {
         course: course,
         class: classSelect,
         title: title,
@@ -243,30 +280,59 @@ function saveMaterial(course, classSelect, title, type, content, description, ca
         description: description,
         category: category,
         sequence: sequence,
-        uploadedBy: getCurrentUser().name,
-        uploadedAt: new Date().toISOString()
+        uploadedBy: currentUser.name
     };
     
-    // Check if editing
-    const editingId = document.getElementById('uploadForm').dataset.editingId;
+    let success = false;
     
-    if (editingId) {
-        // Update existing material
-        const index = materials.findIndex(m => m.id === editingId);
-        if (index !== -1) {
-            materials[index] = { ...materials[index], ...newMaterial, id: editingId };
-            localStorage.setItem('materials', JSON.stringify(materials));
-            alert('Material updated successfully!');
+    // Try Supabase first
+    if (typeof createMaterialInSupabase === 'function' && typeof updateMaterialInSupabase === 'function') {
+        try {
+            if (editingId) {
+                success = await updateMaterialInSupabase(editingId, materialData);
+                if (success) {
+                    alert('Material updated successfully!');
+                }
+            } else {
+                const created = await createMaterialInSupabase(materialData);
+                if (created) {
+                    success = true;
+                    alert('Material uploaded successfully!');
+                }
+            }
+        } catch (err) {
+            console.error('Supabase save error:', err);
         }
-        // Clear editing state
+    }
+    
+    // Fallback to localStorage
+    if (!success) {
+        const materials = JSON.parse(localStorage.getItem('materials') || '[]');
+        const newMaterial = {
+            id: editingId || Date.now().toString(),
+            ...materialData,
+            uploadedAt: new Date().toISOString()
+        };
+        
+        if (editingId) {
+            const index = materials.findIndex(m => m.id === editingId);
+            if (index !== -1) {
+                materials[index] = { ...materials[index], ...newMaterial, id: editingId };
+                localStorage.setItem('materials', JSON.stringify(materials));
+                alert('Material updated successfully!');
+            }
+        } else {
+            materials.push(newMaterial);
+            localStorage.setItem('materials', JSON.stringify(materials));
+            alert('Material uploaded successfully!');
+        }
+    }
+    
+    // Clear editing state
+    if (editingId) {
         delete document.getElementById('uploadForm').dataset.editingId;
         document.getElementById('submitBtn').textContent = 'Upload Material';
         document.getElementById('cancelBtn').style.display = 'none';
-    } else {
-        // Add new material
-        materials.push(newMaterial);
-        localStorage.setItem('materials', JSON.stringify(materials));
-        alert('Material uploaded successfully!');
     }
     
     // Reset form
@@ -494,25 +560,51 @@ function showAnalytics(tab) {
     loadAnalytics();
 }
 
-function loadMaterials() {
-    const materials = JSON.parse(localStorage.getItem('materials') || '[]');
+async function loadMaterials() {
     const materialsList = document.getElementById('materialsList');
     const filterClass = document.getElementById('filterClass')?.value || 'all';
     const filterCategory = document.getElementById('filterCategory')?.value || 'all';
     
-    // Filter materials
-    let filteredMaterials = materials;
-    if (filterClass !== 'all') {
-        filteredMaterials = filteredMaterials.filter(m => m.class === filterClass);
-    }
-    if (filterCategory !== 'all') {
-        filteredMaterials = filteredMaterials.filter(m => m.category === filterCategory);
+    // Try Supabase first, fallback to localStorage
+    let materials = [];
+    
+    if (typeof getMaterialsFromSupabase === 'function') {
+        try {
+            const filters = {};
+            if (filterClass !== 'all') filters.class = filterClass;
+            if (filterCategory !== 'all') filters.category = filterCategory;
+            materials = await getMaterialsFromSupabase(filters);
+        } catch (err) {
+            console.error('Supabase load error:', err);
+        }
     }
     
-    // Update category filter options
-    updateCategoryFilter(materials);
+    // Fallback to localStorage
+    if (materials.length === 0) {
+        materials = JSON.parse(localStorage.getItem('materials') || '[]');
+        // Apply filters for localStorage
+        if (filterClass !== 'all') {
+            materials = materials.filter(m => m.class === filterClass);
+        }
+        if (filterCategory !== 'all') {
+            materials = materials.filter(m => m.category === filterCategory);
+        }
+    }
     
-    if (filteredMaterials.length === 0) {
+    // Update category filter options (get all materials for filter)
+    let allMaterials = [];
+    if (typeof getMaterialsFromSupabase === 'function') {
+        try {
+            allMaterials = await getMaterialsFromSupabase({});
+        } catch (err) {
+            allMaterials = JSON.parse(localStorage.getItem('materials') || '[]');
+        }
+    } else {
+        allMaterials = JSON.parse(localStorage.getItem('materials') || '[]');
+    }
+    updateCategoryFilter(allMaterials);
+    
+    if (materials.length === 0) {
         materialsList.innerHTML = '<p class="empty-state">No materials found</p>';
         return;
     }
@@ -628,23 +720,39 @@ window.cancelEdit = function() {
     cancelBtn.style.display = 'none';
 };
 
-window.deleteMaterial = function(materialId) {
+window.deleteMaterial = async function(materialId) {
     if (!confirm('Are you sure you want to delete this material?')) {
         return;
     }
     
-    const materials = JSON.parse(localStorage.getItem('materials') || '[]');
-    const filteredMaterials = materials.filter(m => m.id !== materialId);
-    localStorage.setItem('materials', JSON.stringify(filteredMaterials));
+    let success = false;
     
-    // Also remove from progress tracking
-    const progress = JSON.parse(localStorage.getItem('progress') || '{}');
-    Object.keys(progress).forEach(officerId => {
-        if (progress[officerId][materialId]) {
-            delete progress[officerId][materialId];
+    // Try Supabase first
+    if (typeof deleteMaterialFromSupabase === 'function' && typeof deleteProgressForMaterial === 'function') {
+        try {
+            // Delete progress first (foreign key constraint)
+            await deleteProgressForMaterial(materialId);
+            success = await deleteMaterialFromSupabase(materialId);
+        } catch (err) {
+            console.error('Supabase delete error:', err);
         }
-    });
-    localStorage.setItem('progress', JSON.stringify(progress));
+    }
+    
+    // Fallback to localStorage
+    if (!success) {
+        const materials = JSON.parse(localStorage.getItem('materials') || '[]');
+        const filteredMaterials = materials.filter(m => m.id !== materialId);
+        localStorage.setItem('materials', JSON.stringify(filteredMaterials));
+        
+        // Also remove from progress tracking
+        const progress = JSON.parse(localStorage.getItem('progress') || '{}');
+        Object.keys(progress).forEach(officerId => {
+            if (progress[officerId][materialId]) {
+                delete progress[officerId][materialId];
+            }
+        });
+        localStorage.setItem('progress', JSON.stringify(progress));
+    }
     
     loadMaterials();
     if (document.getElementById('analyticsContent')) {
