@@ -10,43 +10,7 @@ function showForgotPasswordForm() {
     document.getElementById('resetErrorMessage').classList.remove('show');
     document.getElementById('resetErrorMessage').textContent = '';
     document.getElementById('resetSuccessMessage').style.display = 'none';
-    
-    // Hide all method sections
-    document.getElementById('verifyMethod').style.display = 'none';
-    document.getElementById('adminMethod').style.display = 'none';
-    document.getElementById('manualMethod').style.display = 'none';
-    document.getElementById('backToLoginBtn').style.display = 'none';
-}
-
-function handleResetMethodChange() {
-    const method = document.getElementById('resetMethod').value;
-    const emailMethod = document.getElementById('emailMethod');
-    const verifyMethod = document.getElementById('verifyMethod');
-    const adminMethod = document.getElementById('adminMethod');
-    const manualMethod = document.getElementById('manualMethod');
-    const backToLoginBtn = document.getElementById('backToLoginBtn');
-    
-    // Hide all methods
-    emailMethod.style.display = 'none';
-    verifyMethod.style.display = 'none';
-    adminMethod.style.display = 'none';
-    manualMethod.style.display = 'none';
-    backToLoginBtn.style.display = 'none';
-    
-    // Show selected method
-    if (method === 'email') {
-        emailMethod.style.display = 'block';
-        backToLoginBtn.style.display = 'block';
-    } else if (method === 'verify') {
-        verifyMethod.style.display = 'block';
-        backToLoginBtn.style.display = 'block';
-    } else if (method === 'admin') {
-        adminMethod.style.display = 'block';
-        backToLoginBtn.style.display = 'block';
-    } else if (method === 'manual') {
-        manualMethod.style.display = 'block';
-        backToLoginBtn.style.display = 'block';
-    }
+    document.getElementById('emailResetStatus').innerHTML = '';
 }
 
 async function handlePasswordReset() {
@@ -540,8 +504,6 @@ async function getUserByEmailFromSupabase(email, role) {
 
 // Make functions globally accessible
 window.showForgotPasswordForm = showForgotPasswordForm;
-window.handleResetMethodChange = handleResetMethodChange;
-window.handlePasswordReset = handlePasswordReset;
 window.handleEmailReset = handleEmailReset;
 window.verifyPINAndReset = verifyPINAndReset;
 window.resendPIN = resendPIN;
