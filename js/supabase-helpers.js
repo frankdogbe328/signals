@@ -64,6 +64,7 @@ async function getUserFromSupabase(username, password, role) {
                 password: data.password,
                 role: data.role,
                 name: data.name,
+                email: data.email,
                 class: data.class,
                 courses: data.courses || []
             };
