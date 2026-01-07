@@ -36,14 +36,24 @@ async function getUserFromSupabase(username, password, role) {
     if (!client) return null;
     
     try {
+        // Use .maybeSingle() instead of .single() to handle 0 or 1 records
+        // .single() throws 406 error if no record found
         const { data, error } = await client
             .from('users')
             .select('*')
             .eq('username', username)
             .eq('role', role)
-            .single();
+            .maybeSingle(); // Returns null if no record, single object if found
         
-        if (error || !data) return null;
+        if (error) {
+            console.error('Supabase query error:', error);
+            return null;
+        }
+        
+        if (!data) {
+            // No user found with that username and role
+            return null;
+        }
         
         // Verify password (in production, use hashed passwords)
         if (data.password === password) {
