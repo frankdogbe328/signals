@@ -3,36 +3,29 @@
 
 // Wait for Supabase to be available
 function getSupabaseClient() {
-    // Check if Supabase library is loaded
-    if (typeof window.supabase === 'undefined') {
-        console.warn('Supabase library not loaded yet');
-        return null;
+    // Use the global client if available
+    if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
+        return window.supabaseClient;
     }
     
-    // Initialize if not already done
-    if (!supabase) {
-        try {
-            // Access SUPABASE_URL and SUPABASE_ANON_KEY from global scope
-            if (typeof SUPABASE_URL !== 'undefined' && typeof SUPABASE_ANON_KEY !== 'undefined') {
-                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-                console.log('Supabase client initialized in helper');
-            } else {
-                console.error('Supabase config variables not found');
-                return null;
+    // Try to initialize if Supabase library is loaded
+    if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+        // Check if config variables are available
+        if (typeof SUPABASE_URL !== 'undefined' && typeof SUPABASE_ANON_KEY !== 'undefined') {
+            try {
+                window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
+                    console.log('Supabase client initialized in helper function');
+                    return window.supabaseClient;
+                }
+            } catch (err) {
+                console.error('Error creating Supabase client in helper:', err);
             }
-        } catch (err) {
-            console.error('Error initializing Supabase client:', err);
-            return null;
         }
     }
     
-    // Verify client has the 'from' method
-    if (!supabase || typeof supabase.from !== 'function') {
-        console.error('Supabase client not properly initialized - from method missing');
-        return null;
-    }
-    
-    return supabase;
+    console.warn('Supabase client not available - falling back to localStorage');
+    return null;
 }
 
 // ========== USER OPERATIONS ==========
