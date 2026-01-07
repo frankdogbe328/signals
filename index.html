@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signal Training School - LMS Login</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <div class="logo-section">
+                <h1>🇬🇭 Signal Training School</h1>
+                <h2>Learning Management System</h2>
+            </div>
+            
+            <form id="loginForm" class="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userType">Login As</label>
+                    <select id="userType" name="userType" required>
+                        <option value="">Select Role</option>
+                        <option value="lecturer">Lecturer</option>
+                        <option value="officer">Officer</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Login</button>
+                
+                <div id="errorMessage" class="error-message"></div>
+            </form>
+            
+            <div class="register-section">
+                <p style="text-align: center; margin-top: 20px; color: #666;">
+                    <a href="#" onclick="showRegisterForm('officer'); return false;" style="color: var(--primary-color); font-weight: 600;">Register as Officer</a> | 
+                    <a href="#" onclick="showRegisterForm('lecturer'); return false;" style="color: var(--primary-color); font-weight: 600;">Register as Lecturer</a>
+                </p>
+            </div>
+            
+            <form id="registerForm" class="login-form" style="display: none;">
+                <h3 id="registerTitle" style="text-align: center; color: var(--primary-color); margin-bottom: 20px;">Registration</h3>
+                
+                <div class="form-group">
+                    <label for="regName">Full Name</label>
+                    <input type="text" id="regName" name="name" placeholder="e.g., Lt. John Doe" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regUsername">Username</label>
+                    <input type="text" id="regUsername" name="username" placeholder="Choose a username" required>
+                    <small style="color: #666; font-size: 12px;">Username must be unique</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regPassword">Password</label>
+                    <input type="password" id="regPassword" name="password" placeholder="Choose a password" required>
+                    <small style="color: #666; font-size: 12px;">Minimum 6 characters</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regConfirmPassword">Confirm Password</label>
+                    <input type="password" id="regConfirmPassword" name="confirmPassword" placeholder="Re-enter password" required>
+                </div>
+                
+                <div class="form-group" id="regClassGroup">
+                    <label for="regClass">Class</label>
+                    <select id="regClass" name="class">
+                        <option value="">Select Class</option>
+                        <option value="class-a">Class A</option>
+                        <option value="class-b">Class B</option>
+                        <option value="class-c">Class C</option>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="regCourseGroup">
+                    <label for="regCourse">Course (Optional)</label>
+                    <select id="regCourse" name="course">
+                        <option value="">Skip - Register later</option>
+                        <option value="cyber-security-fundamentals">Cyber Security Fundamentals</option>
+                        <option value="network-security">Network Security</option>
+                        <option value="cyber-defense-operations">Cyber Defense Operations</option>
+                        <option value="information-security-management">Information Security Management</option>
+                        <option value="cyber-threat-intelligence">Cyber Threat Intelligence</option>
+                        <option value="course1">Course 1</option>
+                    </select>
+                    <small style="color: #666; font-size: 12px;">You can register for courses after logging in</small>
+                </div>
+                
+                <button type="submit" class="btn btn-success">Register</button>
+                <button type="button" class="btn btn-secondary" onclick="showLoginForm()" style="margin-top: 10px;">Back to Login</button>
+                
+                <div id="registerErrorMessage" class="error-message"></div>
+            </form>
+            
+            <div class="demo-credentials">
+                <h3>Demo Credentials:</h3>
+                <p><strong>Lecturer:</strong> lecturer1 / password123</p>
+                <p><strong>Officer:</strong> officer1 / password123</p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/register.js"></script>
+</body>
+</html>
+

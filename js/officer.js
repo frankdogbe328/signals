@@ -1,0 +1,634 @@
+// Officer dashboard functionality
+let currentMaterialId = null; // Store current material ID for modal
+let isInitialized = false; // Flag to prevent repeated initialization
+let lastMaterialsHTML = ''; // Store last materials HTML to prevent unnecessary updates
+let lastCoursesHTML = ''; // Store last courses HTML to prevent unnecessary updates
+let isUpdating = false; // Flag to prevent concurrent updates
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Prevent multiple initializations
+    if (isInitialized) return;
+    isInitialized = true;
+    // Check authentication
+    let currentUser = getCurrentUser();
+    if (!currentUser || currentUser.role !== 'officer') {
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    // Migrate old course format to courses array if needed (only once)
+    const wasMigrated = migrateUserCourses(currentUser);
+    
+    // Get updated user after migration if needed
+    if (wasMigrated) {
+        currentUser = getCurrentUser();
+    }
+    
+    // Display officer name and info (set once, no repeated updates)
+    const officerNameEl = document.getElementById('officerName');
+    if (officerNameEl) {
+        officerNameEl.textContent = currentUser.name;
+    }
+    
+    // Update mobile menu name
+    const mobileOfficerName = document.getElementById('mobileOfficerName');
+    if (mobileOfficerName) {
+        mobileOfficerName.textContent = currentUser.name;
+    }
+    
+    // Update officer info text directly (with check to prevent blinking)
+    const officerInfoEl = document.getElementById('officerInfo');
+    if (officerInfoEl) {
+        const courses = currentUser.courses || [];
+        const coursesText = courses.length > 0 
+            ? `Registered Courses: ${courses.length}` 
+            : 'No courses registered yet';
+        const newText = `Welcome, ${currentUser.name}. Class: ${currentUser.class || 'N/A'} | ${coursesText}`;
+        
+        // Only update if text changed
+        if (officerInfoEl.textContent !== newText) {
+            officerInfoEl.textContent = newText;
+            lastOfficerInfoText = newText;
+        }
+    }
+    
+    // Load registered courses first
+    loadRegisteredCourses();
+    
+    // Load materials and progress (use requestAnimationFrame to batch DOM updates)
+    requestAnimationFrame(() => {
+        loadMaterials();
+        updateProgress();
+    });
+    
+    // Handle course filter (add event listener after dropdown is populated)
+    const courseFilter = document.getElementById('courseFilter');
+    if (courseFilter) {
+        // Remove any existing listeners to prevent duplicates
+        courseFilter.removeEventListener('change', filterMaterials);
+        courseFilter.addEventListener('change', filterMaterials);
+    }
+    
+    // Handle category filter
+    const categoryFilter = document.getElementById('categoryFilter');
+    if (categoryFilter) {
+        categoryFilter.removeEventListener('change', filterMaterials);
+        categoryFilter.addEventListener('change', filterMaterials);
+    }
+});
+
+// Migrate old users with single 'course' to 'courses' array
+// Returns true if migration occurred, false otherwise
+function migrateUserCourses(user) {
+    let migrated = false;
+    
+    if (user.course && !user.courses) {
+        user.courses = [user.course];
+        delete user.course;
+        migrated = true;
+    } else if (!user.courses) {
+        user.courses = [];
+        migrated = true;
+    }
+    
+    // Only update storage if migration occurred
+    if (migrated) {
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const userIndex = users.findIndex(u => u.id === user.id);
+        if (userIndex !== -1) {
+            users[userIndex] = user;
+            localStorage.setItem('users', JSON.stringify(users));
+            setCurrentUser(user);
+        }
+    }
+    
+    return migrated;
+}
+
+// Store last updated text to prevent unnecessary DOM updates
+let lastOfficerInfoText = '';
+
+function updateOfficerInfo() {
+    const currentUser = getCurrentUser();
+    if (!currentUser) return;
+    
+    const courses = currentUser.courses || [];
+    const coursesText = courses.length > 0 
+        ? `Registered Courses: ${courses.length}` 
+        : 'No courses registered yet';
+    
+    const newText = `Welcome, ${currentUser.name}. Class: ${currentUser.class || 'N/A'} | ${coursesText}`;
+    
+    // Only update if text actually changed
+    if (newText === lastOfficerInfoText) return;
+    lastOfficerInfoText = newText;
+    
+    const officerInfoEl = document.getElementById('officerInfo');
+    if (officerInfoEl) {
+        officerInfoEl.textContent = newText;
+    }
+}
+
+function loadRegisteredCourses() {
+    if (isUpdating) return; // Prevent concurrent updates
+    
+    const currentUser = getCurrentUser();
+    const registeredCourses = currentUser.courses || [];
+    const registeredCoursesList = document.getElementById('registeredCoursesList');
+    if (!registeredCoursesList) return;
+    
+    let newHTML = '';
+    if (registeredCourses.length === 0) {
+        newHTML = '<p class="empty-state" style="padding: 10px;">No courses registered. Register for a course above.</p>';
+    } else {
+        newHTML = registeredCourses.map(course => `
+            <div class="registered-course-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 5px; margin-bottom: 10px;">
+                <span style="font-weight: 600;">${course}</span>
+                <button onclick="unregisterFromCourse('${course}')" class="btn btn-danger" style="width: auto; padding: 5px 15px; font-size: 12px;">Unregister</button>
+            </div>
+        `).join('');
+    }
+    
+    // Only update if content changed
+    if (newHTML !== lastCoursesHTML) {
+        registeredCoursesList.innerHTML = newHTML;
+        lastCoursesHTML = newHTML;
+    }
+    
+    // Update course filter dropdown (without triggering change event)
+    const courseFilter = document.getElementById('courseFilter');
+    if (courseFilter) {
+        const currentValue = courseFilter.value;
+        const newHTML = '<option value="all">All My Courses</option>' +
+            registeredCourses.map(course => `<option value="${course}">${course}</option>`).join('');
+        
+        // Only update if content changed
+        if (courseFilter.innerHTML !== newHTML) {
+            courseFilter.innerHTML = newHTML;
+            
+            // Restore selection if it still exists, otherwise set to 'all'
+            if (currentValue && registeredCourses.includes(currentValue)) {
+                courseFilter.value = currentValue;
+            } else {
+                courseFilter.value = 'all';
+            }
+        }
+    }
+    
+    // Show/hide materials section based on registered courses
+    const materialsSection = document.getElementById('materialsSection');
+    const noCoursesMessage = document.getElementById('noCoursesMessage');
+    
+    if (registeredCourses.length === 0) {
+        if (materialsSection) materialsSection.style.display = 'none';
+        if (noCoursesMessage) noCoursesMessage.style.display = 'block';
+    } else {
+        if (materialsSection) materialsSection.style.display = 'block';
+        if (noCoursesMessage) noCoursesMessage.style.display = 'none';
+    }
+    
+    isUpdating = false;
+    
+    isUpdating = false;
+}
+
+function registerForCourse() {
+    const courseSelect = document.getElementById('registerCourseSelect');
+    const selectedCourse = courseSelect.value;
+    
+    if (!selectedCourse) {
+        alert('Please select a course to register');
+        return;
+    }
+    
+    const currentUser = getCurrentUser();
+    const courses = currentUser.courses || [];
+    
+    // Check if already registered
+    if (courses.includes(selectedCourse)) {
+        alert('You are already registered for this course');
+        return;
+    }
+    
+    // Add course to user's courses
+    courses.push(selectedCourse);
+    currentUser.courses = courses;
+    
+    // Update in localStorage
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const userIndex = users.findIndex(u => u.id === currentUser.id);
+    if (userIndex !== -1) {
+        users[userIndex] = currentUser;
+        localStorage.setItem('users', JSON.stringify(users));
+        setCurrentUser(currentUser);
+    }
+    
+    // Reset dropdown
+    courseSelect.value = '';
+    
+    // Reload UI (update officer info directly to prevent blinking)
+    loadRegisteredCourses();
+    loadMaterials();
+    updateProgress();
+    
+    // Update officer info text directly (not via function to prevent repeated calls)
+    // Update officer info text directly (with check to prevent blinking)
+    const officerInfoEl = document.getElementById('officerInfo');
+    if (officerInfoEl) {
+        const courses = currentUser.courses || [];
+        const coursesText = courses.length > 0 
+            ? `Registered Courses: ${courses.length}` 
+            : 'No courses registered yet';
+        const newText = `Welcome, ${currentUser.name}. Class: ${currentUser.class || 'N/A'} | ${coursesText}`;
+        
+        // Only update if text changed
+        if (officerInfoEl.textContent !== newText) {
+            officerInfoEl.textContent = newText;
+            lastOfficerInfoText = newText;
+        }
+    }
+    
+    alert('Successfully registered for ' + selectedCourse + '!');
+}
+
+function unregisterFromCourse(course) {
+    if (!confirm(`Are you sure you want to unregister from ${course}?`)) {
+        return;
+    }
+    
+    const currentUser = getCurrentUser();
+    const courses = currentUser.courses || [];
+    
+    // Remove course
+    currentUser.courses = courses.filter(c => c !== course);
+    
+    // Update in localStorage
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const userIndex = users.findIndex(u => u.id === currentUser.id);
+    if (userIndex !== -1) {
+        users[userIndex] = currentUser;
+        localStorage.setItem('users', JSON.stringify(users));
+        setCurrentUser(currentUser);
+    }
+    
+    // Reload UI (without updating officer info text to prevent blinking)
+    loadRegisteredCourses();
+    loadMaterials();
+    updateProgress();
+    // Update officer info text only once, not repeatedly
+    // Update officer info text directly (with check to prevent blinking)
+    const officerInfoEl = document.getElementById('officerInfo');
+    if (officerInfoEl) {
+        const courses = currentUser.courses || [];
+        const coursesText = courses.length > 0 
+            ? `Registered Courses: ${courses.length}` 
+            : 'No courses registered yet';
+        const newText = `Welcome, ${currentUser.name}. Class: ${currentUser.class || 'N/A'} | ${coursesText}`;
+        
+        // Only update if text changed
+        if (officerInfoEl.textContent !== newText) {
+            officerInfoEl.textContent = newText;
+            lastOfficerInfoText = newText;
+        }
+    }
+    
+    alert('Unregistered from ' + course);
+}
+
+function loadMaterials() {
+    if (isUpdating) return; // Prevent concurrent updates
+    isUpdating = true;
+    
+    const currentUser = getCurrentUser();
+    const registeredCourses = currentUser.courses || [];
+    
+    // If no courses registered, don't show materials
+    if (registeredCourses.length === 0) {
+        isUpdating = false;
+        return;
+    }
+    
+    const allMaterials = JSON.parse(localStorage.getItem('materials') || '[]');
+    const progress = JSON.parse(localStorage.getItem('progress') || '{}');
+    const userProgress = progress[currentUser.id] || {};
+    
+    // Filter materials for this officer's class and registered courses
+    let materials = allMaterials.filter(m => 
+        m.class === currentUser.class && 
+        registeredCourses.includes(m.course)
+    );
+    
+    // Apply course filter
+    const courseFilter = document.getElementById('courseFilter')?.value || 'all';
+    if (courseFilter !== 'all') {
+        materials = materials.filter(m => m.course === courseFilter);
+    }
+    
+    // Apply category filter
+    const categoryFilter = document.getElementById('categoryFilter')?.value || 'all';
+    if (categoryFilter !== 'all') {
+        materials = materials.filter(m => m.category === categoryFilter);
+    }
+    
+    // Update category filter options
+    updateCategoryFilter(allMaterials.filter(m => 
+        m.class === currentUser.class && 
+        registeredCourses.includes(m.course)
+    ));
+    
+    const materialsList = document.getElementById('materialsList');
+    if (!materialsList) return;
+    
+    if (materials.length === 0) {
+        const emptyHTML = '<p class="empty-state">No learning materials available for your registered courses yet</p>';
+        if (materialsList.innerHTML !== emptyHTML) {
+            materialsList.innerHTML = emptyHTML;
+            lastMaterialsHTML = emptyHTML;
+        }
+        return;
+    }
+    
+    // Sort by sequence number, then by upload date
+    materials.sort((a, b) => {
+        const seqA = a.sequence || 999;
+        const seqB = b.sequence || 999;
+        if (seqA !== seqB) return seqA - seqB;
+        return new Date(a.uploadedAt) - new Date(b.uploadedAt);
+    });
+    
+    // Generate new HTML
+    const newHTML = materials.map(material => {
+        const isCompleted = userProgress[material.id] === true;
+        return `
+            <div class="material-item ${isCompleted ? 'completed' : ''}">
+                <div class="material-header">
+                    <div>
+                        <div class="material-title">
+                            ${material.sequence ? `<span style="color: var(--text-color); opacity: 0.7; font-weight: normal; font-size: 0.9em;">Module ${material.sequence}: </span>` : ''}
+                            ${material.title}
+                        </div>
+                        <div class="material-meta">
+                            <span>📚 ${material.course}</span>
+                            ${material.category ? `<span>📁 ${material.category}</span>` : ''}
+                            ${material.isFile ? `<span>📎 ${material.fileName || 'File'}</span>` : ''}
+                            <span>📅 ${formatDate(material.uploadedAt)}</span>
+                            <span class="badge badge-${material.type}">${material.isFile ? 'FILE' : material.type.toUpperCase()}</span>
+                            ${isCompleted ? '<span class="badge badge-completed">✓ Completed</span>' : ''}
+                        </div>
+                    </div>
+                </div>
+                ${material.description ? `<div class="material-description">${material.description}</div>` : ''}
+                <div class="material-actions">
+                    <button onclick="viewMaterial('${material.id}')" class="btn btn-primary">View Material</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Only update if content changed to prevent blinking
+    if (newHTML !== lastMaterialsHTML) {
+        materialsList.innerHTML = newHTML;
+        lastMaterialsHTML = newHTML;
+    }
+    
+    isUpdating = false;
+}
+
+function updateCategoryFilter(materials) {
+    const categoryFilter = document.getElementById('categoryFilter');
+    if (!categoryFilter) return;
+    
+    const categories = [...new Set(materials.map(m => m.category).filter(c => c))];
+    const currentValue = categoryFilter.value;
+    
+    categoryFilter.innerHTML = '<option value="all">All Categories</option>' +
+        categories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+    
+    if (currentValue && categories.includes(currentValue)) {
+        categoryFilter.value = currentValue;
+    }
+}
+
+function viewMaterial(materialId) {
+    currentMaterialId = materialId; // Store for markAsCompleted function
+    
+    const materials = JSON.parse(localStorage.getItem('materials') || '[]');
+    const material = materials.find(m => m.id === materialId);
+    
+    if (!material) {
+        alert('Material not found');
+        return;
+    }
+    
+    const modal = document.getElementById('materialModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    const completeBtn = document.getElementById('completeBtn');
+    
+    modalTitle.textContent = material.title;
+    
+    // Display content based on type
+    let contentHtml = '';
+    
+    // Check if this is an uploaded file
+    if (material.isFile && material.content) {
+        const fileType = material.fileType || '';
+        const fileName = material.fileName || 'download';
+        
+        if (fileType === 'application/pdf' || fileName.toLowerCase().endsWith('.pdf')) {
+            // Display PDF inline
+            contentHtml = `
+                <div style="margin-bottom: 15px;">
+                    <strong>📄 File:</strong> ${fileName}
+                    <button onclick="downloadFile('${materialId}')" class="btn btn-secondary" style="margin-left: 10px; padding: 5px 15px; font-size: 14px;">Download</button>
+                </div>
+                <iframe src="${material.content}" style="width: 100%; height: 600px; border: 1px solid #ddd; border-radius: 5px;" frameborder="0"></iframe>
+            `;
+        } else if (fileType.startsWith('image/')) {
+            // Display images inline
+            contentHtml = `
+                <div style="margin-bottom: 15px;">
+                    <strong>🖼️ Image:</strong> ${fileName}
+                    <button onclick="downloadFile('${materialId}')" class="btn btn-secondary" style="margin-left: 10px; padding: 5px 15px; font-size: 14px;">Download</button>
+                </div>
+                <img src="${material.content}" alt="${fileName}" style="max-width: 100%; height: auto; border-radius: 5px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+            `;
+        } else {
+            // For other file types, provide download link
+            contentHtml = `
+                <div style="text-align: center; padding: 40px;">
+                    <div style="font-size: 48px; margin-bottom: 20px;">📎</div>
+                    <h3>${fileName}</h3>
+                    <p class="material-description">File Type: ${fileType || 'Unknown'}</p>
+                    <button onclick="downloadFile('${materialId}')" class="btn btn-primary" style="margin-top: 20px;">Download File</button>
+                </div>
+            `;
+        }
+    } else if (material.type === 'pdf') {
+        contentHtml = `
+            <p><strong>PDF Document:</strong></p>
+            <p>${material.content}</p>
+            <p class="material-description">Note: In a production system, this would display or download the PDF file.</p>
+        `;
+    } else if (material.type === 'video') {
+        contentHtml = `
+            <p><strong>Video Content:</strong></p>
+            <p>${material.content}</p>
+            <p class="material-description">Note: In a production system, this would embed or link to the video.</p>
+        `;
+    } else if (material.type === 'link') {
+        contentHtml = `
+            <p><strong>External Link:</strong></p>
+            <p><a href="${material.content}" target="_blank">${material.content}</a></p>
+            <p class="material-description">Click the link above to open in a new tab.</p>
+        `;
+    } else if (material.type === 'text') {
+        contentHtml = `
+            <div style="white-space: pre-wrap; line-height: 1.8;">${material.content}</div>
+        `;
+    }
+    
+    if (material.description) {
+        contentHtml = `<p class="material-description"><strong>Description:</strong> ${material.description}</p>` + contentHtml;
+    }
+    
+    modalBody.innerHTML = contentHtml;
+    
+    // Check if already completed
+    const currentUser = getCurrentUser();
+    const progress = JSON.parse(localStorage.getItem('progress') || '{}');
+    const userProgress = progress[currentUser.id] || {};
+    const isCompleted = userProgress[materialId] === true;
+    
+    if (isCompleted) {
+        completeBtn.textContent = '✓ Already Completed';
+        completeBtn.disabled = true;
+        completeBtn.classList.remove('btn-success');
+        completeBtn.classList.add('btn-secondary');
+    } else {
+        completeBtn.textContent = 'Mark as Completed';
+        completeBtn.disabled = false;
+        completeBtn.classList.remove('btn-secondary');
+        completeBtn.classList.add('btn-success');
+    }
+    
+    modal.style.display = 'block';
+}
+
+function markAsCompleted() {
+    if (!currentMaterialId) {
+        alert('Error: No material selected');
+        return;
+    }
+    
+    const materialId = currentMaterialId;
+    const currentUser = getCurrentUser();
+    const progress = JSON.parse(localStorage.getItem('progress') || '{}');
+    
+    if (!progress[currentUser.id]) {
+        progress[currentUser.id] = {};
+    }
+    
+    progress[currentUser.id][materialId] = true;
+    localStorage.setItem('progress', JSON.stringify(progress));
+    
+    // Update UI
+    loadMaterials();
+    updateProgress();
+    closeMaterialModal();
+    
+    alert('Material marked as completed!');
+}
+
+function closeMaterialModal() {
+    document.getElementById('materialModal').style.display = 'none';
+    currentMaterialId = null; // Clear current material ID
+}
+
+function filterMaterials() {
+    loadMaterials();
+}
+
+// Store last progress values to prevent unnecessary updates
+let lastProgress = { total: -1, completed: -1, percentage: -1 };
+
+function updateProgress() {
+    const currentUser = getCurrentUser();
+    if (!currentUser) return;
+    
+    const registeredCourses = currentUser.courses || [];
+    const allMaterials = JSON.parse(localStorage.getItem('materials') || '[]');
+    const progress = JSON.parse(localStorage.getItem('progress') || '{}');
+    const userProgress = progress[currentUser.id] || {};
+    
+    // Filter materials for this officer's registered courses
+    const materials = allMaterials.filter(m => 
+        m.class === currentUser.class && 
+        registeredCourses.includes(m.course)
+    );
+    
+    const totalMaterials = materials.length;
+    const completedMaterials = materials.filter(m => userProgress[m.id] === true).length;
+    const progressPercentage = totalMaterials > 0 
+        ? Math.round((completedMaterials / totalMaterials) * 100) 
+        : 0;
+    
+    // Only update if values changed
+    if (totalMaterials !== lastProgress.total) {
+        const el = document.getElementById('totalMaterials');
+        if (el) el.textContent = totalMaterials;
+        lastProgress.total = totalMaterials;
+    }
+    
+    if (completedMaterials !== lastProgress.completed) {
+        const el = document.getElementById('completedMaterials');
+        if (el) el.textContent = completedMaterials;
+        lastProgress.completed = completedMaterials;
+    }
+    
+    if (progressPercentage !== lastProgress.percentage) {
+        const el = document.getElementById('progressPercentage');
+        if (el) el.textContent = progressPercentage + '%';
+        lastProgress.percentage = progressPercentage;
+    }
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+    });
+}
+
+// Download file function
+function downloadFile(materialId) {
+    const materials = JSON.parse(localStorage.getItem('materials') || '[]');
+    const material = materials.find(m => m.id === materialId);
+    
+    if (!material || !material.isFile || !material.content) {
+        alert('File not found');
+        return;
+    }
+    
+    const fileName = material.fileName || 'download';
+    const fileData = material.content;
+    
+    // Create download link
+    const link = document.createElement('a');
+    link.href = fileData;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('materialModal');
+    if (event.target === modal) {
+        closeMaterialModal();
+    }
+}
+

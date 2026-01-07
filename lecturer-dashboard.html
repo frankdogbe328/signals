@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecturer Dashboard - Signal Training School LMS</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Menu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+                <h1>🇬🇭 Signal Training School LMS</h1>
+            </div>
+            <div class="nav-user">
+                <span id="lecturerName"></span>
+                <button onclick="logout()" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+        <div class="mobile-menu" id="mobileMenu">
+            <div class="mobile-menu-content">
+                <div class="mobile-menu-user">
+                    <strong id="mobileLecturerName"></strong>
+                </div>
+                <button onclick="logout()" class="btn btn-secondary mobile-logout">Logout</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="dashboard-header">
+            <h2>Lecturer Dashboard</h2>
+            <p>Upload and manage learning materials for officers</p>
+        </div>
+        
+        <div class="dashboard-content">
+            <div class="card">
+                <h3>Upload Learning Material</h3>
+                <form id="uploadForm" class="upload-form">
+                    <div class="form-group">
+                        <label for="courseSelect">Course</label>
+                        <select id="courseSelect" name="course" required>
+                            <option value="">Select Course</option>
+                            <option value="cyber-security-fundamentals">Cyber Security Fundamentals</option>
+                            <option value="network-security">Network Security</option>
+                            <option value="cyber-defense-operations">Cyber Defense Operations</option>
+                            <option value="information-security-management">Information Security Management</option>
+                            <option value="cyber-threat-intelligence">Cyber Threat Intelligence</option>
+                            <option value="course1">Course 1</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="classSelect">Class</label>
+                        <select id="classSelect" name="class" required>
+                            <option value="">Select Class</option>
+                            <option value="class-a">Class A</option>
+                            <option value="class-b">Class B</option>
+                            <option value="class-c">Class C</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="materialTitle">Material Title</label>
+                        <input type="text" id="materialTitle" name="title" placeholder="e.g., Introduction to Signals" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="materialType">Material Type</label>
+                        <select id="materialType" name="type" required onchange="handleMaterialTypeChange()">
+                            <option value="">Select Type</option>
+                            <option value="file">Upload File (PDF, DOC, Images, etc.)</option>
+                            <option value="pdf">PDF Document (URL)</option>
+                            <option value="video">Video</option>
+                            <option value="link">External Link</option>
+                            <option value="text">Text Content</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group" id="fileUploadGroup" style="display: none;">
+                        <label for="materialFile">Upload File</label>
+                        <input type="file" id="materialFile" name="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.gif,.txt,.ppt,.pptx" onchange="previewFile()">
+                        <small style="color: #666; font-size: 12px;">Supported: PDF, Word, Images, PowerPoint, Text files (Max 10MB)</small>
+                        <div id="filePreview" style="margin-top: 10px;"></div>
+                    </div>
+                    
+                    <div class="form-group" id="contentGroup">
+                        <label for="materialContent">Content/URL</label>
+                        <textarea id="materialContent" name="content" rows="4" placeholder="Enter content, URL, or file path"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="materialCategory">Category/Module</label>
+                        <input type="text" id="materialCategory" name="category" placeholder="e.g., Signals Basics, Radio Communication" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="materialSequence">Sequence Number</label>
+                        <input type="number" id="materialSequence" name="sequence" placeholder="e.g., 1, 2, 3 (for ordering)" min="1" required>
+                        <small style="color: #666; font-size: 12px;">Lower numbers appear first. Materials with same sequence are ordered by upload date.</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="materialDescription">Description</label>
+                        <textarea id="materialDescription" name="description" rows="3" placeholder="Brief description of the material"></textarea>
+                    </div>
+                    
+                    <div class="form-actions" style="display: flex; gap: 10px;">
+                        <button type="submit" class="btn btn-primary" id="submitBtn">Upload Material</button>
+                        <button type="button" class="btn btn-secondary" id="cancelBtn" onclick="cancelEdit()" style="display: none;">Cancel</button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="card">
+                <h3>Uploaded Materials</h3>
+                <div class="filter-controls" style="margin-bottom: 20px;">
+                    <select id="filterClass" onchange="loadMaterials()" style="max-width: 200px; padding: 8px; margin-right: 10px;">
+                        <option value="all">All Classes</option>
+                        <option value="class-a">Class A</option>
+                        <option value="class-b">Class B</option>
+                        <option value="class-c">Class C</option>
+                    </select>
+                    <select id="filterCategory" onchange="loadMaterials()" style="max-width: 200px; padding: 8px;">
+                        <option value="all">All Categories</option>
+                    </select>
+                </div>
+                <div id="materialsList" class="materials-list">
+                    <p class="empty-state">No materials uploaded yet</p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>📊 Analytics Dashboard</h3>
+                <div class="analytics-tabs" style="margin-bottom: 20px;">
+                    <button class="tab-btn active" onclick="showAnalytics('overview')">Overview</button>
+                    <button class="tab-btn" onclick="showAnalytics('class-progress')">Class Progress</button>
+                    <button class="tab-btn" onclick="showAnalytics('material-stats')">Material Statistics</button>
+                </div>
+                
+                <div id="analyticsContent">
+                    <div id="overviewTab" class="analytics-tab active">
+                        <div class="analytics-grid">
+                            <div class="analytics-card">
+                                <h4>Total Materials</h4>
+                                <div class="analytics-value" id="totalMaterialsCount">0</div>
+                            </div>
+                            <div class="analytics-card">
+                                <h4>Total Officers</h4>
+                                <div class="analytics-value" id="totalOfficersCount">0</div>
+                            </div>
+                            <div class="analytics-card">
+                                <h4>Overall Completion Rate</h4>
+                                <div class="analytics-value" id="overallCompletion">0%</div>
+                            </div>
+                            <div class="analytics-card">
+                                <h4>Active Classes</h4>
+                                <div class="analytics-value" id="activeClassesCount">0</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="classProgressTab" class="analytics-tab" style="display: none;">
+                        <div id="classProgressContent"></div>
+                    </div>
+                    
+                    <div id="materialStatsTab" class="analytics-tab" style="display: none;">
+                        <div id="materialStatsContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/mobile.js"></script>
+    <script src="js/lecturer.js"></script>
+</body>
+</html>
+
