@@ -489,8 +489,10 @@ async function loadMaterials() {
                     </div>
                 </div>
                 ${material.description ? `<div class="material-description">${material.description}</div>` : ''}
-                <div class="material-actions">
+                <div class="material-actions" style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button onclick="viewMaterial('${material.id}')" class="btn btn-primary">View Material</button>
+                    ${material.isFile ? `<button onclick="downloadFile('${material.id}')" class="btn btn-success" title="Download ${material.fileName || 'file'} in original format">📥 Download File</button>` : ''}
+                    ${!material.isFile && material.content ? `<button onclick="downloadTextMaterial('${material.id}')" class="btn btn-success" title="Download as text file">📥 Download</button>` : ''}
                 </div>
             </div>
         `;
@@ -890,14 +892,46 @@ async function downloadFile(materialId) {
         }
     }
     
-    // Create download link with proper file name and type
-    const link = document.createElement('a');
-    link.href = fileData;
-    link.download = fileName; // Preserve original file name
-    link.style.display = 'none';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Convert data URL to blob for better download support across browsers
+    try {
+        // Extract base64 data from data URL
+        const base64Data = fileData.includes(',') ? fileData.split(',')[1] : fileData.replace(/^data:.*,/, '');
+        const binaryString = atob(base64Data);
+        const bytes = new Uint8Array(binaryString.length);
+        for (let i = 0; i < binaryString.length; i++) {
+            bytes[i] = binaryString.charCodeAt(i);
+        }
+        
+        // Get MIME type from data URL or file type
+        const mimeType = fileData.match(/^data:([^;]+)/)?.[1] || fileType || 'application/octet-stream';
+        const blob = new Blob([bytes], { type: mimeType });
+        
+        // Create download link with blob
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = fileName; // Preserve original file name
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        
+        // Clean up after download
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(link.href);
+        }, 100);
+    } catch (err) {
+        console.error('Error creating blob download:', err);
+        // Fallback to direct data URL download
+        const link = document.createElement('a');
+        link.href = fileData;
+        link.download = fileName;
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(() => {
+            document.body.removeChild(link);
+        }, 100);
+    }
 }
 
 // Download text-based materials as text files
