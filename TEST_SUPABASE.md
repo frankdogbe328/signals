@@ -11,7 +11,7 @@ If you ran the main SQL (`supabase-database-setup.sql`) and got "Success", you'r
 - You should see the login page
 
 ### 2. Register a New Account
-- Click "Register as Officer" or "Register as Lecturer"
+- Click "Register as Student" or "Register as Lecturer"
 - Fill in the form
 - Click "Register"
 - **Expected:** Should redirect to dashboard
@@ -53,7 +53,7 @@ If you see errors like:
 ✅ Can register new accounts
 ✅ Can login
 ✅ Can upload materials (lecturer)
-✅ Can view materials (officer)
+✅ Can view materials (student)
 ✅ Accounts work on different devices
 ✅ Data appears in Supabase tables
 

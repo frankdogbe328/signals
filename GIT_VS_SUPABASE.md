@@ -40,7 +40,7 @@
 ### **Users Use the System:**
 1. User registers → Data goes to **Supabase** ✅
 2. Lecturer uploads material → Data goes to **Supabase** ✅
-3. Officer views materials → Data comes from **Supabase** ✅
+3. Student views materials → Data comes from **Supabase** ✅
 4. **Result:** Data changes go to Supabase (NOT Git) ✅
 
 ## ⚠️ Important Notes

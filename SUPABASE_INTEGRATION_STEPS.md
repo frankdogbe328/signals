@@ -40,7 +40,7 @@ Once you've run the SQL setup, let me know and I'll:
 1. Update `js/auth.js` to use Supabase for login
 2. Update `js/register.js` to use Supabase for registration
 3. Update `js/lecturer.js` to use Supabase for materials
-4. Update `js/officer.js` to use Supabase for viewing materials and progress
+4. Update `js/student.js` to use Supabase for viewing materials and progress
 5. Update `js/app.js` to use Supabase instead of localStorage
 
 This will make your system work across all devices! 🎉

@@ -29,7 +29,7 @@ SELECT * FROM users
 ORDER BY 
     CASE role 
         WHEN 'lecturer' THEN 1 
-        WHEN 'officer' THEN 2 
+        WHEN 'student' THEN 2 
     END,
     name ASC;
 ```
@@ -69,7 +69,7 @@ SELECT * FROM users
 ORDER BY 
     CASE role 
         WHEN 'lecturer' THEN 1 
-        WHEN 'officer' THEN 2 
+        WHEN 'student' THEN 2 
     END,
     name ASC;
 ```
