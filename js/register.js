@@ -16,7 +16,7 @@ function showRegisterForm(role) {
     document.getElementById('registerForm').dataset.role = role;
     
     // Update form title
-    const title = role === 'lecturer' ? 'Lecturer Registration' : 'Officer Registration';
+    const title = role === 'lecturer' ? 'Lecturer Registration' : 'Student Registration';
     document.getElementById('registerTitle').textContent = title;
     
     // Show/hide fields based on role
@@ -30,7 +30,7 @@ function showRegisterForm(role) {
         courseGroup.style.display = 'none';
         regClass.removeAttribute('required');
     } else {
-        // Officers need class
+        // Students need class
         classGroup.style.display = 'block';
         courseGroup.style.display = 'block';
         regClass.setAttribute('required', 'required');
@@ -82,7 +82,7 @@ async function handleRegistration(e) {
     const classSelect = document.getElementById('regClass').value;
     const course = document.getElementById('regCourse').value;
     const errorMessage = document.getElementById('registerErrorMessage');
-    const role = document.getElementById('registerForm').dataset.role || 'officer';
+    const role = document.getElementById('registerForm').dataset.role || 'student';
     
     // Clear previous errors
     errorMessage.classList.remove('show');
@@ -103,8 +103,8 @@ async function handleRegistration(e) {
         return;
     }
     
-    // Officers need class, lecturers don't
-    if (role === 'officer' && !classSelect) {
+    // Students need class, lecturers don't
+    if (role === 'student' && !classSelect) {
         errorMessage.textContent = 'Please select a class';
         errorMessage.classList.add('show');
         return;
@@ -167,11 +167,11 @@ async function handleRegistration(e) {
             email: email
         };
     } else {
-        // Create officer account
+        // Create student account
         newUser = {
             username: username,
             password: password,
-            role: 'officer',
+            role: 'student',
             name: name,
             email: email,
             class: classSelect,

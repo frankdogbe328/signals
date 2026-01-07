@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
     username TEXT UNIQUE NOT NULL,
     password TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('lecturer', 'officer')),
+    role TEXT NOT NULL CHECK (role IN ('lecturer', 'student')),
     name TEXT NOT NULL,
     class TEXT,
     courses JSONB DEFAULT '[]'::jsonb,

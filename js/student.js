@@ -1,4 +1,4 @@
-// Officer dashboard functionality
+// Student dashboard functionality
 let currentMaterialId = null; // Store current material ID for modal
 let isInitialized = false; // Flag to prevent repeated initialization
 let lastMaterialsHTML = ''; // Store last materials HTML to prevent unnecessary updates
@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', function() {
     isInitialized = true;
     // Check authentication
     let currentUser = getCurrentUser();
-    if (!currentUser || currentUser.role !== 'officer') {
+    if (!currentUser || currentUser.role !== 'student') {
         window.location.href = 'index.html';
         return;
     }
@@ -24,20 +24,20 @@ document.addEventListener('DOMContentLoaded', function() {
         currentUser = getCurrentUser();
     }
     
-    // Display officer name and info (set once, no repeated updates)
-    const officerNameEl = document.getElementById('officerName');
-    if (officerNameEl) {
-        officerNameEl.textContent = currentUser.name;
+    // Display student name and info (set once, no repeated updates)
+    const studentNameEl = document.getElementById('studentName');
+    if (studentNameEl) {
+        studentNameEl.textContent = currentUser.name;
     }
     
     // Update mobile menu name
-    const mobileOfficerName = document.getElementById('mobileOfficerName');
-    if (mobileOfficerName) {
-        mobileOfficerName.textContent = currentUser.name;
+    const mobileStudentName = document.getElementById('mobileStudentName');
+    if (mobileStudentName) {
+        mobileStudentName.textContent = currentUser.name;
     }
     
-    // Update officer info text directly (with check to prevent blinking)
-    const officerInfoEl = document.getElementById('officerInfo');
+    // Update student info text directly (with check to prevent blinking)
+    const studentInfoEl = document.getElementById('studentInfo');
     if (officerInfoEl) {
         const courses = currentUser.courses || [];
         const coursesText = courses.length > 0 
@@ -109,9 +109,9 @@ function migrateUserCourses(user) {
 }
 
 // Store last updated text to prevent unnecessary DOM updates
-let lastOfficerInfoText = '';
+let lastStudentInfoText = '';
 
-function updateOfficerInfo() {
+function updateStudentInfo() {
     const currentUser = getCurrentUser();
     if (!currentUser) return;
     
@@ -123,16 +123,16 @@ function updateOfficerInfo() {
     const newText = `Welcome, ${currentUser.name}. Class: ${currentUser.class || 'N/A'} | ${coursesText}`;
     
     // Only update if text actually changed
-    if (newText === lastOfficerInfoText) return;
-    lastOfficerInfoText = newText;
+    if (newText === lastStudentInfoText) return;
+    lastStudentInfoText = newText;
     
-    const officerInfoEl = document.getElementById('officerInfo');
-    if (officerInfoEl) {
-        officerInfoEl.textContent = newText;
+    const studentInfoEl = document.getElementById('studentInfo');
+    if (studentInfoEl) {
+        studentInfoEl.textContent = newText;
     }
 }
 
-// Populate course registration dropdown based on officer's class
+// Populate course registration dropdown based on student's class
 function populateCourseRegistrationDropdown() {
     const currentUser = getCurrentUser();
     if (!currentUser || !currentUser.class) return;
@@ -312,15 +312,15 @@ window.registerForCourse = async function() {
     courseSelect.value = '';
     populateCourseRegistrationDropdown();
     
-    // Reload UI (update officer info directly to prevent blinking)
+    // Reload UI (update student info directly to prevent blinking)
     loadRegisteredCourses();
     loadMaterials();
     updateProgress();
     
-    // Update officer info text directly (not via function to prevent repeated calls)
-    // Update officer info text directly (with check to prevent blinking)
-    const officerInfoEl = document.getElementById('officerInfo');
-    if (officerInfoEl) {
+    // Update student info text directly (not via function to prevent repeated calls)
+    // Update student info text directly (with check to prevent blinking)
+    const studentInfoEl = document.getElementById('studentInfo');
+    if (studentInfoEl) {
         const courses = currentUser.courses || [];
         const coursesText = courses.length > 0 
             ? `Registered Courses: ${courses.length}` 
@@ -328,9 +328,9 @@ window.registerForCourse = async function() {
         const newText = `Welcome, ${currentUser.name}. Class: ${currentUser.class || 'N/A'} | ${coursesText}`;
         
         // Only update if text changed
-        if (officerInfoEl.textContent !== newText) {
-            officerInfoEl.textContent = newText;
-            lastOfficerInfoText = newText;
+        if (studentInfoEl.textContent !== newText) {
+            studentInfoEl.textContent = newText;
+            lastStudentInfoText = newText;
         }
     }
     
@@ -357,14 +357,14 @@ function unregisterFromCourse(course) {
         setCurrentUser(currentUser);
     }
     
-    // Reload UI (without updating officer info text to prevent blinking)
+    // Reload UI (without updating student info text to prevent blinking)
     loadRegisteredCourses();
     loadMaterials();
     updateProgress();
-    // Update officer info text only once, not repeatedly
-    // Update officer info text directly (with check to prevent blinking)
-    const officerInfoEl = document.getElementById('officerInfo');
-    if (officerInfoEl) {
+    // Update student info text only once, not repeatedly
+    // Update student info text directly (with check to prevent blinking)
+    const studentInfoEl = document.getElementById('studentInfo');
+    if (studentInfoEl) {
         const courses = currentUser.courses || [];
         const coursesText = courses.length > 0 
             ? `Registered Courses: ${courses.length}` 
@@ -372,9 +372,9 @@ function unregisterFromCourse(course) {
         const newText = `Welcome, ${currentUser.name}. Class: ${currentUser.class || 'N/A'} | ${coursesText}`;
         
         // Only update if text changed
-        if (officerInfoEl.textContent !== newText) {
-            officerInfoEl.textContent = newText;
-            lastOfficerInfoText = newText;
+        if (studentInfoEl.textContent !== newText) {
+            studentInfoEl.textContent = newText;
+            lastStudentInfoText = newText;
         }
     }
     
@@ -423,7 +423,7 @@ async function loadMaterials() {
         userProgress = progress[currentUser.id] || {};
     }
     
-    // Filter materials for this officer's class and registered courses
+    // Filter materials for this student's class and registered courses
     let materials = allMaterials.filter(m => 
         m.class === currentUser.class && 
         registeredCourses.includes(m.course)
@@ -755,7 +755,7 @@ async function updateProgress() {
         userProgress = progress[currentUser.id] || {};
     }
     
-    // Filter materials for this officer's registered courses
+    // Filter materials for this student's registered courses
     const materials = allMaterials.filter(m => 
         m.class === currentUser.class && 
         registeredCourses.includes(m.course)

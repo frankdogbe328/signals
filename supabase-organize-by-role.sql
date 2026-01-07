@@ -15,7 +15,7 @@ FROM users
 ORDER BY 
     CASE role 
         WHEN 'lecturer' THEN 1 
-        WHEN 'officer' THEN 2 
+        WHEN 'student' THEN 2 
     END,
     name ASC;
 
@@ -31,7 +31,7 @@ FROM users
 WHERE role = 'lecturer'
 ORDER BY name ASC;
 
--- 3. View only Officers
+-- 3. View only Students
 SELECT 
     id,
     username,
@@ -42,7 +42,7 @@ SELECT
     courses,
     created_at
 FROM users
-WHERE role = 'officer'
+WHERE role = 'student'
 ORDER BY class, name ASC;
 
 -- 4. Count users by role
@@ -53,13 +53,13 @@ FROM users
 GROUP BY role
 ORDER BY role;
 
--- 5. View officers grouped by class
+-- 5. View students grouped by class
 SELECT 
     class,
-    COUNT(*) as total_officers,
-    STRING_AGG(name, ', ' ORDER BY name) as officer_names
+    COUNT(*) as total_students,
+    STRING_AGG(name, ', ' ORDER BY name) as student_names
 FROM users
-WHERE role = 'officer' AND class IS NOT NULL
+WHERE role = 'student' AND class IS NOT NULL
 GROUP BY class
 ORDER BY class;
 
@@ -79,13 +79,13 @@ FROM users
 ORDER BY 
     CASE role 
         WHEN 'lecturer' THEN 1 
-        WHEN 'officer' THEN 2 
+        WHEN 'student' THEN 2 
     END,
     name ASC;
 
 -- 7. View lecturers only (using the view)
 SELECT * FROM users_by_role WHERE role = 'lecturer';
 
--- 8. View officers only (using the view)
-SELECT * FROM users_by_role WHERE role = 'officer';
+-- 8. View students only (using the view)
+SELECT * FROM users_by_role WHERE role = 'student';
 

@@ -54,8 +54,8 @@ async function handleLogin(e) {
         // Redirect based on role
         if (userType === 'lecturer') {
             window.location.href = 'lecturer-dashboard.html';
-        } else if (userType === 'officer') {
-            window.location.href = 'officer-dashboard.html';
+        } else if (userType === 'student') {
+            window.location.href = 'student-dashboard.html';
         }
     } else {
         errorMessage.textContent = 'Invalid username, password, or role';

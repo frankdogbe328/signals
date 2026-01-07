@@ -16,8 +16,8 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => {
                 if (currentUser.role === 'lecturer') {
                     window.location.href = 'lecturer-dashboard.html';
-                } else if (currentUser.role === 'officer') {
-                    window.location.href = 'officer-dashboard.html';
+                } else if (currentUser.role === 'student') {
+                    window.location.href = 'student-dashboard.html';
                 }
             }, 0);
         }
@@ -172,19 +172,19 @@ function initializeDemoData() {
                 name: 'Dr. John Mensah'
             },
             {
-                id: 'officer1',
-                username: 'officer1',
+                id: 'student1',
+                username: 'student1',
                 password: 'password123',
-                role: 'officer',
+                role: 'student',
                 name: 'Lt. Sarah Adjei',
                 class: 'signal-basic-beginner',
                 courses: [] // Start with no courses - officers will register for courses
             },
             {
-                id: 'officer2',
-                username: 'officer2',
+                id: 'student2',
+                username: 'student2',
                 password: 'password123',
-                role: 'officer',
+                role: 'student',
                 name: 'Capt. Kwame Asante',
                 class: 'regimental-basic-beginner',
                 courses: [] // Start with no courses - officers will register for courses
@@ -232,7 +232,7 @@ function initializeDemoData() {
     
     let usersUpdated = false;
     users.forEach(user => {
-        if (user.role === 'officer' && user.courses && Array.isArray(user.courses)) {
+        if (user.role === 'student' && user.courses && Array.isArray(user.courses)) {
             const originalLength = user.courses.length;
             user.courses = user.courses.filter(course => !exampleCourses.includes(course));
             if (user.courses.length !== originalLength) {
@@ -240,7 +240,7 @@ function initializeDemoData() {
             }
         }
         // Also handle old single 'course' field
-        if (user.role === 'officer' && user.course && exampleCourses.includes(user.course)) {
+        if (user.role === 'student' && user.course && exampleCourses.includes(user.course)) {
             delete user.course;
             if (!user.courses) {
                 user.courses = [];
