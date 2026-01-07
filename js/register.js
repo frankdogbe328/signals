@@ -10,7 +10,6 @@ function showRegisterForm(role) {
     document.getElementById('loginForm').style.display = 'none';
     document.getElementById('registerForm').style.display = 'block';
     document.querySelector('.register-section').style.display = 'none';
-    document.querySelector('.demo-credentials').style.display = 'none';
     
     // Store registration role
     document.getElementById('registerForm').dataset.role = role;
@@ -62,7 +61,6 @@ function showLoginForm() {
     document.getElementById('loginForm').style.display = 'block';
     document.getElementById('registerForm').style.display = 'none';
     document.querySelector('.register-section').style.display = 'block';
-    document.querySelector('.demo-credentials').style.display = 'block';
     
     // Clear registration form
     document.getElementById('registerForm').reset();

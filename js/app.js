@@ -161,7 +161,20 @@ function getCoursesForClass(classId) {
 
 // Initialize demo data
 function initializeDemoData() {
-    // Initialize users if not exists
+    // Note: Since we're using Supabase, demo accounts are not created automatically
+    // Demo accounts should only exist in Supabase if manually created
+    // localStorage is kept only for backward compatibility/fallback
+    
+    // Clear any existing localStorage users to avoid confusion
+    // Users should be registered through the system, not through localStorage
+    if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        // Supabase is available, don't create localStorage demo accounts
+        // localStorage will be used only as fallback
+        return;
+    }
+    
+    // Only create localStorage users if Supabase is not available (fallback mode)
+    // This is for backward compatibility only
     if (!localStorage.getItem('users')) {
         const users = [
             {
@@ -178,7 +191,7 @@ function initializeDemoData() {
                 role: 'student',
                 name: 'Lt. Sarah Adjei',
                 class: 'signal-basic-beginner',
-                courses: [] // Start with no courses - officers will register for courses
+                courses: []
             },
             {
                 id: 'student2',
@@ -187,7 +200,7 @@ function initializeDemoData() {
                 role: 'student',
                 name: 'Capt. Kwame Asante',
                 class: 'regimental-basic-beginner',
-                courses: [] // Start with no courses - officers will register for courses
+                courses: []
             }
         ];
         localStorage.setItem('users', JSON.stringify(users));
