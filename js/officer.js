@@ -241,7 +241,8 @@ function loadRegisteredCourses() {
     isUpdating = false;
 }
 
-function registerForCourse() {
+// Make registerForCourse globally accessible
+window.registerForCourse = function() {
     const courseSelect = document.getElementById('registerCourseSelect');
     if (!courseSelect) {
         alert('Course selection dropdown not found');
@@ -320,7 +321,7 @@ function registerForCourse() {
     }
     
     alert('Successfully registered for ' + selectedCourse + '!');
-}
+};
 
 function unregisterFromCourse(course) {
     if (!confirm(`Are you sure you want to unregister from ${course}?`)) {
