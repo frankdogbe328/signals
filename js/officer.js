@@ -152,17 +152,47 @@ function populateCourseRegistrationDropdown() {
 
 function loadRegisteredCourses() {
     if (isUpdating) return; // Prevent concurrent updates
+    isUpdating = true;
     
     const currentUser = getCurrentUser();
+    if (!currentUser || !currentUser.class) {
+        isUpdating = false;
+        return;
+    }
+    
+    // Get valid courses for this class
+    const validCoursesForClass = getCoursesForClass(currentUser.class);
     const registeredCourses = currentUser.courses || [];
+    
+    // Filter to only show registered courses that are valid for this class
+    const validRegisteredCourses = registeredCourses.filter(course => 
+        validCoursesForClass.includes(course)
+    );
+    
+    // If there are invalid courses, clean them up
+    if (validRegisteredCourses.length !== registeredCourses.length) {
+        currentUser.courses = validRegisteredCourses;
+        // Update in localStorage
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const userIndex = users.findIndex(u => u.id === currentUser.id);
+        if (userIndex !== -1) {
+            users[userIndex] = currentUser;
+            localStorage.setItem('users', JSON.stringify(users));
+            setCurrentUser(currentUser);
+        }
+    }
+    
     const registeredCoursesList = document.getElementById('registeredCoursesList');
-    if (!registeredCoursesList) return;
+    if (!registeredCoursesList) {
+        isUpdating = false;
+        return;
+    }
     
     let newHTML = '';
-    if (registeredCourses.length === 0) {
+    if (validRegisteredCourses.length === 0) {
         newHTML = '<p class="empty-state" style="padding: 10px;">No courses registered. Register for a course above.</p>';
     } else {
-        newHTML = registeredCourses.map(course => `
+        newHTML = validRegisteredCourses.map(course => `
             <div class="registered-course-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 5px; margin-bottom: 10px;">
                 <span style="font-weight: 600;">${course}</span>
                 <button onclick="unregisterFromCourse('${course}')" class="btn btn-danger" style="width: auto; padding: 5px 15px; font-size: 12px;">Unregister</button>
@@ -181,14 +211,14 @@ function loadRegisteredCourses() {
     if (courseFilter) {
         const currentValue = courseFilter.value;
         const newHTML = '<option value="all">All My Courses</option>' +
-            registeredCourses.map(course => `<option value="${course}">${course}</option>`).join('');
+            validRegisteredCourses.map(course => `<option value="${course}">${course}</option>`).join('');
         
         // Only update if content changed
         if (courseFilter.innerHTML !== newHTML) {
             courseFilter.innerHTML = newHTML;
             
             // Restore selection if it still exists, otherwise set to 'all'
-            if (currentValue && registeredCourses.includes(currentValue)) {
+            if (currentValue && validRegisteredCourses.includes(currentValue)) {
                 courseFilter.value = currentValue;
             } else {
                 courseFilter.value = 'all';
@@ -200,7 +230,7 @@ function loadRegisteredCourses() {
     const materialsSection = document.getElementById('materialsSection');
     const noCoursesMessage = document.getElementById('noCoursesMessage');
     
-    if (registeredCourses.length === 0) {
+    if (validRegisteredCourses.length === 0) {
         if (materialsSection) materialsSection.style.display = 'none';
         if (noCoursesMessage) noCoursesMessage.style.display = 'block';
     } else {
@@ -209,13 +239,16 @@ function loadRegisteredCourses() {
     }
     
     isUpdating = false;
-    
-    isUpdating = false;
 }
 
 function registerForCourse() {
     const courseSelect = document.getElementById('registerCourseSelect');
-    const selectedCourse = courseSelect.value;
+    if (!courseSelect) {
+        alert('Course selection dropdown not found');
+        return;
+    }
+    
+    const selectedCourse = courseSelect.value.trim();
     
     if (!selectedCourse) {
         alert('Please select a course to register');
@@ -223,11 +256,24 @@ function registerForCourse() {
     }
     
     const currentUser = getCurrentUser();
+    if (!currentUser || !currentUser.class) {
+        alert('User information not found. Please log in again.');
+        return;
+    }
+    
+    // Validate that the course is valid for this class
+    const validCoursesForClass = getCoursesForClass(currentUser.class);
+    if (!validCoursesForClass.includes(selectedCourse)) {
+        alert('This course is not available for your class. Please select a valid course.');
+        return;
+    }
+    
     const courses = currentUser.courses || [];
     
     // Check if already registered
     if (courses.includes(selectedCourse)) {
         alert('You are already registered for this course');
+        populateCourseRegistrationDropdown(); // Refresh dropdown
         return;
     }
     
@@ -242,6 +288,9 @@ function registerForCourse() {
         users[userIndex] = currentUser;
         localStorage.setItem('users', JSON.stringify(users));
         setCurrentUser(currentUser);
+    } else {
+        alert('Error: User not found in system');
+        return;
     }
     
     // Reset dropdown and repopulate
