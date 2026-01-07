@@ -36,7 +36,28 @@
 4. Enable "Email/Password" provider
 5. Click "Save"
 
-## Step 3: Create Firestore Database
+## Step 3: Enable Billing (Required but FREE)
+
+**⚠️ Important:** Firebase requires billing to be enabled, BUT you won't be charged as long as you stay within the free tier limits!
+
+1. **Click the link in the error message** or go to: https://console.developers.google.com/billing/enable?project=YOUR_PROJECT_ID
+   - Replace `YOUR_PROJECT_ID` with your actual project ID (from the error message)
+2. **Or go to:** Firebase Console → Project Settings → Usage and billing
+3. Click **"Upgrade"** or **"Enable billing"**
+4. Select **"Blaze Plan"** (Pay as you go) - This is required for Firestore
+5. **Add a payment method** (credit card)
+   - **Don't worry!** You won't be charged unless you exceed free limits
+   - Free tier includes: 50,000 reads/day, 20,000 writes/day, 1 GB storage
+6. Complete the billing setup
+7. **Wait 2-3 minutes** for billing to activate
+
+**Free Tier Limits (You won't be charged if you stay within these):**
+- 50,000 Firestore reads per day
+- 20,000 Firestore writes per day
+- 1 GB storage
+- 10 GB/month network transfer
+
+## Step 4: Create Firestore Database
 
 1. Click "Firestore Database" in left menu
 2. Click "Create database"
