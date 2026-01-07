@@ -1,13 +1,21 @@
 # Firebase Setup Guide for Signal Training School LMS
 
-## Step 0: Create Firebase Account (If you don't have one)
+## Step 0: Sign in to Firebase (If you already have an account)
 
+**If you already have a Firebase/Google account:**
+1. **Go to:** https://console.firebase.google.com
+2. Sign in with your existing Google account
+3. You're ready to create a new project!
+
+**If you don't have an account yet:**
 1. **Go to:** https://firebase.google.com
 2. Click **"Get started"** or **"Go to console"** button (top right)
 3. You'll be asked to sign in with a **Google account**
    - If you have Gmail, use that
    - If not, create a Google account first at https://accounts.google.com/signup
 4. Once signed in, you'll be taken to the Firebase Console
+
+**Note:** You can have multiple projects in one Firebase account. Each project is separate and isolated. The free tier applies per project.
 
 ## Step 1: Create Firebase Project
 
