@@ -13,8 +13,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check authentication
     let currentUser = getCurrentUser();
     if (!currentUser || currentUser.role !== 'student') {
-        // Redirect to login with redirect parameter to come back here
-        window.location.href = '../index.html?redirect=exam-portal/student-exam-portal.html';
+        // Redirect to exam portal login page
+        window.location.href = 'login.html';
         return;
     }
     

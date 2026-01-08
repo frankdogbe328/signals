@@ -24,9 +24,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Exam Portal - IS_EXAM_PORTAL flag:', window.IS_EXAM_PORTAL);
         
         if (!currentUser || currentUser.role !== 'lecturer') {
-            // Redirect to login with redirect parameter to come back here
-            console.log('Exam Portal - Not authenticated, redirecting to login');
-            window.location.href = '../index.html?redirect=exam-portal/lecturer-exam-dashboard.html';
+            // Redirect to exam portal login page
+            console.log('Exam Portal - Not authenticated, redirecting to exam portal login');
+            window.location.href = 'login.html';
             return;
         }
         
