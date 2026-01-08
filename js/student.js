@@ -181,7 +181,7 @@ function loadRegisteredCourses() {
     
     let newHTML = '';
     if (validRegisteredCourses.length === 0) {
-        newHTML = '<p class="empty-state" style="padding: 10px;">No courses registered. Register for a course above.</p>';
+        newHTML = '<p class="empty-state" style="padding: 10px;">No subjects registered. Register for a subject above.</p>';
     } else {
         newHTML = validRegisteredCourses.map(course => `
             <div class="registered-course-item" style="display: flex; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 5px; margin-bottom: 10px;">
@@ -263,7 +263,7 @@ window.registerForCourse = async function() {
     
     // Check if already registered
     if (courses.includes(selectedCourse)) {
-        alert('You are already registered for this course');
+        alert('You are already registered for this subject');
         populateCourseRegistrationDropdown(); // Refresh dropdown
         return;
     }

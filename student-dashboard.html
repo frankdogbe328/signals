@@ -60,19 +60,19 @@
         
         <div class="dashboard-content">
             <div class="card">
-                <h3>📚 Course Registration</h3>
-                <p style="margin-bottom: 15px; color: #666;">Register for courses to access learning materials</p>
+                <h3>📚 Subject Registration</h3>
+                <p style="margin-bottom: 15px; color: #666;">Register for subjects to access learning materials</p>
                 <div class="course-registration-section">
                     <div class="form-group" style="margin-bottom: 15px;">
-                        <label for="registerCourseSelect">Select Course to Register</label>
+                        <label for="registerCourseSelect">Select Subject to Register</label>
                         <select id="registerCourseSelect" style="max-width: 300px;">
-                            <option value="">Select a course</option>
+                            <option value="">Select a subject</option>
                         </select>
                     </div>
-                    <button onclick="registerForCourse()" class="btn btn-primary" style="width: auto;">Register for Course</button>
+                    <button onclick="registerForCourse()" class="btn btn-primary" style="width: auto;">Register for Subject</button>
                 </div>
                 <div id="registeredCourses" class="registered-courses-list" style="margin-top: 20px;">
-                    <h4 style="margin-bottom: 10px;">My Registered Courses:</h4>
+                    <h4 style="margin-bottom: 10px;">My Registered Subjects:</h4>
                     <div id="registeredCoursesList"></div>
                 </div>
             </div>
@@ -80,7 +80,7 @@
             <div class="card">
                 <h3>Learning Materials</h3>
                 <div id="noCoursesMessage" class="empty-state" style="display: none;">
-                    <p>You haven't registered for any courses yet. Please register for a course above to view materials.</p>
+                    <p>You haven't registered for any subjects yet. Please register for a subject above to view materials.</p>
                 </div>
                 <div id="materialsSection" style="display: none;">
                     <div class="course-filter" style="display: flex; gap: 15px; margin-bottom: 20px; flex-wrap: wrap;">
