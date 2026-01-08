@@ -276,9 +276,12 @@ window.registerForCourse = async function() {
     let updated = false;
     if (typeof updateUserInSupabase === 'function') {
         try {
-            updated = await updateUserInSupabase(currentUser.id, { courses: courses });
-            if (updated) {
+            const updatedUser = await updateUserInSupabase(currentUser.id, { courses: courses });
+            if (updatedUser) {
+                // Use the updated user from Supabase (in case it has additional fields)
+                currentUser.courses = updatedUser.courses || courses;
                 setCurrentUser(currentUser);
+                updated = true;
             }
         } catch (err) {
             console.error('Supabase update error:', err);
@@ -299,11 +302,23 @@ window.registerForCourse = async function() {
         }
     }
     
+    // Ensure current user is updated in session before reloading UI
+    // Force refresh by getting the latest user data
+    const latestUser = getCurrentUser();
+    if (latestUser) {
+        latestUser.courses = courses;
+        setCurrentUser(latestUser);
+    }
+    
     // Reset dropdown and repopulate
     courseSelect.value = '';
-    populateCourseRegistrationDropdown();
     
-    // Reload UI (update student info directly to prevent blinking)
+    // Force update by resetting the flag and last HTML
+    isUpdating = false;
+    lastCoursesHTML = ''; // Force update by clearing cached HTML
+    
+    // Reload UI immediately
+    populateCourseRegistrationDropdown();
     loadRegisteredCourses();
     loadMaterials();
     updateProgress();
