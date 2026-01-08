@@ -1,0 +1,37 @@
+============================================
+QUICK WAY TO CLEAR ALL DATABASE DATA
+============================================
+
+STEP 1: Go to Supabase Dashboard
+- Open: https://supabase.com/dashboard
+- Select your project
+
+STEP 2: Open SQL Editor
+- Click "SQL Editor" on the left
+- Click "New Query"
+
+STEP 3: Copy and paste this SQL code:
+
+DELETE FROM progress;
+DELETE FROM materials;
+DELETE FROM users;
+DELETE FROM storage.objects WHERE bucket_id = 'learning-materials';
+
+STEP 4: Click "Run" button (or press Ctrl+Enter)
+
+STEP 5: Done! All data is cleared.
+
+============================================
+VERIFY IT WORKED (Optional):
+============================================
+
+Run these to check:
+
+SELECT COUNT(*) FROM users;
+SELECT COUNT(*) FROM materials;
+SELECT COUNT(*) FROM progress;
+
+All should show 0.
+
+============================================
+
