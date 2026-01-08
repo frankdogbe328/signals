@@ -258,12 +258,26 @@ function updateCoursesForLecturer() {
 }
 
 // Lecturer dashboard functionality
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // Check authentication
-    const currentUser = getCurrentUser();
+    let currentUser = getCurrentUser();
     if (!currentUser || currentUser.role !== 'lecturer') {
         window.location.href = 'index.html';
         return;
+    }
+    
+    // Refresh user data from Supabase to get latest registered subjects
+    if (typeof getUserFromSupabase === 'function' && currentUser.id) {
+        try {
+            const refreshedUser = await getUserFromSupabase(currentUser.id);
+            if (refreshedUser) {
+                setCurrentUser(refreshedUser);
+                currentUser = refreshedUser;
+                console.log('User data refreshed on dashboard load:', refreshedUser.courses);
+            }
+        } catch (err) {
+            console.error('Error refreshing user on dashboard load:', err);
+        }
     }
     
     // Display lecturer name with Welcome
