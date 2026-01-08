@@ -61,21 +61,6 @@ async function registerLecturerForSubject() {
         courses.push(selectedSubject);
     }
     
-    // Check if this class has supplement classes (e.g., SIGNALS BASIC has supplements)
-    const supplementClasses = getSupplementClasses(classSelect);
-    if (supplementClasses.length > 0) {
-        // Check if the same subject exists in supplement classes
-        supplementClasses.forEach(supplementClassId => {
-            const supplementSubjects = getCoursesForClass(supplementClassId);
-            // If the subject exists in the supplement class, add it to courses
-            // This ensures lecturer is registered for the subject across all supplement classes
-            if (supplementSubjects.includes(selectedSubject) && !courses.includes(selectedSubject)) {
-                // Subject already added above, but we log which supplement classes it applies to
-                console.log(`Subject "${selectedSubject}" also applies to supplement class: ${formatClassName(supplementClassId)}`);
-            }
-        });
-    }
-    
     currentUser.courses = courses;
     
     // Update in Supabase first, fallback to localStorage
@@ -135,29 +120,7 @@ async function registerLecturerForSubject() {
     }, 100);
     
     const className = formatClassName(classSelect);
-    const supplementClasses = getSupplementClasses(classSelect);
-    
-    let message = `Successfully registered for ${selectedSubject} in ${className}!`;
-    if (supplementClasses.length > 0) {
-        const supplementNames = supplementClasses.map(c => formatClassName(c)).join(', ');
-        message += `\n\nNote: This subject also applies to supplement classes: ${supplementNames}`;
-    }
-    
-    alert(message);
-}
-
-// Helper function to get supplement classes for a given class
-// Supplement classes share the same subjects and should be registered together
-function getSupplementClasses(classId) {
-    const supplementMap = {
-        'signals-basic': ['signals-b-iii-b-ii', 'signals-b-ii-b-i'], // SIGNALS BASIC supplements
-        'signals-b-iii-b-ii': ['signals-basic', 'signals-b-ii-b-i'], // SIGNALS B III – B II supplements
-        'signals-b-ii-b-i': ['signals-basic', 'signals-b-iii-b-ii'], // SIGNALS B II – B I supplements
-        'regimental-basic': ['regimental-b-iii-b-ii', 'regimental-b-ii-b-i'], // REGIMENTAL BASIC supplements
-        'regimental-b-iii-b-ii': ['regimental-basic', 'regimental-b-ii-b-i'], // REGIMENTAL B III – B II supplements
-        'regimental-b-ii-b-i': ['regimental-basic', 'regimental-b-iii-b-ii'] // REGIMENTAL B II – B I supplements
-    };
-    return supplementMap[classId] || [];
+    alert(`Successfully registered for ${selectedSubject} in ${className}!`);
 }
 
 // Helper function to find which classes a subject belongs to
