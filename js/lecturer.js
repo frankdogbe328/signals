@@ -621,10 +621,57 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
     }
 }
 
-function loadAnalytics() {
-    const materials = JSON.parse(localStorage.getItem('materials') || '[]');
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const progress = JSON.parse(localStorage.getItem('progress') || '{}');
+async function loadAnalytics() {
+    // Get current lecturer's registered subjects
+    const currentUser = getCurrentUser();
+    const registeredSubjects = currentUser.courses || [];
+    
+    let materials = [];
+    let users = [];
+    let progress = {};
+    
+    // Try Supabase first
+    if (typeof getMaterialsFromSupabase === 'function') {
+        try {
+            materials = await getMaterialsFromSupabase({});
+        } catch (err) {
+            materials = JSON.parse(localStorage.getItem('materials') || '[]');
+        }
+    } else {
+        materials = JSON.parse(localStorage.getItem('materials') || '[]');
+    }
+    
+    // Filter materials to only show courses/subjects the lecturer is registered for
+    if (registeredSubjects.length > 0) {
+        materials = materials.filter(m => registeredSubjects.includes(m.course));
+    }
+    
+    // Get users and progress
+    if (typeof getUsersFromSupabase === 'function') {
+        try {
+            users = await getUsersFromSupabase({});
+        } catch (err) {
+            users = JSON.parse(localStorage.getItem('users') || '[]');
+        }
+    } else {
+        users = JSON.parse(localStorage.getItem('users') || '[]');
+    }
+    
+    if (typeof getProgressFromSupabase === 'function') {
+        try {
+            const progressData = await getProgressFromSupabase({});
+            // Convert array to object format
+            progress = {};
+            progressData.forEach(p => {
+                if (!progress[p.user_id]) progress[p.user_id] = {};
+                progress[p.user_id][p.material_id] = true;
+            });
+        } catch (err) {
+            progress = JSON.parse(localStorage.getItem('progress') || '{}');
+        }
+    } else {
+        progress = JSON.parse(localStorage.getItem('progress') || '{}');
+    }
     
     const students = users.filter(u => u.role === 'student');
     const activeClasses = [...new Set(materials.map(m => m.class))];
