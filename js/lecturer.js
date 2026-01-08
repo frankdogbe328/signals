@@ -1316,7 +1316,11 @@ window.deleteMaterial = async function(materialId) {
             success = await deleteMaterialFromSupabase(materialId);
             
             if (success) {
-                alert('✅ Material deleted successfully!');
+                if (typeof showSuccess === 'function') {
+                    showSuccess('Material deleted successfully!', 'Delete Successful');
+                } else {
+                    alert('✅ Material deleted successfully!');
+                }
             } else {
                 errorMessage = 'Failed to delete material from database';
             }
