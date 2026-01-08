@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Portal - Lecturer Dashboard</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .exam-form-section {
+            margin-bottom: 30px;
+        }
+        .question-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 8px;
+            border-left: 4px solid var(--primary-color);
+        }
+        .question-options {
+            margin-top: 10px;
+            padding-left: 20px;
+        }
+        .question-options input {
+            margin-right: 8px;
+        }
+        .timer-display {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-align: center;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .exam-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: var(--shadow);
+        }
+        .stat-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="../images/logo.jpeg" alt="Signal Training School Logo" class="nav-logo" onerror="this.style.display='none';">
+                <h1 style="display: none;">🇬🇭 Signal Training School - Exam Portal</h1>
+            </div>
+            <div class="nav-user">
+                <span id="lecturerName"></span>
+                <a href="../lecturer-dashboard.html" class="btn btn-secondary" style="text-decoration: none; margin-right: 10px;">LMS Portal</a>
+                <button onclick="logout()" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="dashboard-header">
+            <h2>Exam Portal - Lecturer Dashboard</h2>
+            <p>Create and manage exams and quizzes for your students</p>
+        </div>
+        
+        <div class="dashboard-content">
+            <!-- Create New Exam Section -->
+            <div class="card">
+                <h3>📝 Create New Exam</h3>
+                <form id="examForm" class="exam-form-section">
+                    <div class="form-group">
+                        <label for="examTitle">Exam Title *</label>
+                        <input type="text" id="examTitle" required placeholder="e.g., Mid-Term Exam - Voice Procedure">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="examDescription">Description</label>
+                        <textarea id="examDescription" rows="3" placeholder="Brief description of the exam"></textarea>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label for="examSubject">Subject *</label>
+                            <select id="examSubject" required>
+                                <option value="">Select Subject</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="examClass">Class *</label>
+                            <select id="examClass" required>
+                                <option value="">Select Class</option>
+                                <optgroup label="Signals">
+                                    <option value="signals-basic">SIGNALS BASIC</option>
+                                    <option value="signals-b-iii-b-ii">SIGNALS B III – B II</option>
+                                    <option value="signals-b-ii-b-i">SIGNALS B II – B I</option>
+                                </optgroup>
+                                <optgroup label="Advanced Courses">
+                                    <option value="superintendent">SUPERINTENDENT</option>
+                                    <option value="pre-qualifying">PRE-QUALIFYING</option>
+                                </optgroup>
+                                <optgroup label="Regimental">
+                                    <option value="regimental-basic">REGIMENTAL BASIC</option>
+                                    <option value="regimental-b-iii-b-ii">REGIMENTAL B III – B II</option>
+                                    <option value="regimental-b-ii-b-i">REGIMENTAL B II – B I</option>
+                                </optgroup>
+                                <optgroup label="Other">
+                                    <option value="rso-rsi">RSO / RSI</option>
+                                    <option value="electronic-warfare-course">ELECTRONIC WARFARE COURSE</option>
+                                    <option value="tactical-drone-course">TACTICAL DRONE COURSE</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label for="examDuration">Duration (minutes) *</label>
+                            <input type="number" id="examDuration" required min="1" value="60" placeholder="60">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="examTotalMarks">Total Marks *</label>
+                            <input type="number" id="examTotalMarks" required min="1" value="100" placeholder="100">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="examPassingScore">Passing Score (optional)</label>
+                            <input type="number" id="examPassingScore" min="0" placeholder="50">
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                        <div class="form-group">
+                            <label for="examStartDate">Start Date (optional)</label>
+                            <input type="datetime-local" id="examStartDate">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="examEndDate">End Date (optional)</label>
+                            <input type="datetime-local" id="examEndDate">
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Create Exam</button>
+                </form>
+            </div>
+            
+            <!-- My Exams Section -->
+            <div class="card">
+                <h3>📋 My Exams</h3>
+                <div id="examsList" class="materials-list">
+                    <p class="empty-state">No exams created yet</p>
+                </div>
+            </div>
+            
+            <!-- Exam Details Modal -->
+            <div id="examDetailsModal" class="modal" style="display: none;">
+                <div class="modal-content" style="max-width: 900px;">
+                    <span class="close-modal" onclick="closeExamModal()">&times;</span>
+                    <h2 id="modalExamTitle"></h2>
+                    <div id="examDetailsContent"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/supabase-helpers.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/modal.js"></script>
+    <script src="js/lecturer-exam.js"></script>
+    
+    <!-- Modal for Messages -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div class="modal-icon" id="modalIcon"></div>
+            <h3 id="modalTitle"></h3>
+            <p id="modalMessage"></p>
+            <button id="modalButton" class="btn btn-primary">OK</button>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 Ghana Armed Forces Signals Training School. All rights reserved.</p>
+        <p>Developed and Powered by Frank K. Dogbe</p>
+    </footer>
+</body>
+</html>
+
