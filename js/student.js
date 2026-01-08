@@ -137,7 +137,7 @@ function populateCourseRegistrationDropdown() {
     // Filter out already registered courses
     const unregisteredCourses = availableCourses.filter(course => !registeredCourses.includes(course));
     
-    courseSelect.innerHTML = '<option value="">Select a course</option>' +
+    courseSelect.innerHTML = '<option value="">Select a subject</option>' +
         unregisteredCourses.map(course => `<option value="${course}">${course}</option>`).join('');
 }
 
@@ -235,14 +235,14 @@ function loadRegisteredCourses() {
 window.registerForCourse = async function() {
     const courseSelect = document.getElementById('registerCourseSelect');
     if (!courseSelect) {
-        alert('Course selection dropdown not found');
+        alert('Subject selection dropdown not found');
         return;
     }
     
     const selectedCourse = courseSelect.value.trim();
     
     if (!selectedCourse) {
-        alert('Please select a course to register');
+        alert('Please select a subject to register');
         return;
     }
     
@@ -252,10 +252,10 @@ window.registerForCourse = async function() {
         return;
     }
     
-    // Validate that the course is valid for this class
+    // Validate that the subject is valid for this class
     const validCoursesForClass = getCoursesForClass(currentUser.class);
     if (!validCoursesForClass.includes(selectedCourse)) {
-        alert('This course is not available for your class. Please select a valid course.');
+        alert('This subject is not available for your class. Please select a valid subject.');
         return;
     }
     
