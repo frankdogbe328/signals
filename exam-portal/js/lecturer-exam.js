@@ -4,13 +4,24 @@ let currentExamId = null;
 let currentQuestions = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Check authentication
-    let currentUser = getCurrentUser();
-    if (!currentUser || currentUser.role !== 'lecturer') {
-        // Redirect to login with redirect parameter to come back here
-        window.location.href = '../index.html?redirect=exam-portal/lecturer-exam-dashboard.html';
-        return;
-    }
+    // Wait a bit to ensure sessionStorage is ready
+    setTimeout(function() {
+        // Check authentication
+        let currentUser = getCurrentUser();
+        if (!currentUser || currentUser.role !== 'lecturer') {
+            // Redirect to login with redirect parameter to come back here
+            window.location.href = '../index.html?redirect=exam-portal/lecturer-exam-dashboard.html';
+            return;
+        }
+        
+        // If we get here, user is authenticated - continue loading
+        initializeExamPortal();
+    }, 100);
+});
+
+function initializeExamPortal() {
+    
+    const currentUser = getCurrentUser();
     
     // Display lecturer name
     const lecturerNameEl = document.getElementById('lecturerName');
@@ -29,7 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (examForm) {
         examForm.addEventListener('submit', handleCreateExam);
     }
-});
+}
 
 // Populate subject dropdown with lecturer's registered subjects
 function populateExamSubjectDropdown() {

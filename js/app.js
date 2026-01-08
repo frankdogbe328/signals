@@ -1,5 +1,13 @@
 // Initialize app - check authentication and redirect if needed
 document.addEventListener('DOMContentLoaded', function() {
+    // Skip redirect logic if we're on exam portal pages
+    const currentPath = window.location.pathname;
+    if (currentPath.includes('exam-portal')) {
+        // Still initialize demo data but skip redirect
+        initializeDemoData();
+        return;
+    }
+    
     // Initialize demo data if not exists
     initializeDemoData();
     
