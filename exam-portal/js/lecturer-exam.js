@@ -386,63 +386,197 @@ function displayQuestion(question, index) {
     `;
 }
 
-// Add question (simplified - will be expanded)
+// Add question - Opens interactive form
 function addQuestion(examId) {
-    const questionType = prompt('Question Type:\n1. Multiple Choice\n2. True/False\n3. Short Answer\n4. Essay\n\nEnter number:');
-    if (!questionType) return;
+    // Reset form
+    document.getElementById('questionForm').reset();
+    document.getElementById('questionExamId').value = examId;
+    document.getElementById('questionEditId').value = '';
+    document.getElementById('questionFormTitle').textContent = 'Add Question';
     
-    const types = {
-        '1': 'multiple_choice',
-        '2': 'true_false',
-        '3': 'short_answer',
-        '4': 'essay'
-    };
+    // Hide all sections initially
+    document.getElementById('multipleChoiceSection').style.display = 'none';
+    document.getElementById('trueFalseSection').style.display = 'none';
+    document.getElementById('textAnswerSection').style.display = 'none';
+    document.getElementById('optionsContainer').innerHTML = '';
     
-    const selectedType = types[questionType];
-    if (!selectedType) {
-        showError('Invalid question type', 'Error');
+    // Show modal
+    document.getElementById('questionFormModal').style.display = 'block';
+}
+
+// Update form fields based on question type selection
+function updateQuestionFormFields() {
+    const questionType = document.getElementById('questionType').value;
+    
+    // Hide all sections first
+    document.getElementById('multipleChoiceSection').style.display = 'none';
+    document.getElementById('trueFalseSection').style.display = 'none';
+    document.getElementById('textAnswerSection').style.display = 'none';
+    
+    // Show relevant section based on type
+    if (questionType === 'multiple_choice') {
+        document.getElementById('multipleChoiceSection').style.display = 'block';
+        // Initialize with 2 options
+        if (document.getElementById('optionsContainer').children.length === 0) {
+            addOption();
+            addOption();
+        }
+    } else if (questionType === 'true_false') {
+        document.getElementById('trueFalseSection').style.display = 'block';
+    } else if (questionType === 'short_answer' || questionType === 'essay') {
+        document.getElementById('textAnswerSection').style.display = 'block';
+    }
+}
+
+// Add option field for multiple choice
+let optionCount = 0;
+function addOption() {
+    if (optionCount >= 6) {
+        showInfo('Maximum 6 options allowed', 'Limit Reached');
         return;
     }
     
-    // For now, show a simple prompt - will be expanded to full form
-    const questionText = prompt('Enter question text:');
-    if (!questionText) return;
+    optionCount++;
+    const container = document.getElementById('optionsContainer');
+    const optionDiv = document.createElement('div');
+    optionDiv.className = 'option-row';
+    optionDiv.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
+    optionDiv.innerHTML = `
+        <label style="display: flex; align-items: center; flex: 1; cursor: pointer; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+            <input type="radio" name="correctOption" value="${optionCount}" style="margin-right: 10px;" required>
+            <input type="text" class="option-input" placeholder="Option ${optionCount}" style="flex: 1; border: none; outline: none;" required>
+        </label>
+        <button type="button" onclick="removeOption(this)" class="btn btn-danger" style="padding: 8px 12px;">Remove</button>
+    `;
+    container.appendChild(optionDiv);
+}
+
+// Remove option field
+function removeOption(button) {
+    if (document.getElementById('optionsContainer').children.length <= 2) {
+        showError('Minimum 2 options required', 'Cannot Remove');
+        return;
+    }
+    button.parentElement.remove();
+    optionCount--;
+    // Renumber remaining options
+    const options = document.querySelectorAll('.option-row');
+    options.forEach((row, index) => {
+        const radio = row.querySelector('input[type="radio"]');
+        const textInput = row.querySelector('.option-input');
+        if (radio && textInput) {
+            radio.value = index + 1;
+            textInput.placeholder = `Option ${index + 1}`;
+        }
+    });
+}
+
+// Close question form modal
+function closeQuestionFormModal() {
+    document.getElementById('questionFormModal').style.display = 'none';
+    document.getElementById('questionForm').reset();
+    optionCount = 0;
+}
+
+// Handle question form submission
+document.addEventListener('DOMContentLoaded', function() {
+    const questionForm = document.getElementById('questionForm');
+    if (questionForm) {
+        questionForm.addEventListener('submit', handleQuestionFormSubmit);
+    }
+});
+
+async function handleQuestionFormSubmit(e) {
+    e.preventDefault();
     
-    const marks = parseInt(prompt('Enter marks for this question:') || '1');
+    const examId = document.getElementById('questionExamId').value;
+    const questionType = document.getElementById('questionType').value;
+    const questionText = document.getElementById('questionText').value.trim();
+    const marks = parseInt(document.getElementById('questionMarks').value);
+    const editId = document.getElementById('questionEditId').value;
+    
+    if (!examId || !questionType || !questionText) {
+        showError('Please fill in all required fields', 'Missing Information');
+        return;
+    }
     
     let correctAnswer = '';
     let options = null;
     
-    if (selectedType === 'multiple_choice') {
-        const option1 = prompt('Option 1:');
-        const option2 = prompt('Option 2:');
-        const option3 = prompt('Option 3 (optional):');
-        const option4 = prompt('Option 4 (optional):');
+    // Get correct answer based on question type
+    if (questionType === 'multiple_choice') {
+        const correctRadio = document.querySelector('input[name="correctOption"]:checked');
+        if (!correctRadio) {
+            showError('Please select the correct option', 'Missing Selection');
+            return;
+        }
         
-        options = [option1, option2];
-        if (option3) options.push(option3);
-        if (option4) options.push(option4);
+        const optionInputs = document.querySelectorAll('.option-input');
+        const optionValues = Array.from(optionInputs).map(input => {
+            const value = input.value.trim();
+            if (!value) {
+                showError('All options must be filled', 'Incomplete Options');
+                return null;
+            }
+            return value;
+        });
         
-        correctAnswer = prompt('Correct answer (enter the option text):');
-    } else if (selectedType === 'true_false') {
-        correctAnswer = prompt('Correct answer (True/False):');
-    } else {
-        correctAnswer = prompt('Correct answer (for grading reference):');
+        if (optionValues.includes(null)) return;
+        
+        const correctIndex = parseInt(correctRadio.value) - 1;
+        correctAnswer = optionValues[correctIndex];
+        options = JSON.stringify(optionValues);
+        
+    } else if (questionType === 'true_false') {
+        const trueFalseRadio = document.querySelector('input[name="trueFalseAnswer"]:checked');
+        if (!trueFalseRadio) {
+            showError('Please select correct answer (True/False)', 'Missing Selection');
+            return;
+        }
+        correctAnswer = trueFalseRadio.value;
+        
+    } else if (questionType === 'short_answer' || questionType === 'essay') {
+        const textAnswer = document.getElementById('textAnswer').value.trim();
+        if (!textAnswer) {
+            showError('Please enter the expected answer or key points', 'Missing Answer');
+            return;
+        }
+        correctAnswer = textAnswer;
     }
     
     if (!correctAnswer) {
-        showError('Correct answer is required', 'Error');
+        showError('Please provide a correct answer', 'Missing Answer');
         return;
     }
     
-    saveQuestion(examId, {
+    const questionData = {
         question_text: questionText,
-        question_type: selectedType,
-        options: selectedType === 'multiple_choice' ? JSON.stringify(options) : null,
+        question_type: questionType,
+        options: options,
         correct_answer: correctAnswer,
         marks: marks,
-        sequence_order: currentQuestions.length + 1
-    });
+        sequence_order: editId ? currentQuestions.findIndex(q => q.id === editId) + 1 : currentQuestions.length + 1
+    };
+    
+    try {
+        if (editId) {
+            // Update existing question
+            await updateQuestion(editId, questionData);
+        } else {
+            // Save new question
+            await saveQuestion(examId, questionData);
+        }
+        
+        // Close modal and refresh
+        closeQuestionFormModal();
+        
+        // Reload exam details to show new question
+        viewExamDetails(examId);
+        
+    } catch (error) {
+        console.error('Error saving question:', error);
+        showError('Failed to save question: ' + (error.message || 'Unknown error'), 'Error');
+    }
 }
 
 // Save question to database
@@ -592,15 +726,106 @@ function formatClassName(classId) {
     return classNames[classId] || classId;
 }
 
-// Placeholder functions (to be implemented)
+// Edit question - Opens form with existing question data
 function editQuestion(questionId) {
-    showInfo('Edit question functionality will be implemented', 'Coming Soon');
+    const question = currentQuestions.find(q => q.id === questionId);
+    if (!question) {
+        showError('Question not found', 'Error');
+        return;
+    }
+    
+    // Populate form with question data
+    document.getElementById('questionExamId').value = question.exam_id || currentExamId;
+    document.getElementById('questionEditId').value = questionId;
+    document.getElementById('questionFormTitle').textContent = 'Edit Question';
+    document.getElementById('questionType').value = question.question_type;
+    document.getElementById('questionText').value = question.question_text;
+    document.getElementById('questionMarks').value = question.marks || 1;
+    
+    // Update form fields based on type
+    updateQuestionFormFields();
+    
+    // Populate fields based on type
+    if (question.question_type === 'multiple_choice' && question.options) {
+        const options = JSON.parse(question.options);
+        document.getElementById('optionsContainer').innerHTML = '';
+        optionCount = 0;
+        
+        options.forEach((opt, index) => {
+            addOption();
+            const optionInput = document.querySelectorAll('.option-input')[index];
+            if (optionInput) {
+                optionInput.value = opt;
+            }
+            // Check if this is the correct answer
+            if (opt === question.correct_answer) {
+                const radios = document.querySelectorAll('input[name="correctOption"]');
+                if (radios[index]) {
+                    radios[index].checked = true;
+                }
+            }
+        });
+    } else if (question.question_type === 'true_false') {
+        const radios = document.querySelectorAll('input[name="trueFalseAnswer"]');
+        if (question.correct_answer === 'True') {
+            radios[0].checked = true;
+        } else {
+            radios[1].checked = true;
+        }
+    } else if (question.question_type === 'short_answer' || question.question_type === 'essay') {
+        document.getElementById('textAnswer').value = question.correct_answer || '';
+    }
+    
+    // Show modal
+    document.getElementById('questionFormModal').style.display = 'block';
 }
 
-function deleteQuestion(questionId) {
-    if (!confirm('Are you sure you want to delete this question?')) return;
+// Update question in database
+async function updateQuestion(questionId, questionData) {
+    const client = getSupabaseClient();
+    if (!client) {
+        throw new Error('Supabase client not available');
+    }
     
-    // Implement delete functionality
-    showInfo('Delete question functionality will be implemented', 'Coming Soon');
+    const { error } = await client
+        .from('questions')
+        .update(questionData)
+        .eq('id', questionId);
+    
+    if (error) throw error;
+    
+    showSuccess('Question updated successfully!', 'Success');
+}
+
+// Delete question
+async function deleteQuestion(questionId) {
+    if (!confirm('Are you sure you want to delete this question? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const client = getSupabaseClient();
+        if (!client) {
+            throw new Error('Supabase client not available');
+        }
+        
+        const { error } = await client
+            .from('questions')
+            .delete()
+            .eq('id', questionId);
+        
+        if (error) throw error;
+        
+        showSuccess('Question deleted successfully!', 'Success');
+        
+        // Reload exam details
+        if (currentExamId) {
+            viewExamDetails(currentExamId);
+        }
+        
+    } catch (error) {
+        console.error('Error deleting question:', error);
+        showError('Failed to delete question: ' + (error.message || 'Unknown error'), 'Error');
+    }
 }
 
