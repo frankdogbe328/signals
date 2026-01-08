@@ -37,9 +37,42 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 500); // Increased delay to ensure app.js has finished
 });
 
-function initializeExamPortal() {
+async function initializeExamPortal() {
     
-    const currentUser = getCurrentUser();
+    let currentUser = getCurrentUser();
+    
+    // Refresh user data from Supabase to get latest courses
+    if (currentUser && currentUser.id && typeof getSupabaseClient === 'function') {
+        try {
+            const client = getSupabaseClient();
+            if (client) {
+                const { data, error } = await client
+                    .from('users')
+                    .select('*')
+                    .eq('id', currentUser.id)
+                    .maybeSingle();
+                
+                if (!error && data) {
+                    // Update current user with latest data from Supabase
+                    currentUser = {
+                        id: data.id,
+                        username: data.username,
+                        password: data.password,
+                        role: data.role,
+                        name: data.name,
+                        class: data.class,
+                        courses: data.courses || [],
+                        email: data.email || null
+                    };
+                    // Update sessionStorage with fresh data
+                    setCurrentUser(currentUser);
+                    console.log('User data refreshed from Supabase:', currentUser);
+                }
+            }
+        } catch (err) {
+            console.error('Error refreshing user data:', err);
+        }
+    }
     
     // Display lecturer name
     const lecturerNameEl = document.getElementById('lecturerName');
@@ -63,30 +96,69 @@ function initializeExamPortal() {
 // Populate subject dropdown with lecturer's registered subjects
 function populateExamSubjectDropdown() {
     const currentUser = getCurrentUser();
-    if (!currentUser || !currentUser.courses || currentUser.courses.length === 0) {
-        showError('Please register for subjects in the LMS portal first', 'No Subjects Registered');
+    
+    console.log('Populating subject dropdown. Current user:', currentUser);
+    console.log('User courses:', currentUser?.courses);
+    
+    const subjectSelect = document.getElementById('examSubject');
+    if (!subjectSelect) {
+        console.error('Subject select element not found');
         return;
     }
     
-    const subjectSelect = document.getElementById('examSubject');
-    if (!subjectSelect) return;
-    
     subjectSelect.innerHTML = '<option value="">Select Subject</option>';
+    
+    if (!currentUser) {
+        console.warn('No current user found');
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No user data - please log in again';
+        subjectSelect.appendChild(option);
+        return;
+    }
+    
+    const registeredSubjects = currentUser.courses || [];
+    
+    if (registeredSubjects.length === 0) {
+        console.warn('No subjects registered for this lecturer');
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No subjects registered - Register in LMS Portal first';
+        subjectSelect.appendChild(option);
+        
+        // Show info message instead of error
+        if (typeof showInfo === 'function') {
+            showInfo('Please register for subjects in the LMS portal first. Go to LMS Portal → Register Subjects.', 'No Subjects Registered');
+        }
+        return;
+    }
     
     // Get unique subjects from all classes
     const allSubjects = new Set();
-    const registeredSubjects = currentUser.courses || [];
     
     registeredSubjects.forEach(subject => {
-        allSubjects.add(subject);
+        if (subject && typeof subject === 'string') {
+            allSubjects.add(subject);
+        }
     });
     
+    if (allSubjects.size === 0) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No valid subjects found';
+        subjectSelect.appendChild(option);
+        return;
+    }
+    
+    // Sort and add subjects to dropdown
     Array.from(allSubjects).sort().forEach(subject => {
         const option = document.createElement('option');
         option.value = subject;
         option.textContent = subject;
         subjectSelect.appendChild(option);
     });
+    
+    console.log(`Added ${allSubjects.size} subjects to dropdown`);
 }
 
 // Handle create exam form submission
