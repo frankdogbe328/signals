@@ -3,7 +3,16 @@
 let currentExamId = null;
 let currentQuestions = [];
 
+// Prevent any redirects - set flag immediately
+if (typeof window !== 'undefined') {
+    window.IS_EXAM_PORTAL = true;
+    window.EXAM_PORTAL_LOADED = false;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Set flag to prevent any redirects
+    window.IS_EXAM_PORTAL = true;
+    
     // Wait a bit to ensure sessionStorage is ready and prevent conflicts with app.js
     setTimeout(function() {
         // Check authentication
@@ -12,6 +21,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // Debug log
         console.log('Exam Portal - Current User:', currentUser);
         console.log('Exam Portal - Current URL:', window.location.href);
+        console.log('Exam Portal - IS_EXAM_PORTAL flag:', window.IS_EXAM_PORTAL);
         
         if (!currentUser || currentUser.role !== 'lecturer') {
             // Redirect to login with redirect parameter to come back here
@@ -22,8 +32,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // If we get here, user is authenticated - continue loading
         console.log('Exam Portal - User authenticated, initializing portal');
+        window.EXAM_PORTAL_LOADED = true;
         initializeExamPortal();
-    }, 300); // Increased delay to ensure app.js has finished
+    }, 500); // Increased delay to ensure app.js has finished
 });
 
 function initializeExamPortal() {
