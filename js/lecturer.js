@@ -664,7 +664,11 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
             if (index !== -1) {
                 materials[index] = { ...materials[index], ...newMaterial, id: editingId };
                 localStorage.setItem('materials', JSON.stringify(materials));
-                alert('⚠️ Material updated (stored locally - Supabase unavailable)');
+                if (typeof showInfo === 'function') {
+                    showInfo('Material updated (stored locally - Supabase unavailable)', 'Local Storage');
+                } else {
+                    alert('⚠️ Material updated (stored locally - Supabase unavailable)');
+                }
                 success = true;
             }
             delete document.getElementById('uploadForm').dataset.editingId;
@@ -749,7 +753,11 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
                     if (typeof showSuccess === 'function') {
                         showSuccess('Material uploaded successfully!', 'Upload Successful');
                     } else {
-                        alert('✅ Material uploaded successfully!');
+                        if (typeof showSuccess === 'function') {
+                            showSuccess('Material uploaded successfully!', 'Upload Successful');
+                        } else {
+                            alert('✅ Material uploaded successfully!');
+                        }
                     }
                 } else {
                     errorMessage = 'Failed to save material to database';
@@ -776,7 +784,11 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
             if (index !== -1) {
                 materials[index] = { ...materials[index], ...newMaterial, id: editingId };
                 localStorage.setItem('materials', JSON.stringify(materials));
-                alert('⚠️ Material updated (stored locally - Supabase unavailable)');
+                if (typeof showInfo === 'function') {
+                    showInfo('Material updated (stored locally - Supabase unavailable)', 'Local Storage');
+                } else {
+                    alert('⚠️ Material updated (stored locally - Supabase unavailable)');
+                }
                 success = true;
             }
             delete document.getElementById('uploadForm').dataset.editingId;
@@ -787,7 +799,11 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
         } else {
             materials.push(newMaterial);
             localStorage.setItem('materials', JSON.stringify(materials));
-            alert('⚠️ Material uploaded (stored locally - Supabase unavailable)');
+            if (typeof showInfo === 'function') {
+                showInfo('Material uploaded (stored locally - Supabase unavailable)', 'Local Storage');
+            } else {
+                alert('⚠️ Material uploaded (stored locally - Supabase unavailable)');
+            }
             success = true;
         }
     } else if (!success) {
@@ -1319,7 +1335,11 @@ window.deleteMaterial = async function(materialId) {
                 if (typeof showSuccess === 'function') {
                     showSuccess('Material deleted successfully!', 'Delete Successful');
                 } else {
-                    alert('✅ Material deleted successfully!');
+                    if (typeof showSuccess === 'function') {
+                        showSuccess('Material deleted successfully!', 'Delete Successful');
+                    } else {
+                        alert('✅ Material deleted successfully!');
+                    }
                 }
             } else {
                 errorMessage = 'Failed to delete material from database';
@@ -1349,7 +1369,11 @@ window.deleteMaterial = async function(materialId) {
         if (typeof showInfo === 'function') {
             showInfo('Material deleted (from local storage - Supabase unavailable)', 'Local Storage');
         } else {
-            alert('⚠️ Material deleted (from local storage - Supabase unavailable)');
+            if (typeof showInfo === 'function') {
+                showInfo('Material deleted (from local storage - Supabase unavailable)', 'Local Storage');
+            } else {
+                alert('⚠️ Material deleted (from local storage - Supabase unavailable)');
+            }
         }
     }
     
