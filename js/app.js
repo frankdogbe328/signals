@@ -1,18 +1,20 @@
 // Initialize app - check authentication and redirect if needed
 document.addEventListener('DOMContentLoaded', function() {
     // Skip redirect logic if we're on exam portal pages
+    // Check multiple ways to ensure we catch it
     const currentPath = window.location.pathname;
     const currentHref = window.location.href;
     const currentPage = window.location.pathname.split('/').pop() || window.location.href.split('/').pop();
+    const isExamPortal = window.IS_EXAM_PORTAL || 
+                         currentPath.includes('exam-portal') || 
+                         currentHref.includes('exam-portal') || 
+                         currentPage.includes('lecturer-exam-dashboard') || 
+                         currentPage.includes('student-exam-portal');
     
-    // Check if we're on exam portal page (multiple ways to check)
-    if (currentPath.includes('exam-portal') || 
-        currentHref.includes('exam-portal') || 
-        currentPage.includes('lecturer-exam-dashboard') || 
-        currentPage.includes('student-exam-portal')) {
-        // Still initialize demo data but skip redirect
+    if (isExamPortal) {
+        // Still initialize demo data but skip ALL redirect logic
         initializeDemoData();
-        return;
+        return; // Exit early - don't do any redirects
     }
     
     // Initialize demo data if not exists
