@@ -86,17 +86,17 @@ async function registerLecturerForSubject() {
         }
     }
     
-    // Reset dropdowns
-    document.getElementById('lecturerClassSelect').value = '';
+    // Reset dropdowns (but keep class selected so they can register more subjects from same class)
     subjectSelect.value = '';
-    subjectSelect.innerHTML = '<option value="">Select Class First</option>';
+    populateLecturerSubjectDropdown(); // Refresh to show remaining unregistered subjects
     
     // Reload UI
     loadLecturerRegisteredSubjects();
     updateCoursesForLecturer(); // Update upload form dropdown
     loadMaterials(); // Refresh materials list
     
-    alert('Successfully registered for ' + selectedSubject + '!');
+    const className = formatClassName(classSelect);
+    alert(`Successfully registered for ${selectedSubject} in ${className}!`);
 }
 
 // Helper function to find which classes a subject belongs to
