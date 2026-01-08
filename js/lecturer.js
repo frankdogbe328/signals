@@ -87,10 +87,15 @@ async function registerLecturerForSubject() {
     }
     
     // Refresh current user from Supabase to ensure we have latest data
-    if (typeof getUserFromSupabase === 'function') {
+    if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient && currentUser.id) {
         try {
-            const refreshedUser = await getUserFromSupabase(currentUser.id);
-            if (refreshedUser) {
+            const { data: refreshedUser, error } = await window.supabaseClient
+                .from('users')
+                .select('*')
+                .eq('id', currentUser.id)
+                .maybeSingle();
+            
+            if (!error && refreshedUser) {
                 setCurrentUser(refreshedUser);
                 console.log('User refreshed from Supabase:', refreshedUser.courses);
             }
@@ -267,10 +272,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
     
     // Refresh user data from Supabase to get latest registered subjects
-    if (typeof getUserFromSupabase === 'function' && currentUser.id) {
+    // Use the Supabase client directly to get user by ID
+    if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient && currentUser.id) {
         try {
-            const refreshedUser = await getUserFromSupabase(currentUser.id);
-            if (refreshedUser) {
+            const { data: refreshedUser, error } = await window.supabaseClient
+                .from('users')
+                .select('*')
+                .eq('id', currentUser.id)
+                .maybeSingle();
+            
+            if (!error && refreshedUser) {
                 setCurrentUser(refreshedUser);
                 currentUser = refreshedUser;
                 console.log('User data refreshed on dashboard load:', refreshedUser.courses);
