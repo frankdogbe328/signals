@@ -55,16 +55,26 @@ async function handleLogin(e) {
         const urlParams = new URLSearchParams(window.location.search);
         const redirectTo = urlParams.get('redirect');
         
+        console.log('Login - Redirect parameter:', redirectTo);
+        console.log('Login - User role:', userType);
+        
         // If redirect parameter exists and is valid, use it
         if (redirectTo && (redirectTo.includes('exam-portal') || redirectTo.includes('lecturer-dashboard') || redirectTo.includes('student-dashboard'))) {
-            window.location.href = redirectTo;
+            console.log('Login - Redirecting to:', redirectTo);
+            // Small delay to ensure sessionStorage is set
+            setTimeout(() => {
+                window.location.href = redirectTo;
+            }, 100);
         } else {
             // Default redirect based on role
-            if (userType === 'lecturer') {
-                window.location.href = 'lecturer-dashboard.html';
-            } else if (userType === 'student') {
-                window.location.href = 'student-dashboard.html';
-            }
+            console.log('Login - Using default redirect for role:', userType);
+            setTimeout(() => {
+                if (userType === 'lecturer') {
+                    window.location.href = 'lecturer-dashboard.html';
+                } else if (userType === 'student') {
+                    window.location.href = 'student-dashboard.html';
+                }
+            }, 100);
         }
     } else {
         errorMessage.textContent = 'Invalid username, password, or role';
