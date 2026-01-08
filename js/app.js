@@ -151,6 +151,136 @@ function getCoursesForClass(classId) {
             'UAS Operations',
             'Flight safety',
             'Payloads and Anti-Drone Systems'
+        ],
+        
+        // ========== BACKWARD COMPATIBILITY - Old Class IDs ==========
+        // Map old class IDs to new ones so old accounts still work
+        
+        // Old Signal Basic classes
+        'signal-basic-beginner': [
+            'Voice procedure',
+            'Telegraphy procedure',
+            'Antenna theory',
+            'Communication centre management',
+            'Power management',
+            'Front desk management',
+            'Exchanges',
+            'Information Technology',
+            'Communication skills',
+            'Basic physics',
+            'Basic maths',
+            'Cable networking',
+            'Signal tactics'
+        ],
+        'signal-basic-ii-intermediate': [
+            'Voice procedure',
+            'Telegraphy procedure',
+            'Antenna theory',
+            'Communication centre management',
+            'Power management',
+            'Front desk management',
+            'Exchanges',
+            'Information Technology',
+            'Communication skills',
+            'Basic physics',
+            'Basic maths',
+            'Cable networking',
+            'Signal tactics'
+        ],
+        'signal-basic-i-advanced': [
+            'Voice procedure',
+            'Telegraphy procedure',
+            'Antenna theory',
+            'Communication centre management',
+            'Power management',
+            'Front desk management',
+            'Exchanges',
+            'Information Technology',
+            'Communication skills',
+            'Basic physics',
+            'Basic maths',
+            'Cable networking',
+            'Signal tactics'
+        ],
+        // Old Regimental Basic classes
+        'regimental-basic-beginner': [
+            'Voice procedure',
+            'Telegraphy procedure',
+            'Antenna',
+            'Communication centre management',
+            'Basic maths',
+            'Communication skills',
+            'Power management',
+            'Information Technology',
+            'Signal tactics',
+            'Method of instructions'
+        ],
+        'regimental-basic-ii-intermediate': [
+            'Voice procedure',
+            'Telegraphy procedure',
+            'Antenna theory',
+            'Basic math',
+            'Communication skills',
+            'Field cable networking',
+            'Communication centre management',
+            'Power management',
+            'Information Technology',
+            'Signal tactics'
+        ],
+        'regimental-basic-i-advanced': [
+            'Voice procedure',
+            'Telegraphy procedure',
+            'Antenna theory',
+            'Basic math',
+            'Communication skills',
+            'Field cable networking',
+            'Communication centre management',
+            'Power management',
+            'Information Technology',
+            'Signal tactics'
+        ],
+        // Old Electronic Warfare
+        'electronic-warfare': [
+            'Voice procedure',
+            'Telegraphy procedure',
+            'Antenna theory',
+            'Front desk management',
+            'Basic math',
+            'Communication skills',
+            'Power management',
+            'Information Technology',
+            'Communication centre management',
+            'Signal tactics'
+        ],
+        // Old Upgrading classes
+        'upgrading-telecom': [
+            'Telecom',
+            'Exchanges',
+            'Electronics',
+            'Antenna',
+            'Basic maths',
+            'Communication skills',
+            'Fibre optics',
+            'Power management',
+            'Information Technology (Networking)'
+        ],
+        'upgrading-rf': [
+            'Electronics',
+            'Physics',
+            'Antenna',
+            'Basic math',
+            'Communication skills',
+            'Power management',
+            'Information Technology (Networking)'
+        ],
+        // Old Drone Operators
+        'drone-operators': [
+            'UAS Fundamentals',
+            'UAS Control',
+            'UAS Systems',
+            'UAS Operations',
+            'Flight safety',
+            'Payloads and Anti-Drone Systems'
         ]
     };
     
