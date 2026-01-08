@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Portal - Student Portal</title>
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .timer-warning {
+            color: #dc3545;
+            font-weight: bold;
+        }
+        .question-container {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+        .question-number {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        .question-text {
+            font-size: 16px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .answer-options {
+            margin-top: 15px;
+        }
+        .answer-option {
+            padding: 12px;
+            margin-bottom: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .answer-option:hover {
+            border-color: var(--primary-color);
+            background: #f0f7ff;
+        }
+        .answer-option.selected {
+            border-color: var(--primary-color);
+            background: #e6f2ff;
+        }
+        .answer-option input {
+            margin-right: 10px;
+        }
+        .exam-info-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+        .exam-info-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .exam-info-item:last-child {
+            border-bottom: none;
+        }
+        .exam-info-label {
+            font-weight: 600;
+            color: #666;
+        }
+        .exam-info-value {
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+        .navigation-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .submit-exam-btn {
+            background: var(--danger-color);
+            color: white;
+        }
+        .submit-exam-btn:hover {
+            background: #c82333;
+        }
+        .disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="../images/logo.jpeg" alt="Signal Training School Logo" class="nav-logo" onerror="this.style.display='none';">
+                <h1 style="display: none;">🇬🇭 Signal Training School - Exam Portal</h1>
+            </div>
+            <div class="nav-user">
+                <span id="studentName"></span>
+                <a href="../student-dashboard.html" class="btn btn-secondary" style="text-decoration: none; margin-right: 10px;">LMS Portal</a>
+                <button onclick="logout()" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <!-- Available Exams View -->
+        <div id="availableExamsView">
+            <div class="dashboard-header">
+                <h2>Available Exams</h2>
+                <p>Select an exam to begin</p>
+            </div>
+            
+            <div class="dashboard-content">
+                <div id="examsList" class="materials-list">
+                    <p class="empty-state">No exams available at the moment</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Exam Taking View -->
+        <div id="examTakingView" style="display: none;">
+            <div class="dashboard-header">
+                <h2 id="examTitleHeader"></h2>
+                <div class="timer-display" id="timerDisplay">
+                    <span id="timerText">00:00:00</span>
+                </div>
+            </div>
+            
+            <div class="dashboard-content">
+                <div class="exam-info-card">
+                    <div class="exam-info-item">
+                        <span class="exam-info-label">Question:</span>
+                        <span class="exam-info-value"><span id="currentQuestionNum">1</span> of <span id="totalQuestions">0</span></span>
+                    </div>
+                    <div class="exam-info-item">
+                        <span class="exam-info-label">Total Marks:</span>
+                        <span class="exam-info-value"><span id="totalMarksDisplay">0</span></span>
+                    </div>
+                    <div class="exam-info-item">
+                        <span class="exam-info-label">Time Remaining:</span>
+                        <span class="exam-info-value" id="timeRemainingDisplay">00:00:00</span>
+                    </div>
+                </div>
+                
+                <div id="questionContainer" class="question-container">
+                    <!-- Questions will be loaded here -->
+                </div>
+                
+                <div class="navigation-buttons">
+                    <button id="prevBtn" class="btn btn-secondary disabled" onclick="previousQuestion()" disabled>Previous</button>
+                    <button id="nextBtn" class="btn btn-primary" onclick="nextQuestion()">Next</button>
+                    <button id="submitBtn" class="btn submit-exam-btn" onclick="submitExam()" style="display: none;">Submit Exam</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results View -->
+        <div id="resultsView" style="display: none;">
+            <div class="dashboard-header">
+                <h2>Exam Results</h2>
+            </div>
+            
+            <div class="dashboard-content">
+                <div class="card">
+                    <h3 id="resultsExamTitle"></h3>
+                    <div class="exam-stats">
+                        <div class="stat-card">
+                            <div class="stat-value" id="resultsScore">0</div>
+                            <div class="stat-label">Your Score</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="resultsTotal">0</div>
+                            <div class="stat-label">Total Marks</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="resultsPercentage">0%</div>
+                            <div class="stat-label">Percentage</div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button onclick="goBackToExams()" class="btn btn-primary">Back to Exams</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="../js/supabase-config.js"></script>
+    <script src="../js/supabase-helpers.js"></script>
+    <script src="../js/app.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/modal.js"></script>
+    <script src="js/student-exam.js"></script>
+    
+    <!-- Modal for Messages -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div class="modal-icon" id="modalIcon"></div>
+            <h3 id="modalTitle"></h3>
+            <p id="modalMessage"></p>
+            <button id="modalButton" class="btn btn-primary">OK</button>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 Ghana Armed Forces Signals Training School. All rights reserved.</p>
+        <p>Developed and Powered by Frank K. Dogbe</p>
+    </footer>
+</body>
+</html>
+
