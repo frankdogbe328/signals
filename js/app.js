@@ -2,7 +2,14 @@
 document.addEventListener('DOMContentLoaded', function() {
     // Skip redirect logic if we're on exam portal pages
     const currentPath = window.location.pathname;
-    if (currentPath.includes('exam-portal')) {
+    const currentHref = window.location.href;
+    const currentPage = window.location.pathname.split('/').pop() || window.location.href.split('/').pop();
+    
+    // Check if we're on exam portal page (multiple ways to check)
+    if (currentPath.includes('exam-portal') || 
+        currentHref.includes('exam-portal') || 
+        currentPage.includes('lecturer-exam-dashboard') || 
+        currentPage.includes('student-exam-portal')) {
         // Still initialize demo data but skip redirect
         initializeDemoData();
         return;

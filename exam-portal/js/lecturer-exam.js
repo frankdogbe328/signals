@@ -4,19 +4,26 @@ let currentExamId = null;
 let currentQuestions = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Wait a bit to ensure sessionStorage is ready
+    // Wait a bit to ensure sessionStorage is ready and prevent conflicts with app.js
     setTimeout(function() {
         // Check authentication
         let currentUser = getCurrentUser();
+        
+        // Debug log
+        console.log('Exam Portal - Current User:', currentUser);
+        console.log('Exam Portal - Current URL:', window.location.href);
+        
         if (!currentUser || currentUser.role !== 'lecturer') {
             // Redirect to login with redirect parameter to come back here
+            console.log('Exam Portal - Not authenticated, redirecting to login');
             window.location.href = '../index.html?redirect=exam-portal/lecturer-exam-dashboard.html';
             return;
         }
         
         // If we get here, user is authenticated - continue loading
+        console.log('Exam Portal - User authenticated, initializing portal');
         initializeExamPortal();
-    }, 100);
+    }, 300); // Increased delay to ensure app.js has finished
 });
 
 function initializeExamPortal() {
