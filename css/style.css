@@ -30,8 +30,23 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    background: linear-gradient(135deg, var(--primary-color) 0%, #0052a3 100%);
+    background: linear-gradient(135deg, rgba(0, 102, 204, 0.85) 0%, rgba(0, 82, 163, 0.85) 100%),
+                url('../images/form-background.jpg') center/cover no-repeat;
+    background-blend-mode: overlay;
     padding: 20px;
+    position: relative;
+}
+
+/* Fallback if background image doesn't exist */
+.login-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #0052a3 100%);
+    z-index: -1;
 }
 
 .login-box {
