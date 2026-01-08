@@ -80,8 +80,7 @@ async function loadAvailableExams() {
         displayAvailableExams(availableExams, attemptsMap);
         
     } catch (error) {
-        console.error('Error loading exams:', error);
-        showError('Failed to load exams: ' + (error.message || 'Unknown error'), 'Error');
+        showError('Failed to load exams: ' + (error.message || 'Unknown error'), 'Error Loading Exams');
     }
 }
 
@@ -223,8 +222,7 @@ async function startExam(examId) {
         loadQuestion(0);
         
     } catch (error) {
-        console.error('Error starting exam:', error);
-        showError('Failed to start exam: ' + (error.message || 'Unknown error'), 'Error');
+        showError('Failed to start exam: ' + (error.message || 'Unknown error'), 'Error Starting Exam');
     }
 }
 
@@ -302,12 +300,14 @@ async function loadExamForAttempt(examId, attemptId) {
         // Start timer
         startTimer();
         
+        // Initialize question navigation sidebar
+        updateQuestionNavSidebar();
+        
         // Load current question
         loadQuestion(currentQuestionIndex);
         
     } catch (error) {
-        console.error('Error loading exam attempt:', error);
-        showError('Failed to load exam: ' + (error.message || 'Unknown error'), 'Error');
+        showError('Failed to load exam: ' + (error.message || 'Unknown error'), 'Error Loading Exam');
     }
 }
 
@@ -349,6 +349,90 @@ function loadQuestion(index) {
     if (answers[question.id]) {
         restoreAnswer(question, answers[question.id]);
     }
+    
+    // Update question navigation sidebar
+    updateQuestionNavSidebar();
+}
+
+// Toggle question navigation sidebar
+function toggleQuestionNav() {
+    const sidebar = document.getElementById('questionNavSidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('open');
+    }
+}
+
+// Update question navigation sidebar
+function updateQuestionNavSidebar() {
+    const grid = document.getElementById('questionNavGrid');
+    if (!grid || !randomizedQuestions) return;
+    
+    grid.innerHTML = randomizedQuestions.map((question, index) => {
+        const isCurrent = index === currentQuestionIndex;
+        const answer = answers[question.id];
+        let statusClass = '';
+        
+        if (isCurrent) {
+            statusClass = 'current';
+        } else if (answer) {
+            // Check if answer is complete
+            if (question.question_type === 'short_answer' || question.question_type === 'essay') {
+                statusClass = answer.trim().length > 0 ? 'answered' : 'incomplete';
+            } else {
+                statusClass = 'answered';
+            }
+        } else {
+            statusClass = '';
+        }
+        
+        return `<div class="question-nav-item ${statusClass}" onclick="jumpToQuestion(${index})">${index + 1}</div>`;
+    }).join('');
+}
+
+// Jump to specific question
+function jumpToQuestion(index) {
+    if (index >= 0 && index < randomizedQuestions.length) {
+        loadQuestion(index);
+        // Close sidebar on mobile after selection
+        if (window.innerWidth <= 768) {
+            toggleQuestionNav();
+        }
+    }
+}
+
+// Show auto-save indicator
+function showAutoSaveIndicator(status) {
+    const indicator = document.getElementById('autoSaveIndicator');
+    const icon = document.getElementById('saveIcon');
+    const text = document.getElementById('saveText');
+    
+    if (!indicator) return;
+    
+    indicator.classList.remove('hidden', 'saving', 'saved', 'error');
+    
+    if (status === 'saving') {
+        indicator.classList.add('saving');
+        icon.innerHTML = '<div class="save-spinner"></div>';
+        text.textContent = 'Saving...';
+    } else if (status === 'saved') {
+        indicator.classList.add('saved');
+        icon.textContent = '✓';
+        text.textContent = 'Saved';
+        // Hide after 2 seconds
+        setTimeout(() => {
+            indicator.classList.add('hidden');
+        }, 2000);
+    } else if (status === 'error') {
+        indicator.classList.add('error');
+        icon.textContent = '⚠';
+        text.textContent = 'Save failed';
+        // Hide after 3 seconds
+        setTimeout(() => {
+            indicator.classList.add('hidden');
+        }, 3000);
+    }
+    
+    indicator.classList.remove('hidden');
 }
 
 // Render question HTML
@@ -457,6 +541,9 @@ async function debounceSaveAnswer(questionId, answer) {
 async function saveAnswerToDatabase(questionId, answer) {
     if (!currentAttempt) return;
     
+    // Show saving indicator
+    showAutoSaveIndicator('saving');
+    
     try {
         const client = getSupabaseClient();
         if (!client) {
@@ -494,9 +581,18 @@ async function saveAnswerToDatabase(questionId, answer) {
                 }]);
         }
         
+        // Show saved indicator
+        showAutoSaveIndicator('saved');
+        
+        // Update navigation sidebar
+        updateQuestionNavSidebar();
+        
     } catch (error) {
-        console.error('Error saving answer:', error);
-        // Don't show error to user, just log it
+        // Show error indicator instead of console.error
+        showAutoSaveIndicator('error');
+        if (typeof showError === 'function') {
+            showError('Failed to save answer. Your answer is saved locally and will be synced when connection is restored.', 'Save Error');
+        }
     }
 }
 
@@ -561,7 +657,8 @@ async function updateTimeRemaining() {
             .eq('id', currentAttempt.id);
         
     } catch (error) {
-        console.error('Error updating time:', error);
+        // Silently fail - time update is not critical, timer continues locally
+        // Don't interrupt student's exam flow
     }
 }
 
@@ -671,8 +768,7 @@ async function finalizeExam(status) {
         }
         
     } catch (error) {
-        console.error('Error finalizing exam:', error);
-        showError('Failed to submit exam: ' + (error.message || 'Unknown error'), 'Error');
+        showError('Failed to submit exam: ' + (error.message || 'Unknown error'), 'Error Submitting Exam');
     }
 }
 
@@ -733,8 +829,7 @@ async function viewResults(examId) {
         showResults(attempt.score || 0, attempt.total_marks || 0, attempt.percentage || 0);
         
     } catch (error) {
-        console.error('Error loading results:', error);
-        showError('Failed to load results: ' + (error.message || 'Unknown error'), 'Error');
+        showError('Failed to load results: ' + (error.message || 'Unknown error'), 'Error Loading Results');
     }
 }
 

@@ -19,19 +19,15 @@ document.addEventListener('DOMContentLoaded', function() {
         let currentUser = getCurrentUser();
         
         // Debug log
-        console.log('Exam Portal - Current User:', currentUser);
-        console.log('Exam Portal - Current URL:', window.location.href);
-        console.log('Exam Portal - IS_EXAM_PORTAL flag:', window.IS_EXAM_PORTAL);
+        // Debug logs removed - use browser DevTools if needed
         
         if (!currentUser || currentUser.role !== 'lecturer') {
             // Redirect to exam portal login page
-            console.log('Exam Portal - Not authenticated, redirecting to exam portal login');
             window.location.href = 'login.html';
             return;
         }
         
         // If we get here, user is authenticated - continue loading
-        console.log('Exam Portal - User authenticated, initializing portal');
         window.EXAM_PORTAL_LOADED = true;
         initializeExamPortal();
     }, 500); // Increased delay to ensure app.js has finished
@@ -66,11 +62,14 @@ async function initializeExamPortal() {
                     };
                     // Update sessionStorage with fresh data
                     setCurrentUser(currentUser);
-                    console.log('User data refreshed from Supabase:', currentUser);
+                    // User data refreshed successfully
                 }
             }
         } catch (err) {
-            console.error('Error refreshing user data:', err);
+            // Error refreshing user data - will use sessionStorage data
+            if (typeof showError === 'function') {
+                showError('Could not refresh user data. Some features may be limited.', 'Data Refresh Error');
+            }
         }
     }
     
@@ -97,30 +96,30 @@ async function initializeExamPortal() {
 function populateExamSubjectDropdown() {
     const currentUser = getCurrentUser();
     
-    console.log('Populating subject dropdown. Current user:', currentUser);
-    console.log('User courses:', currentUser?.courses);
-    
     const subjectSelect = document.getElementById('examSubject');
     if (!subjectSelect) {
-        console.error('Subject select element not found');
+        if (typeof showError === 'function') {
+            showError('Subject dropdown not found. Please refresh the page.', 'Page Error');
+        }
         return;
     }
     
     subjectSelect.innerHTML = '<option value="">Select Subject</option>';
     
     if (!currentUser) {
-        console.warn('No current user found');
         const option = document.createElement('option');
         option.value = '';
         option.textContent = 'No user data - please log in again';
         subjectSelect.appendChild(option);
+        if (typeof showError === 'function') {
+            showError('User session expired. Please log in again.', 'Session Expired');
+        }
         return;
     }
     
     const registeredSubjects = currentUser.courses || [];
     
     if (registeredSubjects.length === 0) {
-        console.warn('No subjects registered for this lecturer');
         const option = document.createElement('option');
         option.value = '';
         option.textContent = 'No subjects registered - Register in LMS Portal first';
@@ -158,7 +157,7 @@ function populateExamSubjectDropdown() {
         subjectSelect.appendChild(option);
     });
     
-    console.log(`Added ${allSubjects.size} subjects to dropdown`);
+    // Subjects populated successfully
 }
 
 // Handle create exam form submission
@@ -214,8 +213,7 @@ async function handleCreateExam(e) {
         }, 1000);
         
     } catch (error) {
-        console.error('Error creating exam:', error);
-        showError('Failed to create exam: ' + (error.message || 'Unknown error'), 'Error');
+        showError('Failed to create exam: ' + (error.message || 'Unknown error'), 'Error Creating Exam');
     }
 }
 
@@ -241,8 +239,7 @@ async function loadExams() {
         displayExams(data || []);
         
     } catch (error) {
-        console.error('Error loading exams:', error);
-        showError('Failed to load exams: ' + (error.message || 'Unknown error'), 'Error');
+        showError('Failed to load exams: ' + (error.message || 'Unknown error'), 'Error Loading Exams');
     }
 }
 
@@ -318,8 +315,7 @@ async function viewExamDetails(examId) {
         showExamDetailsModal(exam, currentQuestions);
         
     } catch (error) {
-        console.error('Error loading exam details:', error);
-        showError('Failed to load exam details: ' + (error.message || 'Unknown error'), 'Error');
+        showError('Failed to load exam details: ' + (error.message || 'Unknown error'), 'Error Loading Exam Details');
     }
 }
 
@@ -574,8 +570,7 @@ async function handleQuestionFormSubmit(e) {
         viewExamDetails(examId);
         
     } catch (error) {
-        console.error('Error saving question:', error);
-        showError('Failed to save question: ' + (error.message || 'Unknown error'), 'Error');
+        showError('Failed to save question: ' + (error.message || 'Unknown error'), 'Error Saving Question');
     }
 }
 
@@ -604,8 +599,7 @@ async function saveQuestion(examId, questionData) {
         viewExamDetails(examId);
         
     } catch (error) {
-        console.error('Error saving question:', error);
-        showError('Failed to save question: ' + (error.message || 'Unknown error'), 'Error');
+        showError('Failed to save question: ' + (error.message || 'Unknown error'), 'Error Saving Question');
     }
 }
 
@@ -628,8 +622,7 @@ async function toggleExamStatus(examId, currentStatus) {
         loadExams();
         
     } catch (error) {
-        console.error('Error toggling exam status:', error);
-        showError('Failed to update exam status: ' + (error.message || 'Unknown error'), 'Error');
+        showError('Failed to update exam status: ' + (error.message || 'Unknown error'), 'Error Updating Status');
     }
 }
 
@@ -656,8 +649,7 @@ async function releaseResults(examId) {
         loadExams();
         
     } catch (error) {
-        console.error('Error releasing results:', error);
-        showError('Failed to release results: ' + (error.message || 'Unknown error'), 'Error');
+        showError('Failed to release results: ' + (error.message || 'Unknown error'), 'Error Releasing Results');
     }
 }
 
@@ -687,8 +679,7 @@ async function viewExamStats(examId) {
         );
         
     } catch (error) {
-        console.error('Error loading exam stats:', error);
-        showError('Failed to load statistics: ' + (error.message || 'Unknown error'), 'Error');
+        showError('Failed to load statistics: ' + (error.message || 'Unknown error'), 'Error Loading Statistics');
     }
 }
 
@@ -824,8 +815,7 @@ async function deleteQuestion(questionId) {
         }
         
     } catch (error) {
-        console.error('Error deleting question:', error);
-        showError('Failed to delete question: ' + (error.message || 'Unknown error'), 'Error');
+        showError('Failed to delete question: ' + (error.message || 'Unknown error'), 'Error Deleting Question');
     }
 }
 

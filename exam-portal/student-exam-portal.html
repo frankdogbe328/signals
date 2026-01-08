@@ -94,6 +94,225 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+        
+        /* Question Navigation Sidebar */
+        .question-nav-sidebar {
+            position: fixed;
+            right: -280px;
+            top: 80px;
+            width: 260px;
+            background: white;
+            border-left: 2px solid var(--primary-color);
+            box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            max-height: calc(100vh - 100px);
+            overflow-y: auto;
+            transition: right 0.3s ease;
+            z-index: 1000;
+        }
+        .question-nav-sidebar.open {
+            right: 0;
+        }
+        .question-nav-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        .question-nav-header h4 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+        .toggle-nav-btn {
+            position: fixed;
+            right: 20px;
+            top: 100px;
+            z-index: 1001;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 5px 0 0 5px;
+            cursor: pointer;
+            box-shadow: -2px 2px 8px rgba(0,0,0,0.2);
+        }
+        .question-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+        .question-nav-item {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s;
+            background: white;
+        }
+        .question-nav-item:hover {
+            border-color: var(--primary-color);
+            background: #f0f7ff;
+        }
+        .question-nav-item.current {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+        }
+        .question-nav-item.answered {
+            background: #28a745;
+            color: white;
+            border-color: #28a745;
+        }
+        .question-nav-item.incomplete {
+            background: #ffc107;
+            color: #000;
+            border-color: #ffc107;
+        }
+        .nav-status {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 1px solid #e0e0e0;
+        }
+        .nav-status-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .nav-status-indicator {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            margin-right: 8px;
+        }
+        
+        /* Auto-save Indicator */
+        .auto-save-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 999;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .auto-save-indicator.hidden {
+            opacity: 0;
+            transform: translateY(100px);
+            pointer-events: none;
+        }
+        .auto-save-indicator.saving {
+            color: #ffc107;
+        }
+        .auto-save-indicator.saved {
+            color: #28a745;
+        }
+        .auto-save-indicator.error {
+            color: #dc3545;
+        }
+        .save-spinner {
+            width: 14px;
+            height: 14px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #ffc107;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .save-icon {
+            font-size: 16px;
+        }
+        
+        /* Mobile Optimization */
+        @media (max-width: 768px) {
+            .question-nav-sidebar {
+                width: 100%;
+                right: -100%;
+                top: 60px;
+                max-height: calc(100vh - 60px);
+            }
+            .toggle-nav-btn {
+                top: 70px;
+                right: 0;
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            .question-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+            .question-container {
+                padding: 15px;
+            }
+            .answer-option {
+                padding: 15px;
+                margin-bottom: 12px;
+                font-size: 16px;
+                min-height: 50px;
+                display: flex;
+                align-items: center;
+            }
+            .answer-option input {
+                width: 20px;
+                height: 20px;
+                margin-right: 12px;
+                flex-shrink: 0;
+            }
+            .navigation-buttons {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .navigation-buttons button {
+                width: 100%;
+                padding: 15px;
+                font-size: 16px;
+            }
+            .exam-info-card {
+                padding: 15px;
+            }
+            .timer-display {
+                font-size: 20px;
+                padding: 15px;
+            }
+            .auto-save-indicator {
+                bottom: 10px;
+                right: 10px;
+                left: 10px;
+                right: auto;
+                max-width: calc(100% - 20px);
+                font-size: 12px;
+                padding: 10px 15px;
+            }
+            textarea.form-control {
+                font-size: 16px;
+                padding: 12px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .question-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .dashboard-header h2 {
+                font-size: 18px;
+            }
+        }
     </style>
 </head>
 <body>
@@ -135,6 +354,44 @@
                 </div>
             </div>
             
+            <!-- Toggle Navigation Button -->
+            <button id="toggleNavBtn" class="toggle-nav-btn" onclick="toggleQuestionNav()">📋 Questions</button>
+            
+            <!-- Question Navigation Sidebar -->
+            <div id="questionNavSidebar" class="question-nav-sidebar">
+                <div class="question-nav-header">
+                    <h4>Questions</h4>
+                    <button onclick="toggleQuestionNav()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #666;">&times;</button>
+                </div>
+                <div id="questionNavGrid" class="question-grid">
+                    <!-- Question numbers will be populated here -->
+                </div>
+                <div class="nav-status">
+                    <div class="nav-status-item">
+                        <div class="nav-status-indicator" style="background: var(--primary-color);"></div>
+                        <span>Current</span>
+                    </div>
+                    <div class="nav-status-item">
+                        <div class="nav-status-indicator" style="background: #28a745;"></div>
+                        <span>Answered</span>
+                    </div>
+                    <div class="nav-status-item">
+                        <div class="nav-status-indicator" style="background: #ffc107;"></div>
+                        <span>Incomplete</span>
+                    </div>
+                    <div class="nav-status-item">
+                        <div class="nav-status-indicator" style="background: #e0e0e0;"></div>
+                        <span>Not Started</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Auto-save Indicator -->
+            <div id="autoSaveIndicator" class="auto-save-indicator hidden">
+                <span id="saveIcon" class="save-icon">💾</span>
+                <span id="saveText">Saved</span>
+            </div>
+            
             <div class="dashboard-content">
                 <div class="exam-info-card">
                     <div class="exam-info-item">
@@ -156,8 +413,8 @@
                 </div>
                 
                 <div class="navigation-buttons">
-                    <button id="prevBtn" class="btn btn-secondary disabled" onclick="previousQuestion()" disabled>Previous</button>
-                    <button id="nextBtn" class="btn btn-primary" onclick="nextQuestion()">Next</button>
+                    <button id="prevBtn" class="btn btn-secondary disabled" onclick="previousQuestion()" disabled>← Previous</button>
+                    <button id="nextBtn" class="btn btn-primary" onclick="nextQuestion()">Next →</button>
                     <button id="submitBtn" class="btn submit-exam-btn" onclick="submitExam()" style="display: none;">Submit Exam</button>
                 </div>
             </div>
