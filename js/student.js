@@ -242,20 +242,32 @@ window.registerForCourse = async function() {
     const selectedCourse = courseSelect.value.trim();
     
     if (!selectedCourse) {
-        alert('Please select a subject to register');
+        if (typeof showError === 'function') {
+            showError('Please select a subject to register', 'Missing Selection');
+        } else {
+            alert('Please select a subject to register');
+        }
         return;
     }
     
     const currentUser = getCurrentUser();
     if (!currentUser || !currentUser.class) {
-        alert('User information not found. Please log in again.');
+        if (typeof showError === 'function') {
+            showError('User information not found. Please log in again.', 'Session Expired');
+        } else {
+            alert('User information not found. Please log in again.');
+        }
         return;
     }
     
     // Validate that the subject is valid for this class
     const validCoursesForClass = getCoursesForClass(currentUser.class);
     if (!validCoursesForClass.includes(selectedCourse)) {
-        alert('This subject is not available for your class. Please select a valid subject.');
+        if (typeof showError === 'function') {
+            showError('This subject is not available for your class. Please select a valid subject.', 'Invalid Subject');
+        } else {
+            alert('This subject is not available for your class. Please select a valid subject.');
+        }
         return;
     }
     
@@ -263,7 +275,11 @@ window.registerForCourse = async function() {
     
     // Check if already registered
     if (courses.includes(selectedCourse)) {
-        alert('You are already registered for this subject');
+        if (typeof showInfo === 'function') {
+            showInfo('You are already registered for this subject', 'Already Registered');
+        } else {
+            alert('You are already registered for this subject');
+        }
         populateCourseRegistrationDropdown(); // Refresh dropdown
         return;
     }
@@ -297,7 +313,11 @@ window.registerForCourse = async function() {
             localStorage.setItem('users', JSON.stringify(users));
             setCurrentUser(currentUser);
         } else {
-            alert('Error: User not found in system');
+            if (typeof showError === 'function') {
+                showError('User not found in system', 'Error');
+            } else {
+                alert('Error: User not found in system');
+            }
             return;
         }
     }
@@ -335,7 +355,11 @@ window.registerForCourse = async function() {
         }
     }
     
-    alert('Successfully registered for ' + selectedCourse + '!');
+    if (typeof showSuccess === 'function') {
+        showSuccess('Successfully registered for ' + selectedCourse + '!', 'Registration Successful');
+    } else {
+        alert('Successfully registered for ' + selectedCourse + '!');
+    }
 };
 
 function unregisterFromCourse(course) {

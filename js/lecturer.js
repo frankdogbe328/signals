@@ -424,8 +424,13 @@ async function handleMaterialUpload(e) {
         
         // Check file size (50MB limit for Supabase Storage)
         if (file.size > 50 * 1024 * 1024) {
-            alert('❌ File size exceeds 50MB limit. Please choose a smaller file.\n\nCurrent file size: ' + 
-                  (file.size / (1024 * 1024)).toFixed(2) + ' MB');
+            if (typeof showError === 'function') {
+                showError('File size exceeds 50MB limit. Please choose a smaller file.\n\nCurrent file size: ' + 
+                          (file.size / (1024 * 1024)).toFixed(2) + ' MB', 'File Too Large');
+            } else {
+                alert('❌ File size exceeds 50MB limit. Please choose a smaller file.\n\nCurrent file size: ' + 
+                      (file.size / (1024 * 1024)).toFixed(2) + ' MB');
+            }
             submitBtn.disabled = false;
             submitBtn.textContent = originalBtnText;
             return;
@@ -433,7 +438,11 @@ async function handleMaterialUpload(e) {
         
         // Check file size is reasonable (minimum 1 byte)
         if (file.size === 0) {
-            alert('❌ File is empty. Please select a valid file.');
+            if (typeof showError === 'function') {
+                showError('File is empty. Please select a valid file.', 'Invalid File');
+            } else {
+                alert('❌ File is empty. Please select a valid file.');
+            }
             submitBtn.disabled = false;
             submitBtn.textContent = originalBtnText;
             return;
@@ -485,7 +494,11 @@ async function handleMaterialUpload(e) {
                     submitBtn.textContent = originalBtnText;
                 };
                 reader.onerror = function() {
-                    alert('Error reading file. Please try again.');
+                    if (typeof showError === 'function') {
+                        showError('Error reading file. Please try again.', 'File Read Error');
+                    } else {
+                        alert('Error reading file. Please try again.');
+                    }
                     submitBtn.disabled = false;
                     submitBtn.textContent = originalBtnText;
                 };
@@ -494,7 +507,11 @@ async function handleMaterialUpload(e) {
             }
         } catch (error) {
             console.error('Error uploading file:', error);
-            alert(`Error uploading file: ${error.message || 'Please check your internet connection and try again.'}`);
+            if (typeof showError === 'function') {
+                showError(error.message || 'Please check your internet connection and try again.', 'Upload Error');
+            } else {
+                alert(`Error uploading file: ${error.message || 'Please check your internet connection and try again.'}`);
+            }
             submitBtn.disabled = false;
             submitBtn.textContent = originalBtnText;
             return;
@@ -502,7 +519,11 @@ async function handleMaterialUpload(e) {
     } else {
         content = document.getElementById('materialContent').value;
         if (!content && type !== 'file') {
-            alert('Please provide content or upload a file');
+            if (typeof showError === 'function') {
+                showError('Please provide content or upload a file', 'Missing Content');
+            } else {
+                alert('Please provide content or upload a file');
+            }
             submitBtn.disabled = false;
             submitBtn.textContent = originalBtnText;
             return;
@@ -515,7 +536,11 @@ async function handleMaterialUpload(e) {
             submitBtn.textContent = originalBtnText;
         } catch (error) {
             console.error('Error saving material:', error);
-            alert(`Error saving material: ${error.message || 'Please try again.'}`);
+            if (typeof showError === 'function') {
+                showError(error.message || 'Please try again.', 'Save Error');
+            } else {
+                alert(`Error saving material: ${error.message || 'Please try again.'}`);
+            }
             submitBtn.disabled = false;
             submitBtn.textContent = originalBtnText;
         }
@@ -586,7 +611,11 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
                 
                 success = await updateMaterialInSupabase(editingId, materialData);
                 if (success) {
-                    alert('✅ Material updated successfully!');
+                    if (typeof showSuccess === 'function') {
+                        showSuccess('Material updated successfully!', 'Update Successful');
+                    } else {
+                        alert('✅ Material updated successfully!');
+                    }
                 } else {
                     errorMessage = 'Failed to update material in database';
                 }
@@ -594,7 +623,11 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
                 const created = await createMaterialInSupabase(materialData);
                 if (created) {
                     success = true;
-                    alert('✅ File uploaded successfully to Supabase Storage!');
+                    if (typeof showSuccess === 'function') {
+                        showSuccess('File uploaded successfully to Supabase Storage!', 'Upload Successful');
+                    } else {
+                        alert('✅ File uploaded successfully to Supabase Storage!');
+                    }
                 } else {
                     errorMessage = 'Failed to save material to database';
                 }
@@ -640,7 +673,11 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
         } else {
             materials.push(newMaterial);
             localStorage.setItem('materials', JSON.stringify(materials));
-            alert('⚠️ File uploaded (stored locally - Supabase unavailable)');
+            if (typeof showInfo === 'function') {
+                showInfo('File uploaded (stored locally - Supabase unavailable)', 'Local Storage');
+            } else {
+                alert('⚠️ File uploaded (stored locally - Supabase unavailable)');
+            }
             success = true;
         }
     } else if (!success) {
@@ -697,7 +734,11 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
             if (editingId) {
                 success = await updateMaterialInSupabase(editingId, materialData);
                 if (success) {
-                    alert('✅ Material updated successfully!');
+                    if (typeof showSuccess === 'function') {
+                        showSuccess('Material updated successfully!', 'Update Successful');
+                    } else {
+                        alert('✅ Material updated successfully!');
+                    }
                 } else {
                     errorMessage = 'Failed to update material in database';
                 }
@@ -705,7 +746,11 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
                 const created = await createMaterialInSupabase(materialData);
                 if (created) {
                     success = true;
-                    alert('✅ Material uploaded successfully!');
+                    if (typeof showSuccess === 'function') {
+                        showSuccess('Material uploaded successfully!', 'Upload Successful');
+                    } else {
+                        alert('✅ Material uploaded successfully!');
+                    }
                 } else {
                     errorMessage = 'Failed to save material to database';
                 }
@@ -1297,7 +1342,11 @@ window.deleteMaterial = async function(materialId) {
         });
         localStorage.setItem('progress', JSON.stringify(progress));
         success = true;
-        alert('⚠️ Material deleted (from local storage - Supabase unavailable)');
+        if (typeof showInfo === 'function') {
+            showInfo('Material deleted (from local storage - Supabase unavailable)', 'Local Storage');
+        } else {
+            alert('⚠️ Material deleted (from local storage - Supabase unavailable)');
+        }
     }
     
     // Reset button state

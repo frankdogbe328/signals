@@ -230,7 +230,20 @@ async function handleRegistration(e) {
     
     // Show success message
     const roleText = role === 'lecturer' ? 'Lecturer' : 'Student';
-    alert(`${roleText} registration successful! Redirecting to your dashboard...`);
+    if (typeof showSuccess === 'function') {
+        showSuccess(`${roleText} registration successful! Redirecting to your dashboard...`, 'Registration Successful');
+        // Redirect after a short delay to show the modal
+        setTimeout(() => {
+            if (role === 'lecturer') {
+                window.location.href = 'lecturer-dashboard.html';
+            } else {
+                window.location.href = 'student-dashboard.html';
+            }
+        }, 1500);
+        return;
+    } else {
+        alert(`${roleText} registration successful! Redirecting to your dashboard...`);
+    }
     
     // Redirect to appropriate dashboard based on role
     if (role === 'lecturer') {
