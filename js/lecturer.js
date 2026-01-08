@@ -30,20 +30,32 @@ async function registerLecturerForSubject() {
     const selectedSubject = subjectSelect.value.trim();
     
     if (!classSelect || !selectedSubject) {
-        alert('Please select both class and subject');
+        if (typeof showError === 'function') {
+            showError('Please select both class and subject', 'Missing Information');
+        } else {
+            alert('Please select both class and subject');
+        }
         return;
     }
     
     const currentUser = getCurrentUser();
     if (!currentUser) {
-        alert('User information not found. Please log in again.');
+        if (typeof showError === 'function') {
+            showError('User information not found. Please log in again.', 'Session Expired');
+        } else {
+            alert('User information not found. Please log in again.');
+        }
         return;
     }
     
     // Validate that the subject is valid for this class
     const validSubjectsForClass = getCoursesForClass(classSelect);
     if (!validSubjectsForClass.includes(selectedSubject)) {
-        alert('This subject is not available for the selected class.');
+        if (typeof showError === 'function') {
+            showError('This subject is not available for the selected class.', 'Invalid Subject');
+        } else {
+            alert('This subject is not available for the selected class.');
+        }
         return;
     }
     
@@ -51,7 +63,11 @@ async function registerLecturerForSubject() {
     
     // Check if already registered
     if (courses.includes(selectedSubject)) {
-        alert('You are already registered for this subject');
+        if (typeof showInfo === 'function') {
+            showInfo('You are already registered for this subject', 'Already Registered');
+        } else {
+            alert('You are already registered for this subject');
+        }
         populateLecturerSubjectDropdown();
         return;
     }
@@ -120,7 +136,11 @@ async function registerLecturerForSubject() {
     }, 100);
     
     const className = formatClassName(classSelect);
-    alert(`Successfully registered for ${selectedSubject} in ${className}!`);
+    if (typeof showSuccess === 'function') {
+        showSuccess(`Successfully registered for ${selectedSubject} in ${className}!`, 'Registration Successful');
+    } else {
+        alert(`Successfully registered for ${selectedSubject} in ${className}!`);
+    }
 }
 
 // Helper function to find which classes a subject belongs to
