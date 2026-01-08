@@ -206,6 +206,82 @@
                     <div id="examDetailsContent"></div>
                 </div>
             </div>
+            
+            <!-- Question Form Modal -->
+            <div id="questionFormModal" class="modal" style="display: none;">
+                <div class="modal-content" style="max-width: 700px; max-height: 90vh; overflow-y: auto;">
+                    <span class="close-modal" onclick="closeQuestionFormModal()">&times;</span>
+                    <h2 id="questionFormTitle">Add Question</h2>
+                    <form id="questionForm" style="margin-top: 20px;">
+                        <input type="hidden" id="questionExamId" value="">
+                        <input type="hidden" id="questionEditId" value="">
+                        
+                        <div class="form-group">
+                            <label for="questionType">Question Type *</label>
+                            <select id="questionType" required onchange="updateQuestionFormFields()">
+                                <option value="">Select Question Type</option>
+                                <option value="multiple_choice">Multiple Choice</option>
+                                <option value="true_false">True/False</option>
+                                <option value="short_answer">Short Answer</option>
+                                <option value="essay">Essay</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="questionText">Question Text *</label>
+                            <textarea id="questionText" rows="3" required placeholder="Enter your question here..."></textarea>
+                        </div>
+                        
+                        <!-- Multiple Choice Options -->
+                        <div id="multipleChoiceSection" style="display: none;">
+                            <div class="form-group">
+                                <label>Options * (Minimum 2, Maximum 6)</label>
+                                <div id="optionsContainer">
+                                    <!-- Options will be dynamically added here -->
+                                </div>
+                                <button type="button" onclick="addOption()" class="btn btn-secondary" style="margin-top: 10px;">+ Add Option</button>
+                                <small style="color: #666; display: block; margin-top: 5px;">Select which option is correct</small>
+                            </div>
+                        </div>
+                        
+                        <!-- True/False Section -->
+                        <div id="trueFalseSection" style="display: none;">
+                            <div class="form-group">
+                                <label>Correct Answer *</label>
+                                <div style="display: flex; gap: 20px; margin-top: 10px;">
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="radio" name="trueFalseAnswer" value="True" style="margin-right: 8px;">
+                                        <span>True</span>
+                                    </label>
+                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                        <input type="radio" name="trueFalseAnswer" value="False" style="margin-right: 8px;">
+                                        <span>False</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Short Answer / Essay Section -->
+                        <div id="textAnswerSection" style="display: none;">
+                            <div class="form-group">
+                                <label for="textAnswer">Correct Answer / Expected Response *</label>
+                                <textarea id="textAnswer" rows="3" placeholder="Enter the expected answer or key points for grading reference..."></textarea>
+                                <small style="color: #666; display: block; margin-top: 5px;">For essay questions, enter key points or sample answers</small>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="questionMarks">Marks *</label>
+                            <input type="number" id="questionMarks" min="1" value="1" required>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; margin-top: 20px;">
+                            <button type="submit" class="btn btn-primary">Save Question</button>
+                            <button type="button" onclick="closeQuestionFormModal()" class="btn btn-secondary">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
     
