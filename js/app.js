@@ -75,10 +75,28 @@ function getCoursesForClass(classId) {
             'Cable networking',
             'Signal tactics'
         ],
-        // SUPERINTENDENT - To be defined (subjects to be added)
-        'superintendent': [],
-        // PRE-QUALIFYING - To be defined (subjects to be added)
-        'pre-qualifying': [],
+        // SUPERINTENDENT - Signal Superintendent Course
+        'superintendent': [
+            'Communication Centre Management',
+            'Communication Skills',
+            'Voice Procedure',
+            'Information Technology',
+            'Power Management',
+            'Service Writing',
+            'Cable Networking',
+            'Antenna'
+        ],
+        // PRE-QUALIFYING - Signal Officers – Pre-Qualifying Course
+        'pre-qualifying': [
+            'Communication Centre Management',
+            'Communication Skills',
+            'Voice Procedure',
+            'Information Technology',
+            'Power Management',
+            'Service Writing',
+            'Cable Networking',
+            'Antenna'
+        ],
         // REGIMENTAL BASIC - Signal – Regimental & Basic subjects (includes Method of instructions)
         'regimental-basic': [
             'Voice procedure',
@@ -118,30 +136,27 @@ function getCoursesForClass(classId) {
             'Information Technology',
             'Signal tactics'
         ],
-        // RSO / RSI - Telecom Technician subjects (or could be Radio Technicians - to be confirmed)
+        // RSO / RSI - Regimental Signal Officers / Instructors Course
         'rso-rsi': [
-            'Telecom',
-            'Exchanges',
-            'Electronics',
-            'Antenna',
-            'Basic maths',
-            'Communication skills',
-            'Fibre optics',
-            'Power management',
-            'Information Technology (Networking)'
-        ],
-        // ELECTRONIC WARFARE COURSE - System Operators subjects
-        'electronic-warfare-course': [
-            'Voice procedure',
-            'Telegraphy procedure',
-            'Antenna theory',
-            'Front desk management',
-            'Basic math',
-            'Communication skills',
-            'Power management',
+            'Signal Superintendent Course',
+            'Communication Centre Management',
+            'Signal Tactics',
+            'Field Cable',
+            'Service Writing',
             'Information Technology',
-            'Communication centre management',
-            'Signal tactics'
+            'Voice Procedure',
+            'Antenna',
+            'Power Management'
+        ],
+        // ELECTRONIC WARFARE COURSE - EW
+        'electronic-warfare-course': [
+            'Voice Procedure',
+            'Telegraph Procedure',
+            'Antenna Theory',
+            'Mathematics',
+            'Communication Skills',
+            'Service Writing',
+            'Virtual machines'
         ],
         // TACTICAL DRONE COURSE - Practical Drone Operators Course subjects
         'tactical-drone-course': [
