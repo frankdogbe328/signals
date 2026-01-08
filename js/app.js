@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Only check for redirect on index.html (login page)
     // Don't redirect if already on a dashboard page to prevent loops
-    const currentPage = window.location.pathname.split('/').pop() || window.location.href.split('/').pop();
-    const isLoginPage = currentPage === 'index.html' || currentPage === '' || currentPage.endsWith('/');
+    const currentPageName = window.location.pathname.split('/').pop() || window.location.href.split('/').pop();
+    const isLoginPage = currentPageName === 'index.html' || currentPageName === '' || currentPageName.endsWith('/');
     
     if (isLoginPage) {
         // Check if user is already logged in and redirect
