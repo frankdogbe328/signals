@@ -51,28 +51,40 @@ async function handleLogin(e) {
         // Set current user
         setCurrentUser(user);
         
-        // Check for redirect parameter in URL
+        // Check for portal selection
+        const portalType = document.getElementById('portalType')?.value || 'lms';
+        
+        // Check for redirect parameter in URL (takes priority)
         const urlParams = new URLSearchParams(window.location.search);
         const redirectTo = urlParams.get('redirect');
         
+        console.log('Login - Portal type:', portalType);
         console.log('Login - Redirect parameter:', redirectTo);
         console.log('Login - User role:', userType);
         
         // If redirect parameter exists and is valid, use it
         if (redirectTo && (redirectTo.includes('exam-portal') || redirectTo.includes('lecturer-dashboard') || redirectTo.includes('student-dashboard'))) {
             console.log('Login - Redirecting to:', redirectTo);
-            // Small delay to ensure sessionStorage is set
             setTimeout(() => {
                 window.location.href = redirectTo;
             }, 100);
         } else {
-            // Default redirect based on role
-            console.log('Login - Using default redirect for role:', userType);
+            // Redirect based on portal selection
             setTimeout(() => {
-                if (userType === 'lecturer') {
-                    window.location.href = 'lecturer-dashboard.html';
-                } else if (userType === 'student') {
-                    window.location.href = 'student-dashboard.html';
+                if (portalType === 'exam') {
+                    // Redirect to exam portal
+                    if (userType === 'lecturer') {
+                        window.location.href = 'exam-portal/lecturer-exam-dashboard.html';
+                    } else if (userType === 'student') {
+                        window.location.href = 'exam-portal/student-exam-portal.html';
+                    }
+                } else {
+                    // Default: LMS portal
+                    if (userType === 'lecturer') {
+                        window.location.href = 'lecturer-dashboard.html';
+                    } else if (userType === 'student') {
+                        window.location.href = 'student-dashboard.html';
+                    }
                 }
             }, 100);
         }
