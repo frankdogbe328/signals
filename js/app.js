@@ -24,10 +24,10 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Course mapping - maps class IDs to their available courses
+// Course mapping - maps class IDs to their available courses (subjects)
 function getCoursesForClass(classId) {
     const courseMap = {
-        // SIGNALS BASIC
+        // SIGNALS BASIC - Signal Basic subjects
         'signals-basic': [
             'Voice procedure',
             'Telegraphy procedure',
@@ -43,7 +43,7 @@ function getCoursesForClass(classId) {
             'Cable networking',
             'Signal tactics'
         ],
-        // SIGNALS B III – B II
+        // SIGNALS B III – B II - Signal Basic subjects (intermediate level)
         'signals-b-iii-b-ii': [
             'Voice procedure',
             'Telegraphy procedure',
@@ -59,7 +59,7 @@ function getCoursesForClass(classId) {
             'Cable networking',
             'Signal tactics'
         ],
-        // SIGNALS B II – B I
+        // SIGNALS B II – B I - Signal Basic subjects (advanced level)
         'signals-b-ii-b-i': [
             'Voice procedure',
             'Telegraphy procedure',
@@ -75,24 +75,24 @@ function getCoursesForClass(classId) {
             'Cable networking',
             'Signal tactics'
         ],
-        // SUPERINTENDENT
+        // SUPERINTENDENT - To be defined (subjects to be added)
         'superintendent': [],
-        // PRE-QUALIFYING
+        // PRE-QUALIFYING - To be defined (subjects to be added)
         'pre-qualifying': [],
-        // REGIMENTAL BASIC
+        // REGIMENTAL BASIC - Signal – Regimental & Basic subjects (includes Method of instructions)
         'regimental-basic': [
             'Voice procedure',
             'Telegraphy procedure',
-            'Antenna theory',
-            'Basic math',
-            'Communication skills',
-            'Field cable networking',
+            'Antenna',
             'Communication centre management',
+            'Basic maths',
+            'Communication skills',
             'Power management',
             'Information Technology',
-            'Signal tactics'
+            'Signal tactics',
+            'Method of instructions'
         ],
-        // REGIMENTAL B III – B II
+        // REGIMENTAL B III – B II - Signal – Regimental Basic subjects (intermediate level)
         'regimental-b-iii-b-ii': [
             'Voice procedure',
             'Telegraphy procedure',
@@ -105,7 +105,7 @@ function getCoursesForClass(classId) {
             'Information Technology',
             'Signal tactics'
         ],
-        // REGIMENTAL B II – B I
+        // REGIMENTAL B II – B I - Signal – Regimental Basic subjects (advanced level)
         'regimental-b-ii-b-i': [
             'Voice procedure',
             'Telegraphy procedure',
@@ -118,9 +118,19 @@ function getCoursesForClass(classId) {
             'Information Technology',
             'Signal tactics'
         ],
-        // RSO / RSI
-        'rso-rsi': [],
-        // ELECTRONIC WARFARE COURSE
+        // RSO / RSI - Telecom Technician subjects (or could be Radio Technicians - to be confirmed)
+        'rso-rsi': [
+            'Telecom',
+            'Exchanges',
+            'Electronics',
+            'Antenna',
+            'Basic maths',
+            'Communication skills',
+            'Fibre optics',
+            'Power management',
+            'Information Technology (Networking)'
+        ],
+        // ELECTRONIC WARFARE COURSE - System Operators subjects
         'electronic-warfare-course': [
             'Voice procedure',
             'Telegraphy procedure',
@@ -133,7 +143,7 @@ function getCoursesForClass(classId) {
             'Communication centre management',
             'Signal tactics'
         ],
-        // TACTICAL DRONE COURSE
+        // TACTICAL DRONE COURSE - Practical Drone Operators Course subjects
         'tactical-drone-course': [
             'UAS Fundamentals',
             'UAS Control',
