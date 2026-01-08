@@ -30,11 +30,7 @@ document.addEventListener('DOMContentLoaded', function() {
         studentNameEl.textContent = `Welcome, ${currentUser.name}`;
     }
     
-    // Update mobile menu name with Welcome
-    const mobileStudentName = document.getElementById('mobileStudentName');
-    if (mobileStudentName) {
-        mobileStudentName.textContent = `Welcome, ${currentUser.name}`;
-    }
+    // Mobile menu removed - name shown directly in nav-user span
     
     // Update student info text (just Welcome and name)
     const studentInfoEl = document.getElementById('studentInfo');

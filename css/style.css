@@ -49,30 +49,9 @@ body {
     object-fit: cover;
 }
 
-/* Overlay gradient on top of video - lighter for better video visibility */
-.login-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, rgba(0, 102, 204, 0.4) 0%, rgba(0, 82, 163, 0.4) 100%);
-    z-index: -1;
-}
+/* No overlay - pure video background */
 
-/* Fallback gradient if video doesn't load */
-.login-container::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: linear-gradient(135deg, var(--primary-color) 0%, #0052a3 100%);
-    z-index: -3;
-    display: none; /* Only show if video fails */
-}
+/* No fallback gradient - pure video background */
 
 .login-box {
     background: var(--card-bg);
@@ -356,6 +335,7 @@ body {
     display: flex;
     align-items: center;
     gap: 15px;
+    flex-shrink: 0;
 }
 
 .nav-logo {
@@ -378,17 +358,37 @@ body {
         padding: 4px;
     }
     
+    .nav-container {
+        padding: 0 15px;
+        gap: 10px;
+    }
+    
     .nav-container h1 {
         font-size: 18px;
     }
     
+    .nav-brand {
+        flex-shrink: 0;
+        gap: 10px;
+    }
+    
+    .nav-user {
+        flex-shrink: 0;
+        gap: 10px;
+    }
+    
     .nav-user span {
-        font-size: 14px;
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 120px;
     }
     
     .nav-user .btn {
         padding: 6px 12px;
         font-size: 12px;
+        white-space: nowrap;
     }
 }
 
@@ -399,15 +399,18 @@ body {
     }
     
     .nav-container {
-        padding: 0 15px;
+        padding: 0 12px;
+        gap: 8px;
     }
     
     .nav-brand {
         gap: 8px;
+        flex: 0 0 auto;
     }
     
     .nav-user {
         gap: 8px;
+        flex: 0 0 auto;
     }
     
     .nav-user span {
@@ -417,6 +420,7 @@ body {
     .nav-user .btn {
         padding: 6px 10px;
         font-size: 11px;
+        white-space: nowrap;
     }
 }
 
@@ -435,6 +439,7 @@ body {
     display: flex;
     align-items: center;
     gap: 15px;
+    flex-shrink: 0;
 }
 
 .nav-user span {
