@@ -1,7 +1,130 @@
-// Update courses dropdown for lecturer based on selected class
+// Populate subject dropdown for lecturer registration
+function populateLecturerSubjectDropdown() {
+    const classSelect = document.getElementById('lecturerClassSelect').value;
+    const subjectSelect = document.getElementById('lecturerSubjectSelect');
+    
+    if (!classSelect) {
+        subjectSelect.innerHTML = '<option value="">Select Class First</option>';
+        return;
+    }
+    
+    const currentUser = getCurrentUser();
+    const registeredSubjects = currentUser.courses || [];
+    const availableSubjects = getCoursesForClass(classSelect);
+    
+    // Filter out already registered subjects
+    const unregisteredSubjects = availableSubjects.filter(subject => !registeredSubjects.includes(subject));
+    
+    if (unregisteredSubjects.length === 0) {
+        subjectSelect.innerHTML = '<option value="">No subjects available or all registered</option>';
+    } else {
+        subjectSelect.innerHTML = '<option value="">Select a subject</option>' +
+            unregisteredSubjects.map(subject => `<option value="${subject}">${subject}</option>`).join('');
+    }
+}
+
+// Register lecturer for a subject
+async function registerLecturerForSubject() {
+    const classSelect = document.getElementById('lecturerClassSelect').value;
+    const subjectSelect = document.getElementById('lecturerSubjectSelect');
+    const selectedSubject = subjectSelect.value.trim();
+    
+    if (!classSelect || !selectedSubject) {
+        alert('Please select both class and subject');
+        return;
+    }
+    
+    const currentUser = getCurrentUser();
+    if (!currentUser) {
+        alert('User information not found. Please log in again.');
+        return;
+    }
+    
+    // Validate that the subject is valid for this class
+    const validSubjectsForClass = getCoursesForClass(classSelect);
+    if (!validSubjectsForClass.includes(selectedSubject)) {
+        alert('This subject is not available for the selected class.');
+        return;
+    }
+    
+    const courses = currentUser.courses || [];
+    
+    // Check if already registered
+    if (courses.includes(selectedSubject)) {
+        alert('You are already registered for this subject');
+        populateLecturerSubjectDropdown();
+        return;
+    }
+    
+    // Add subject to lecturer's courses
+    courses.push(selectedSubject);
+    currentUser.courses = courses;
+    
+    // Update in Supabase first, fallback to localStorage
+    let updated = false;
+    if (typeof updateUserInSupabase === 'function') {
+        try {
+            const updatedUser = await updateUserInSupabase(currentUser.id, { courses: courses });
+            if (updatedUser) {
+                currentUser.courses = updatedUser.courses || courses;
+                setCurrentUser(currentUser);
+                updated = true;
+            }
+        } catch (err) {
+            console.error('Supabase update error:', err);
+        }
+    }
+    
+    // Fallback to localStorage
+    if (!updated) {
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        const userIndex = users.findIndex(u => u.id === currentUser.id);
+        if (userIndex !== -1) {
+            users[userIndex] = currentUser;
+            localStorage.setItem('users', JSON.stringify(users));
+            setCurrentUser(currentUser);
+        }
+    }
+    
+    // Reset dropdowns
+    document.getElementById('lecturerClassSelect').value = '';
+    subjectSelect.value = '';
+    subjectSelect.innerHTML = '<option value="">Select Class First</option>';
+    
+    // Reload UI
+    loadLecturerRegisteredSubjects();
+    updateCoursesForLecturer(); // Update upload form dropdown
+    loadMaterials(); // Refresh materials list
+    
+    alert('Successfully registered for ' + selectedSubject + '!');
+}
+
+// Load and display lecturer's registered subjects
+function loadLecturerRegisteredSubjects() {
+    const currentUser = getCurrentUser();
+    if (!currentUser) return;
+    
+    const registeredSubjects = currentUser.courses || [];
+    const subjectsList = document.getElementById('lecturerRegisteredSubjectsList');
+    if (!subjectsList) return;
+    
+    if (registeredSubjects.length === 0) {
+        subjectsList.innerHTML = '<p class="empty-state" style="padding: 10px;">No subjects registered. Register for subjects above to manage materials.</p>';
+    } else {
+        subjectsList.innerHTML = registeredSubjects.map(subject => `
+            <div class="registered-course-item" style="display: flex; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 5px; margin-bottom: 10px;">
+                <span style="font-weight: 600; flex: 1;">${subject}</span>
+            </div>
+        `).join('');
+    }
+}
+
+// Update courses dropdown for lecturer based on selected class (only show registered subjects)
 function updateCoursesForLecturer() {
     const classSelect = document.getElementById('classSelect').value;
     const courseSelect = document.getElementById('courseSelect');
+    const currentUser = getCurrentUser();
+    const registeredSubjects = currentUser.courses || [];
     
     if (!classSelect) {
         courseSelect.innerHTML = '<option value="">Select Class First</option>';
@@ -9,13 +132,17 @@ function updateCoursesForLecturer() {
         return;
     }
     
-    const courses = getCoursesForClass(classSelect);
-    if (courses.length === 0) {
-        courseSelect.innerHTML = '<option value="">No courses available for this class</option>';
+    const allCourses = getCoursesForClass(classSelect);
+    
+    // Only show courses that the lecturer is registered for
+    const availableCourses = allCourses.filter(course => registeredSubjects.includes(course));
+    
+    if (availableCourses.length === 0) {
+        courseSelect.innerHTML = '<option value="">No registered subjects for this class</option>';
         courseSelect.disabled = true;
     } else {
-        courseSelect.innerHTML = '<option value="">Select Course</option>' +
-            courses.map(course => `<option value="${course}">${course}</option>`).join('');
+        courseSelect.innerHTML = '<option value="">Select Subject</option>' +
+            availableCourses.map(course => `<option value="${course}">${course}</option>`).join('');
         courseSelect.disabled = false;
     }
 }
@@ -38,7 +165,10 @@ document.addEventListener('DOMContentLoaded', function() {
         mobileLecturerName.textContent = `Welcome, ${currentUser.name}`;
     }
     
-    // Load materials
+    // Load lecturer's registered subjects
+    loadLecturerRegisteredSubjects();
+    
+    // Load materials (will be filtered by registered subjects)
     loadMaterials();
     loadAnalytics();
     
@@ -711,6 +841,10 @@ async function loadMaterials() {
     const filterClass = document.getElementById('filterClass')?.value || 'all';
     const filterCategory = document.getElementById('filterCategory')?.value || 'all';
     
+    // Get current lecturer's registered subjects
+    const currentUser = getCurrentUser();
+    const registeredSubjects = currentUser.courses || [];
+    
     // Try Supabase first, fallback to localStorage
     let materials = [];
     
@@ -737,7 +871,12 @@ async function loadMaterials() {
         }
     }
     
-    // Update category filter options (get all materials for filter)
+    // Filter materials to only show courses/subjects the lecturer is registered for
+    if (registeredSubjects.length > 0) {
+        materials = materials.filter(m => registeredSubjects.includes(m.course));
+    }
+    
+    // Update category filter options (get all materials for filter - but only for registered subjects)
     let allMaterials = [];
     if (typeof getMaterialsFromSupabase === 'function') {
         try {
@@ -748,22 +887,31 @@ async function loadMaterials() {
     } else {
         allMaterials = JSON.parse(localStorage.getItem('materials') || '[]');
     }
+    
+    // Filter allMaterials for category filter too
+    if (registeredSubjects.length > 0) {
+        allMaterials = allMaterials.filter(m => registeredSubjects.includes(m.course));
+    }
     updateCategoryFilter(allMaterials);
     
     if (materials.length === 0) {
-        materialsList.innerHTML = '<p class="empty-state">No materials found</p>';
+        if (registeredSubjects.length === 0) {
+            materialsList.innerHTML = '<p class="empty-state">No subjects registered. Please register for subjects above to view materials.</p>';
+        } else {
+            materialsList.innerHTML = '<p class="empty-state">No materials found for your registered subjects</p>';
+        }
         return;
     }
     
     // Sort by sequence number, then by upload date
-    filteredMaterials.sort((a, b) => {
+    materials.sort((a, b) => {
         const seqA = a.sequence || 999;
         const seqB = b.sequence || 999;
         if (seqA !== seqB) return seqA - seqB;
-        return new Date(a.uploadedAt) - new Date(b.uploadedAt);
+        return new Date(a.uploadedAt || a.uploaded_at) - new Date(b.uploadedAt || b.uploaded_at);
     });
     
-    materialsList.innerHTML = filteredMaterials.map(material => `
+    materialsList.innerHTML = materials.map(material => `
         <div class="material-item">
             <div class="material-header">
                 <div>
