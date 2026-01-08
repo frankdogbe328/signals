@@ -759,14 +759,32 @@ async function loadAnalytics() {
         progress = JSON.parse(localStorage.getItem('progress') || '{}');
     }
     
-    const students = users.filter(u => u.role === 'student');
+    const allStudents = users.filter(u => u.role === 'student');
     const activeClasses = [...new Set(materials.map(m => m.class))];
     
-    // Calculate overall completion rate
+    // Filter students to only count those registered for subjects the lecturer teaches
+    // A student is relevant if they are registered for at least one subject the lecturer teaches
+    const relevantStudents = allStudents.filter(student => {
+        if (!student.courses || student.courses.length === 0) return false;
+        
+        // Check if student is registered for any subject the lecturer teaches
+        const studentHasLecturerSubject = student.courses.some(studentSubject => 
+            registeredSubjects.includes(studentSubject)
+        );
+        
+        // Also check if student's class has materials from lecturer
+        const studentClassHasMaterials = materials.some(m => 
+            m.class === student.class && student.courses.includes(m.course)
+        );
+        
+        return studentHasLecturerSubject && studentClassHasMaterials;
+    });
+    
+    // Calculate overall completion rate (only for relevant students)
     let totalCompletions = 0;
     let totalPossible = 0;
     
-    students.forEach(student => {
+    relevantStudents.forEach(student => {
         const studentMaterials = materials.filter(m => 
             m.class === student.class && student.courses && student.courses.includes(m.course)
         );
@@ -781,7 +799,7 @@ async function loadAnalytics() {
     
     // Update overview
     document.getElementById('totalMaterialsCount').textContent = materials.length;
-    document.getElementById('totalStudentsCount').textContent = students.length;
+    document.getElementById('totalStudentsCount').textContent = relevantStudents.length;
     document.getElementById('overallCompletion').textContent = overallCompletion + '%';
     document.getElementById('activeClassesCount').textContent = activeClasses.length;
     
