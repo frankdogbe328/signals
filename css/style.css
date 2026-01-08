@@ -33,7 +33,7 @@ body {
     padding: 20px;
     position: relative;
     overflow: hidden;
-    background-color: #000; /* Fallback black background */
+    background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%); /* Fallback gradient background */
 }
 
 /* Video Background */
