@@ -461,6 +461,17 @@ function clearCurrentUser() {
 // Logout function
 function logout() {
     clearCurrentUser();
-    window.location.href = 'index.html';
+    
+    // Check if we're in the exam portal
+    const currentPath = window.location.pathname;
+    const isExamPortal = currentPath.includes('exam-portal');
+    
+    if (isExamPortal) {
+        // Redirect to exam portal login
+        window.location.href = 'login.html';
+    } else {
+        // Redirect to main LMS login
+        window.location.href = 'index.html';
+    }
 }
 
