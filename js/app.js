@@ -12,12 +12,22 @@ document.addEventListener('DOMContentLoaded', function() {
         // Check if user is already logged in and redirect
         const currentUser = getCurrentUser();
         if (currentUser) {
+            // Check for redirect parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectTo = urlParams.get('redirect');
+            
             // Use setTimeout to prevent navigation throttling
             setTimeout(() => {
-                if (currentUser.role === 'lecturer') {
-                    window.location.href = 'lecturer-dashboard.html';
-                } else if (currentUser.role === 'student') {
-                    window.location.href = 'student-dashboard.html';
+                // If redirect parameter exists and is valid, use it
+                if (redirectTo && (redirectTo.includes('exam-portal') || redirectTo.includes('lecturer-dashboard') || redirectTo.includes('student-dashboard'))) {
+                    window.location.href = redirectTo;
+                } else {
+                    // Default redirect based on role
+                    if (currentUser.role === 'lecturer') {
+                        window.location.href = 'lecturer-dashboard.html';
+                    } else if (currentUser.role === 'student') {
+                        window.location.href = 'student-dashboard.html';
+                    }
                 }
             }, 0);
         }

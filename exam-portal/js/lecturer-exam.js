@@ -7,7 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Check authentication
     let currentUser = getCurrentUser();
     if (!currentUser || currentUser.role !== 'lecturer') {
-        window.location.href = '../index.html';
+        // Redirect to login with redirect parameter to come back here
+        window.location.href = '../index.html?redirect=exam-portal/lecturer-exam-dashboard.html';
         return;
     }
     
