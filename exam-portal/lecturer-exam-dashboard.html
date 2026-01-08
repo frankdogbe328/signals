@@ -186,40 +186,9 @@
     <script src="../js/supabase-config.js"></script>
     <script src="../js/supabase-helpers.js"></script>
     <script src="../js/modal.js"></script>
-    <!-- Load app.js functions we need without the redirect logic -->
-    <script>
-        // Load only necessary functions from app.js
-        // We'll define getCurrentUser here to avoid redirect conflicts
-        function getCurrentUser() {
-            const userStr = sessionStorage.getItem('currentUser');
-            return userStr ? JSON.parse(userStr) : null;
-        }
-        
-        function setCurrentUser(user) {
-            sessionStorage.setItem('currentUser', JSON.stringify(user));
-        }
-        
-        function clearCurrentUser() {
-            sessionStorage.removeItem('currentUser');
-        }
-        
-        function logout() {
-            clearCurrentUser();
-            window.location.href = '../index.html';
-        }
-        
-        // Load getCoursesForClass from app.js (needed for subject dropdown)
-        // We'll load app.js but prevent its DOMContentLoaded from running
-        const script = document.createElement('script');
-        script.src = '../js/app.js';
-        script.onload = function() {
-            // Now load the exam portal script
-            const examScript = document.createElement('script');
-            examScript.src = 'js/lecturer-exam.js';
-            document.body.appendChild(examScript);
-        };
-        document.body.appendChild(script);
-    </script>
+    <!-- Load app.js for getCoursesForClass function (redirect logic is skipped for exam-portal pages) -->
+    <script src="../js/app.js"></script>
+    <script src="js/lecturer-exam.js"></script>
     
     <!-- Modal for Messages -->
     <div id="messageModal" class="modal">
