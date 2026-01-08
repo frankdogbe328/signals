@@ -803,11 +803,11 @@ async function loadAnalytics() {
     document.getElementById('overallCompletion').textContent = overallCompletion + '%';
     document.getElementById('activeClassesCount').textContent = activeClasses.length;
     
-    // Load class progress
-    loadClassProgress(materials, students, progress);
+    // Load class progress (use relevant students only)
+    loadClassProgress(materials, relevantStudents, progress);
     
-    // Load material statistics
-    loadMaterialStats(materials, students, progress);
+    // Load material statistics (use relevant students only)
+    loadMaterialStats(materials, relevantStudents, progress);
 }
 
 function loadClassProgress(materials, students, progress) {
