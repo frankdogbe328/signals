@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Exam Portal - Login</title>
+    <script>
+        // Prevent any redirects from app.js by setting a flag early
+        window.IS_EXAM_PORTAL = true;
+    </script>
     <link rel="stylesheet" href="../css/style.css">
     <style>
         .login-container {
@@ -112,9 +116,9 @@
     
     <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="../js/supabase-config.js"></script>
-    <script src="../js/supabase-helpers.js"></script>
-    <script src="../js/modal.js"></script>
+    <script src="../js/supabase-config.js" onerror="console.error('Failed to load supabase-config.js')"></script>
+    <script src="../js/supabase-helpers.js" onerror="console.error('Failed to load supabase-helpers.js')"></script>
+    <script src="../js/modal.js" onerror="console.error('Failed to load modal.js')"></script>
     <script>
         // Exam Portal Login Handler - separate from main LMS login
         document.addEventListener('DOMContentLoaded', function() {
