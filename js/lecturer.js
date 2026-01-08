@@ -99,7 +99,44 @@ async function registerLecturerForSubject() {
     alert('Successfully registered for ' + selectedSubject + '!');
 }
 
-// Load and display lecturer's registered subjects
+// Helper function to find which classes a subject belongs to
+function findClassesForSubject(subject) {
+    const allClasses = [
+        'signals-basic', 'signals-b-iii-b-ii', 'signals-b-ii-b-i',
+        'superintendent', 'pre-qualifying',
+        'regimental-basic', 'regimental-b-iii-b-ii', 'regimental-b-ii-b-i',
+        'rso-rsi', 'electronic-warfare-course', 'tactical-drone-course'
+    ];
+    
+    const classesWithSubject = [];
+    allClasses.forEach(classId => {
+        const subjects = getCoursesForClass(classId);
+        if (subjects.includes(subject)) {
+            classesWithSubject.push(classId);
+        }
+    });
+    return classesWithSubject;
+}
+
+// Helper function to format class name for display
+function formatClassName(classId) {
+    const classNames = {
+        'signals-basic': 'SIGNALS BASIC',
+        'signals-b-iii-b-ii': 'SIGNALS B III – B II',
+        'signals-b-ii-b-i': 'SIGNALS B II – B I',
+        'superintendent': 'SUPERINTENDENT',
+        'pre-qualifying': 'PRE-QUALIFYING',
+        'regimental-basic': 'REGIMENTAL BASIC',
+        'regimental-b-iii-b-ii': 'REGIMENTAL B III – B II',
+        'regimental-b-ii-b-i': 'REGIMENTAL B II – B I',
+        'rso-rsi': 'RSO / RSI',
+        'electronic-warfare-course': 'ELECTRONIC WARFARE COURSE',
+        'tactical-drone-course': 'TACTICAL DRONE COURSE'
+    };
+    return classNames[classId] || classId;
+}
+
+// Load and display lecturer's registered subjects grouped by class
 function loadLecturerRegisteredSubjects() {
     const currentUser = getCurrentUser();
     if (!currentUser) return;
@@ -110,16 +147,47 @@ function loadLecturerRegisteredSubjects() {
     
     if (registeredSubjects.length === 0) {
         subjectsList.innerHTML = '<p class="empty-state" style="padding: 10px;">No subjects registered. Register for subjects above to manage materials.</p>';
-    } else {
-        subjectsList.innerHTML = registeredSubjects.map(subject => `
-            <div class="registered-course-item" style="display: flex; align-items: center; padding: 10px; background: #f8f9fa; border-radius: 5px; margin-bottom: 10px;">
-                <span style="font-weight: 600; flex: 1;">${subject}</span>
-            </div>
-        `).join('');
+        return;
     }
+    
+    // Group subjects by class
+    const subjectsByClass = {};
+    registeredSubjects.forEach(subject => {
+        const classes = findClassesForSubject(subject);
+        classes.forEach(classId => {
+            if (!subjectsByClass[classId]) {
+                subjectsByClass[classId] = [];
+            }
+            if (!subjectsByClass[classId].includes(subject)) {
+                subjectsByClass[classId].push(subject);
+            }
+        });
+    });
+    
+    // Display grouped by class
+    let html = '';
+    Object.keys(subjectsByClass).sort().forEach(classId => {
+        const className = formatClassName(classId);
+        const subjects = subjectsByClass[classId];
+        html += `
+            <div style="margin-bottom: 20px; padding: 15px; background: #ffffff; border-radius: 8px; border-left: 4px solid var(--primary-color);">
+                <h4 style="color: var(--primary-color); margin-bottom: 10px; font-size: 16px; font-weight: 600;">${className}</h4>
+                <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                    ${subjects.map(subject => `
+                        <span style="display: inline-block; padding: 6px 12px; background: #f8f9fa; border-radius: 5px; font-size: 14px; font-weight: 500; color: var(--text-color);">
+                            ${subject}
+                        </span>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    });
+    
+    subjectsList.innerHTML = html;
 }
 
 // Update courses dropdown for lecturer based on selected class (only show registered subjects)
+// This allows lecturers to upload materials for any of their registered subjects across all classes
 function updateCoursesForLecturer() {
     const classSelect = document.getElementById('classSelect').value;
     const courseSelect = document.getElementById('courseSelect');
@@ -132,13 +200,31 @@ function updateCoursesForLecturer() {
         return;
     }
     
-    const allCourses = getCoursesForClass(classSelect);
+    // Get all courses for the selected class
+    const allCoursesForClass = getCoursesForClass(classSelect);
     
-    // Only show courses that the lecturer is registered for
-    const availableCourses = allCourses.filter(course => registeredSubjects.includes(course));
+    // Filter to only show subjects the lecturer is registered for AND that belong to this class
+    const availableCourses = allCoursesForClass.filter(course => registeredSubjects.includes(course));
     
     if (availableCourses.length === 0) {
-        courseSelect.innerHTML = '<option value="">No registered subjects for this class</option>';
+        // Check if lecturer has any registered subjects at all
+        if (registeredSubjects.length === 0) {
+            courseSelect.innerHTML = '<option value="">No subjects registered. Please register for subjects first.</option>';
+        } else {
+            // Lecturer has subjects but not for this class
+            const lecturerClasses = new Set();
+            registeredSubjects.forEach(subject => {
+                const classes = findClassesForSubject(subject);
+                classes.forEach(c => lecturerClasses.add(c));
+            });
+            
+            if (lecturerClasses.size > 0) {
+                const classNames = Array.from(lecturerClasses).map(c => formatClassName(c)).join(', ');
+                courseSelect.innerHTML = `<option value="">No registered subjects for this class. Your subjects are in: ${classNames}</option>`;
+            } else {
+                courseSelect.innerHTML = '<option value="">No registered subjects for this class</option>';
+            }
+        }
         courseSelect.disabled = true;
     } else {
         courseSelect.innerHTML = '<option value="">Select Subject</option>' +
