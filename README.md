@@ -1,129 +1,101 @@
-# Signal Training School - Learning Management System
+# Ghana Armed Forces Signals Training School - Learning Management System
 
-A Learning Management System (LMS) for the Ghana Armed Forces Signal Training School, built with pure HTML, CSS, and JavaScript.
+A comprehensive Learning Management System (LMS) and Exam Portal for the Ghana Armed Forces Signals Training School.
 
-## Features
-
-### Lecturer Portal
-- Upload learning materials for specific courses and classes
-- Support for multiple material types (PDF, Video, Links, Text)
-- View and manage all uploaded materials
-- Delete materials when needed
-
-### Student Portal
-- View learning materials assigned to their class
-- Track learning progress
-- Mark materials as completed
-- View progress statistics (total materials, completed, percentage)
-
-## Getting Started
-
-1. Open `index.html` in a web browser
-2. Use the demo credentials to login:
-
-### Demo Credentials
-
-**Lecturer:**
-- Username: `lecturer1`
-- Password: `password123`
-
-**Student:**
-- Username: `student1`
-- Password: `password123`
-
-## System Structure
+## 📁 Project Structure
 
 ```
-├── index.html                 # Login page
-├── lecturer-dashboard.html    # Lecturer portal
-├── student-dashboard.html     # Student portal
-├── css/
-│   └── style.css             # All styling
-├── js/
-│   ├── app.js                # Core app functionality
-│   ├── auth.js               # Authentication handling
-│   ├── lecturer.js           # Lecturer dashboard logic
-│   └── student.js            # Student dashboard logic
-└── README.md                 # This file
+system fot military/
+├── 📚 LMS Portal/              # Learning Management System
+│   ├── index.html              # Login/Registration page
+│   ├── lecturer-dashboard.html  # Lecturer portal
+│   ├── student-dashboard.html   # Student portal
+│   ├── css/                    # Stylesheets
+│   ├── js/                     # JavaScript files
+│   ├── images/                 # Images and assets
+│   └── lms/                    # LMS database SQL scripts
+│
+├── 📝 Exam Portal/              # Exam and Quiz System
+│   ├── lecturer-exam-dashboard.html
+│   ├── student-exam-portal.html
+│   ├── js/                     # Exam JavaScript files
+│   ├── css/                    # Exam stylesheets
+│   ├── images/                 # Exam images
+│   └── supabase-exam-tables.sql # Exam database tables
+│
+└── 📖 Documentation/           # Setup and reference docs
+    └── docs/                   # Documentation files
 ```
 
-## How to Use
+## 🚀 Features
 
-### For Lecturers:
-1. Login with lecturer credentials
-2. Select course (currently Course 1)
-3. Select class (Class A, B, or C)
-4. Enter material title, type, content/URL, and description
-5. Click "Upload Material"
-6. Materials will be visible to officers in the selected class
+### LMS Portal
+- **Lecturer Features:**
+  - Upload learning materials (PDFs, Word docs, images, PowerPoint, text)
+  - Organize materials by subject, class, and category
+  - Track student progress and completion rates
+  - View analytics dashboard
+  - Register for subjects they teach
 
-### For Students:
-1. Login with student credentials
-2. View available materials for your class
-3. Click "View Material" to access content
-4. Mark materials as completed after studying
-5. Track your progress in the progress section
+- **Student Features:**
+  - Register for subjects
+  - View and download learning materials
+  - Track learning progress
+  - Mark materials as completed
 
-## Data Storage
+### Exam Portal
+- **Lecturer Features:**
+  - Create exams and quizzes
+  - Add questions (Multiple Choice, True/False, Short Answer, Essay)
+  - Set time limits
+  - View statistics
+  - Release results manually
 
-The system currently uses browser **localStorage** to store:
-- User accounts
-- Learning materials
-- Progress tracking
+- **Student Features:**
+  - Take timed exams
+  - Randomized questions (different order per student)
+  - One-way navigation (cannot go back)
+  - Auto-submit when time expires
+  - View results (when released)
 
-### ⚠️ Important Limitation
+## 🛠️ Setup
 
-**localStorage is browser/device-specific:**
-- ✅ Accounts created on Device A work on Device A
-- ❌ Accounts created on Device A **DO NOT** work on Device B or Mobile
-- Each device has its own separate database
+### Prerequisites
+- Supabase account (free tier available)
+- Web server (or use Vercel/Netlify for hosting)
 
-### 🔧 Backend Required for Cross-Device Access
+### Initial Setup
 
-To make accounts work across all devices (laptop, mobile, tablet), you need a **backend server with a shared database**.
+1. **Set up Supabase Database:**
+   - Go to `lms/supabase-database-setup.sql` and run in Supabase SQL Editor
+   - Go to `lms/supabase-storage-setup.sql` and run for file uploads
+   - Go to `exam-portal/supabase-exam-tables.sql` and run for exam system
 
-See `BACKEND_SETUP.md` for setup options including:
-- Firebase (easiest, free)
-- Supabase (free alternative)
-- Node.js + Express (custom backend)
-- PHP backend (if you have web hosting)
+2. **Configure Supabase:**
+   - Update `js/supabase-config.js` with your Supabase URL and keys
 
-**Note:** For single-device use, localStorage works fine. To reset, clear browser localStorage.
+3. **Deploy:**
+   - Upload files to your web server
+   - Or deploy to Vercel/Netlify
 
-## Course Structure
+## 📖 Documentation
 
-Currently configured with:
-- **Course 1** (placeholder course)
-- **Classes:** Class A, Class B, Class C
+- **LMS Setup:** See `docs/` folder for detailed setup instructions
+- **Exam Portal Setup:** See `exam-portal/EXAM_PORTAL_SETUP.md`
+- **Database Scripts:** See `lms/` folder for all SQL scripts
 
-## Material Types
+## 🔗 Quick Links
 
-1. **PDF Document** - For document uploads
-2. **Video** - For video content
-3. **External Link** - For web resources
-4. **Text Content** - For written materials
+- **LMS Login:** `index.html`
+- **Lecturer Dashboard:** `lecturer-dashboard.html`
+- **Student Dashboard:** `student-dashboard.html`
+- **Lecturer Exam Portal:** `exam-portal/lecturer-exam-dashboard.html`
+- **Student Exam Portal:** `exam-portal/student-exam-portal.html`
 
-## Future Enhancements
+## 👨‍💻 Developer
 
-- Exam system integration
-- File upload functionality
-- More courses
-- Advanced progress analytics
-- Notifications system
+Developed and Powered by **Frank K. Dogbe**
 
-## Browser Compatibility
+## 📝 License
 
-Works on all modern browsers:
-- Chrome
-- Firefox
-- Edge
-- Safari
-
-## Security Note
-
-This is a demo system using localStorage. For production use, implement:
-- Backend server with database
-- Secure authentication
-- File storage system
-- Role-based access control
-
+© 2026 Ghana Armed Forces Signals Training School. All rights reserved.
