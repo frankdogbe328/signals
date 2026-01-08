@@ -86,14 +86,30 @@ async function registerLecturerForSubject() {
         }
     }
     
+    // Refresh current user from Supabase to ensure we have latest data
+    if (typeof getUserFromSupabase === 'function') {
+        try {
+            const refreshedUser = await getUserFromSupabase(currentUser.id);
+            if (refreshedUser) {
+                setCurrentUser(refreshedUser);
+                console.log('User refreshed from Supabase:', refreshedUser.courses);
+            }
+        } catch (err) {
+            console.error('Error refreshing user:', err);
+        }
+    }
+    
     // Reset dropdowns (but keep class selected so they can register more subjects from same class)
     subjectSelect.value = '';
     populateLecturerSubjectDropdown(); // Refresh to show remaining unregistered subjects
     
-    // Reload UI
-    loadLecturerRegisteredSubjects();
-    updateCoursesForLecturer(); // Update upload form dropdown
-    loadMaterials(); // Refresh materials list
+    // Small delay to ensure state is updated before reloading UI
+    setTimeout(() => {
+        // Reload UI
+        loadLecturerRegisteredSubjects();
+        updateCoursesForLecturer(); // Update upload form dropdown
+        loadMaterials(); // Refresh materials list
+    }, 100);
     
     const className = formatClassName(classSelect);
     alert(`Successfully registered for ${selectedSubject} in ${className}!`);
@@ -139,11 +155,19 @@ function formatClassName(classId) {
 // Load and display lecturer's registered subjects grouped by class
 function loadLecturerRegisteredSubjects() {
     const currentUser = getCurrentUser();
-    if (!currentUser) return;
+    if (!currentUser) {
+        console.log('No current user found');
+        return;
+    }
     
     const registeredSubjects = currentUser.courses || [];
     const subjectsList = document.getElementById('lecturerRegisteredSubjectsList');
-    if (!subjectsList) return;
+    if (!subjectsList) {
+        console.log('Subjects list element not found');
+        return;
+    }
+    
+    console.log('Loading registered subjects:', registeredSubjects);
     
     if (registeredSubjects.length === 0) {
         subjectsList.innerHTML = '<p class="empty-state" style="padding: 10px;">No subjects registered. Register for subjects above to manage materials.</p>';
