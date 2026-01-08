@@ -27,30 +27,8 @@ document.addEventListener('DOMContentLoaded', function() {
 // Course mapping - maps class IDs to their available courses
 function getCoursesForClass(classId) {
     const courseMap = {
-        // Telecom Technician (Upgrading - Telecom)
-        'upgrading-telecom': [
-            'Telecom',
-            'Exchanges',
-            'Electronics',
-            'Antenna',
-            'Basic maths',
-            'Communication skills',
-            'Fibre optics',
-            'Power management',
-            'Information Technology (Networking)'
-        ],
-        // Radio Technicians (Upgrading - RF)
-        'upgrading-rf': [
-            'Electronics',
-            'Physics',
-            'Antenna',
-            'Basic math',
-            'Communication skills',
-            'Power management',
-            'Information Technology (Networking)'
-        ],
-        // Signal Basic (all levels)
-        'signal-basic-beginner': [
+        // SIGNALS BASIC
+        'signals-basic': [
             'Voice procedure',
             'Telegraphy procedure',
             'Antenna theory',
@@ -65,7 +43,8 @@ function getCoursesForClass(classId) {
             'Cable networking',
             'Signal tactics'
         ],
-        'signal-basic-ii-intermediate': [
+        // SIGNALS B III – B II
+        'signals-b-iii-b-ii': [
             'Voice procedure',
             'Telegraphy procedure',
             'Antenna theory',
@@ -80,7 +59,8 @@ function getCoursesForClass(classId) {
             'Cable networking',
             'Signal tactics'
         ],
-        'signal-basic-i-advanced': [
+        // SIGNALS B II – B I
+        'signals-b-ii-b-i': [
             'Voice procedure',
             'Telegraphy procedure',
             'Antenna theory',
@@ -95,8 +75,12 @@ function getCoursesForClass(classId) {
             'Cable networking',
             'Signal tactics'
         ],
-        // Regimental Basic (all levels)
-        'regimental-basic-beginner': [
+        // SUPERINTENDENT
+        'superintendent': [],
+        // PRE-QUALIFYING
+        'pre-qualifying': [],
+        // REGIMENTAL BASIC
+        'regimental-basic': [
             'Voice procedure',
             'Telegraphy procedure',
             'Antenna theory',
@@ -108,7 +92,8 @@ function getCoursesForClass(classId) {
             'Information Technology',
             'Signal tactics'
         ],
-        'regimental-basic-ii-intermediate': [
+        // REGIMENTAL B III – B II
+        'regimental-b-iii-b-ii': [
             'Voice procedure',
             'Telegraphy procedure',
             'Antenna theory',
@@ -120,7 +105,8 @@ function getCoursesForClass(classId) {
             'Information Technology',
             'Signal tactics'
         ],
-        'regimental-basic-i-advanced': [
+        // REGIMENTAL B II – B I
+        'regimental-b-ii-b-i': [
             'Voice procedure',
             'Telegraphy procedure',
             'Antenna theory',
@@ -132,8 +118,10 @@ function getCoursesForClass(classId) {
             'Information Technology',
             'Signal tactics'
         ],
-        // Electronic Warfare (System Operators)
-        'electronic-warfare': [
+        // RSO / RSI
+        'rso-rsi': [],
+        // ELECTRONIC WARFARE COURSE
+        'electronic-warfare-course': [
             'Voice procedure',
             'Telegraphy procedure',
             'Antenna theory',
@@ -145,8 +133,8 @@ function getCoursesForClass(classId) {
             'Communication centre management',
             'Signal tactics'
         ],
-        // Practical Drone Operators Course
-        'drone-operators': [
+        // TACTICAL DRONE COURSE
+        'tactical-drone-course': [
             'UAS Fundamentals',
             'UAS Control',
             'UAS Systems',
@@ -190,7 +178,7 @@ function initializeDemoData() {
                 password: 'password123',
                 role: 'student',
                 name: 'Lt. Sarah Adjei',
-                class: 'signal-basic-beginner',
+                class: 'signals-basic',
                 courses: []
             },
             {
@@ -199,7 +187,7 @@ function initializeDemoData() {
                 password: 'password123',
                 role: 'student',
                 name: 'Capt. Kwame Asante',
-                class: 'regimental-basic-beginner',
+                class: 'regimental-basic',
                 courses: []
             }
         ];
