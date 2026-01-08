@@ -1158,9 +1158,7 @@ body {
         margin-bottom: 6px;
     }
     
-    .hamburger {
-        display: flex;
-    }
+    /* Hamburger removed - logo and logout are directly visible */
     
     .footer {
         padding: 15px;

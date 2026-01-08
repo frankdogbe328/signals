@@ -317,11 +317,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Display lecturer name with Welcome
     document.getElementById('lecturerName').textContent = `Welcome, ${currentUser.name}`;
     
-    // Update mobile menu name with Welcome
-    const mobileLecturerName = document.getElementById('mobileLecturerName');
-    if (mobileLecturerName) {
-        mobileLecturerName.textContent = `Welcome, ${currentUser.name}`;
-    }
+    // Mobile menu removed - name shown directly in nav-user span
     
     // Load lecturer's registered subjects
     loadLecturerRegisteredSubjects();
