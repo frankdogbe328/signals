@@ -671,18 +671,29 @@ async function viewExamStats(examId) {
         // Get all attempts (submitted, auto_submitted, time_expired)
         const { data: attempts, error } = await client
             .from('student_exam_attempts')
-            .select(`
-                *,
-                users:student_id (
-                    id,
-                    name,
-                    username,
-                    class
-                )
-            `)
+            .select('*')
             .eq('exam_id', examId)
             .in('status', ['submitted', 'auto_submitted', 'time_expired'])
             .order('submitted_at', { ascending: false });
+        
+        // Get user details for each attempt
+        if (attempts && attempts.length > 0) {
+            const userIds = [...new Set(attempts.map(a => a.student_id))];
+            const { data: users } = await client
+                .from('users')
+                .select('id, name, username, class')
+                .in('id', userIds);
+            
+            // Map users to attempts
+            const userMap = {};
+            (users || []).forEach(u => {
+                userMap[u.id] = u;
+            });
+            
+            attempts.forEach(attempt => {
+                attempt.users = userMap[attempt.student_id] || {};
+            });
+        }
         
         if (error) throw error;
         
