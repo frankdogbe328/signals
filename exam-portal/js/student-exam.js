@@ -967,11 +967,191 @@ async function viewResults(examId) {
     }
 }
 
-// Go back to exams list
-function goBackToExams() {
+// Show exams tab
+function showExamsTab() {
     document.getElementById('availableExamsView').style.display = 'block';
+    const myResultsView = document.getElementById('myResultsView');
+    if (myResultsView) myResultsView.style.display = 'none';
     document.getElementById('examTakingView').style.display = 'none';
     document.getElementById('resultsView').style.display = 'none';
+    
+    // Update tab buttons
+    const examsTab = document.getElementById('examsTab');
+    const resultsTab = document.getElementById('resultsTab');
+    if (examsTab && resultsTab) {
+        examsTab.classList.remove('btn-secondary');
+        examsTab.classList.add('btn-primary');
+        resultsTab.classList.remove('btn-primary');
+        resultsTab.classList.add('btn-secondary');
+    }
+    
+    // Reload exams
+    loadAvailableExams();
+}
+
+// Show results tab
+function showResultsTab() {
+    document.getElementById('availableExamsView').style.display = 'none';
+    const myResultsView = document.getElementById('myResultsView');
+    if (myResultsView) myResultsView.style.display = 'block';
+    document.getElementById('examTakingView').style.display = 'none';
+    document.getElementById('resultsView').style.display = 'none';
+    
+    // Update tab buttons
+    const examsTab = document.getElementById('examsTab');
+    const resultsTab = document.getElementById('resultsTab');
+    if (examsTab && resultsTab) {
+        resultsTab.classList.remove('btn-secondary');
+        resultsTab.classList.add('btn-primary');
+        examsTab.classList.remove('btn-primary');
+        examsTab.classList.add('btn-secondary');
+    }
+    
+    // Reload all results
+    loadAllResults();
+}
+
+// Load all exam results for student
+async function loadAllResults() {
+    const currentUser = getCurrentUser();
+    if (!currentUser) return;
+    
+    try {
+        const client = getSupabaseClient();
+        if (!client) {
+            throw new Error('Supabase client not available');
+        }
+        
+        // Get all completed exam attempts
+        const { data: attempts, error } = await client
+            .from('student_exam_attempts')
+            .select('*')
+            .eq('student_id', currentUser.id)
+            .in('status', ['submitted', 'auto_submitted', 'time_expired'])
+            .order('submitted_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        const resultsListEl = document.getElementById('allResultsList');
+        if (!resultsListEl) return;
+        
+        if (!attempts || attempts.length === 0) {
+            resultsListEl.innerHTML = `
+                <div class="card">
+                    <p class="empty-state" style="text-align: center; padding: 40px;">
+                        No exam results available yet.<br>
+                        Complete an exam to see your results here.
+                    </p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Get exam details for each attempt
+        const examIds = [...new Set(attempts.map(a => a.exam_id))];
+        const { data: exams } = await client
+            .from('exams')
+            .select('*')
+            .in('id', examIds);
+        
+        const examMap = {};
+        (exams || []).forEach(exam => {
+            examMap[exam.id] = exam;
+        });
+        
+        displayAllResults(attempts, examMap);
+        
+    } catch (error) {
+        showError('Failed to load results: ' + (error.message || 'Unknown error'), 'Error Loading Results');
+    }
+}
+
+// Display all results
+function displayAllResults(attempts, examMap) {
+    const resultsListEl = document.getElementById('allResultsList');
+    if (!resultsListEl) return;
+    
+    const gradeColors = {
+        A: '#28a745',
+        B: '#17a2b8',
+        C: '#ffc107',
+        D: '#fd7e14',
+        F: '#dc3545'
+    };
+    
+    resultsListEl.innerHTML = attempts.map(attempt => {
+        const exam = examMap[attempt.exam_id];
+        if (!exam) return '';
+        
+        const percentage = attempt.percentage || 0;
+        const grade = calculateGrade(percentage);
+        const submittedDate = attempt.submitted_at ? new Date(attempt.submitted_at).toLocaleString() : 'N/A';
+        const canViewDetails = exam.results_released;
+        
+        return `
+            <div class="card" style="margin-bottom: 20px; border-left: 4px solid ${gradeColors[grade]};">
+                <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 15px;">
+                    <div style="flex: 1; min-width: 250px;">
+                        <h3 style="margin-bottom: 10px; color: var(--primary-color);">${escapeHtml(exam.title)}</h3>
+                        <p style="color: #666; margin-bottom: 10px;">${escapeHtml(exam.description || 'No description')}</p>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 15px; font-size: 14px;">
+                            <div><strong>Subject:</strong> ${escapeHtml(exam.subject)}</div>
+                            <div><strong>Class:</strong> ${formatClassName(exam.class_id)}</div>
+                            <div><strong>Submitted:</strong> ${submittedDate.split(',')[0]}</div>
+                        </div>
+                        <div style="display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+                            <div style="background: ${gradeColors[grade]}; color: white; padding: 8px 16px; border-radius: 20px; font-weight: bold; font-size: 18px;">
+                                ${grade}
+                            </div>
+                            <div>
+                                <div style="font-size: 24px; font-weight: bold; color: var(--primary-color);">
+                                    ${attempt.score || 0} / ${exam.total_marks}
+                                </div>
+                                <div style="font-size: 14px; color: #666;">${percentage.toFixed(1)}%</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                            Status: ${attempt.status === 'time_expired' ? '⏱ Time Expired' : attempt.status === 'auto_submitted' ? '🤖 Auto-Submitted' : '✓ Submitted'}
+                        </div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        ${canViewDetails ? `
+                            <button onclick="viewResults('${exam.id}')" class="btn btn-primary" style="width: auto; min-width: 150px;">
+                                View Details
+                            </button>
+                        ` : `
+                            <div style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; text-align: center; font-size: 14px;">
+                                ⏳ Results Pending
+                            </div>
+                        `}
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// Format class name
+function formatClassName(classId) {
+    const classNames = {
+        'signals-basic': 'SIGNALS BASIC',
+        'signals-b-iii-b-ii': 'SIGNALS B III – B II',
+        'signals-b-ii-b-i': 'SIGNALS B II – B I',
+        'superintendent': 'SUPERINTENDENT',
+        'pre-qualifying': 'PRE-QUALIFYING',
+        'regimental-basic': 'REGIMENTAL BASIC',
+        'regimental-b-iii-b-ii': 'REGIMENTAL B III – B II',
+        'regimental-b-ii-b-i': 'REGIMENTAL B II – B I',
+        'rso-rsi': 'RSO / RSI',
+        'electronic-warfare-course': 'ELECTRONIC WARFARE COURSE',
+        'tactical-drone-course': 'TACTICAL DRONE COURSE'
+    };
+    return classNames[classId] || classId;
+}
+
+// Go back to exams list
+function goBackToExams() {
+    showExamsTab();
     
     // Reset state
     currentExam = null;
