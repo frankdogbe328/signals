@@ -452,13 +452,20 @@ function addOption() {
     optionDiv.className = 'option-row';
     optionDiv.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
     optionDiv.innerHTML = `
-        <label style="display: flex; align-items: center; flex: 1; cursor: pointer; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
-            <input type="radio" name="correctOption" value="${optionCount}" style="margin-right: 10px;" required>
-            <input type="text" class="option-input" placeholder="Option ${optionCount}" style="flex: 1; border: none; outline: none;" required>
+        <label style="display: flex; align-items: center; cursor: pointer; margin-right: 10px;">
+            <input type="radio" name="correctOption" value="${optionCount}" style="margin-right: 5px; cursor: pointer;" required>
+            <span style="font-weight: 500; min-width: 50px;">Correct</span>
         </label>
-        <button type="button" onclick="removeOption(this)" class="btn btn-danger" style="padding: 8px 12px;">Remove</button>
+        <input type="text" class="option-input" placeholder="Enter option ${optionCount} text here..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; outline: none; font-size: 14px;" required>
+        <button type="button" onclick="removeOption(this)" class="btn btn-danger" style="padding: 8px 12px; white-space: nowrap;">Remove</button>
     `;
     container.appendChild(optionDiv);
+    
+    // Focus on the new input field for better UX
+    const newInput = optionDiv.querySelector('.option-input');
+    if (newInput) {
+        setTimeout(() => newInput.focus(), 100);
+    }
 }
 
 // Remove option field
@@ -484,9 +491,10 @@ function removeOption(button) {
     options.forEach((row, index) => {
         const radio = row.querySelector('input[type="radio"]');
         const textInput = row.querySelector('.option-input');
+        const labelSpan = row.querySelector('label span');
         if (radio && textInput) {
             radio.value = index + 1;
-            textInput.placeholder = `Option ${index + 1}`;
+            textInput.placeholder = `Enter option ${index + 1} text here...`;
         }
     });
     
@@ -960,11 +968,12 @@ function editQuestion(questionId) {
                 optionDiv.className = 'option-row';
                 optionDiv.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
                 optionDiv.innerHTML = `
-                    <label style="display: flex; align-items: center; flex: 1; cursor: pointer; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
-                        <input type="radio" name="correctOption" value="${optionCount}" style="margin-right: 10px;" required>
-                        <input type="text" class="option-input" placeholder="Option ${optionCount}" value="${escapeHtml(opt)}" style="flex: 1; border: none; outline: none;" required>
+                    <label style="display: flex; align-items: center; cursor: pointer; margin-right: 10px;">
+                        <input type="radio" name="correctOption" value="${optionCount}" style="margin-right: 5px; cursor: pointer;" required>
+                        <span style="font-weight: 500; min-width: 50px;">Correct</span>
                     </label>
-                    <button type="button" onclick="removeOption(this)" class="btn btn-danger" style="padding: 8px 12px;">Remove</button>
+                    <input type="text" class="option-input" placeholder="Enter option ${optionCount} text here..." value="${escapeHtml(opt)}" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; outline: none; font-size: 14px;" required>
+                    <button type="button" onclick="removeOption(this)" class="btn btn-danger" style="padding: 8px 12px; white-space: nowrap;">Remove</button>
                 `;
                 container.appendChild(optionDiv);
                 
