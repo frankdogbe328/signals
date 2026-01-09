@@ -338,8 +338,15 @@ function showExamDetailsModal(exam, questions) {
         </div>
         
         <div style="border-top: 2px solid #e0e0e0; padding-top: 20px;">
-            <h3>Questions (${questions.length})</h3>
-            <button onclick="addQuestion('${exam.id}')" class="btn btn-primary" style="margin-bottom: 15px;">Add Question</button>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">Questions (${questions.length})</h3>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="showWordUploadDialog('${exam.id}')" class="btn btn-secondary" style="display: flex; align-items: center; gap: 5px;">
+                        📄 Upload Word Document
+                    </button>
+                    <button onclick="addQuestion('${exam.id}')" class="btn btn-primary">+ Add Question</button>
+                </div>
+            </div>
             <div id="questionsList">
                 ${questions.length === 0 ? '<p class="empty-state">No questions added yet</p>' : questions.map((q, index) => displayQuestion(q, index + 1)).join('')}
             </div>
@@ -480,8 +487,8 @@ function addOption() {
     optionDiv.setAttribute('data-option-index', optionCount);
     optionDiv.innerHTML = `
         <span class="option-label">${optionLetter}.</span>
-        <input type="text" class="option-input" data-option-letter="${optionLetter}" placeholder="Enter option ${optionLetter} text here..." style="flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 4px; outline: none; font-size: 14px; color: #333; background-color: #fff;" required>
-        <button type="button" onclick="removeOption(this)" class="btn btn-danger" style="padding: 8px 12px; white-space: nowrap;">Remove</button>
+        <input type="text" class="option-input" data-option-letter="${optionLetter}" placeholder="Enter option ${optionLetter} text here..." required>
+        <button type="button" onclick="removeOption(this)" class="btn btn-danger">Remove</button>
     `;
     container.appendChild(optionDiv);
     
@@ -1072,8 +1079,8 @@ function editQuestion(questionId) {
                 optionDiv.setAttribute('data-option-index', optionCount);
                 optionDiv.innerHTML = `
                     <span class="option-label">${optionLetter}.</span>
-                    <input type="text" class="option-input" data-option-letter="${optionLetter}" placeholder="Enter option ${optionLetter} text here..." value="${escapeHtml(opt)}" style="flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 4px; outline: none; font-size: 14px; color: #333; background-color: #fff;" required>
-                    <button type="button" onclick="removeOption(this)" class="btn btn-danger" style="padding: 8px 12px; white-space: nowrap;">Remove</button>
+                    <input type="text" class="option-input" data-option-letter="${optionLetter}" placeholder="Enter option ${optionLetter} text here..." value="${escapeHtml(opt)}" required>
+                    <button type="button" onclick="removeOption(this)" class="btn btn-danger">Remove</button>
                 `;
                 container.appendChild(optionDiv);
                 
@@ -1167,6 +1174,334 @@ async function deleteQuestion(questionId) {
         
     } catch (error) {
         showError('Failed to delete question: ' + (error.message || 'Unknown error'), 'Error Deleting Question');
+    }
+}
+
+// Show Word document upload dialog
+function showWordUploadDialog(examId) {
+    const modal = document.getElementById('wordUploadModal');
+    const fileInput = document.getElementById('wordFileInput');
+    const progressDiv = document.getElementById('wordUploadProgress');
+    const statusDiv = document.getElementById('wordUploadStatus');
+    const progressBar = document.getElementById('wordUploadProgressBar');
+    
+    if (!modal) {
+        showError('Upload modal not found. Please refresh the page.', 'Error');
+        return;
+    }
+    
+    // Store exam ID for processing
+    modal.setAttribute('data-exam-id', examId);
+    
+    // Reset form
+    if (fileInput) fileInput.value = '';
+    if (progressDiv) progressDiv.style.display = 'none';
+    if (statusDiv) statusDiv.textContent = 'Processing...';
+    if (progressBar) progressBar.style.width = '0%';
+    
+    modal.style.display = 'block';
+}
+
+// Close Word upload modal
+function closeWordUploadModal() {
+    const modal = document.getElementById('wordUploadModal');
+    if (modal) {
+        modal.style.display = 'none';
+        const fileInput = document.getElementById('wordFileInput');
+        if (fileInput) fileInput.value = '';
+    }
+}
+
+// Process Word document and extract questions
+async function processWordDocument() {
+    const fileInput = document.getElementById('wordFileInput');
+    const modal = document.getElementById('wordUploadModal');
+    const progressDiv = document.getElementById('wordUploadProgress');
+    const statusDiv = document.getElementById('wordUploadStatus');
+    const progressBar = document.getElementById('wordUploadProgressBar');
+    const processBtn = document.getElementById('processWordBtn');
+    
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        showError('Please select a Word document file first.', 'No File Selected');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    const examId = modal ? modal.getAttribute('data-exam-id') : currentExamId;
+    
+    if (!examId) {
+        showError('Exam ID not found. Please try again.', 'Error');
+        return;
+    }
+    
+    // Validate file type
+    const fileName = file.name.toLowerCase();
+    if (!fileName.endsWith('.docx')) {
+        showError('Please upload a .docx file only. Older .doc files are not supported. You can save .doc files as .docx in Microsoft Word.', 'Invalid File Type');
+        return;
+    }
+    
+    // Check if mammoth is available
+    if (typeof mammoth === 'undefined') {
+        showError('Word document parser not loaded. Please refresh the page and try again.', 'Library Error');
+        return;
+    }
+    
+    // Show progress
+    if (progressDiv) progressDiv.style.display = 'block';
+    if (statusDiv) statusDiv.textContent = 'Reading document...';
+    if (progressBar) progressBar.style.width = '20%';
+    if (processBtn) processBtn.disabled = true;
+    
+    try {
+        // Read file as array buffer
+        const arrayBuffer = await file.arrayBuffer();
+        
+        if (statusDiv) statusDiv.textContent = 'Parsing document...';
+        if (progressBar) progressBar.style.width = '40%';
+        
+        // Convert Word document to HTML using mammoth
+        const result = await mammoth.extractRawText({ arrayBuffer: arrayBuffer });
+        const text = result.value;
+        const messages = result.messages;
+        
+        if (messages && messages.length > 0) {
+            console.warn('Word parsing warnings:', messages);
+        }
+        
+        if (!text || text.trim().length === 0) {
+            throw new Error('Document appears to be empty or could not be read.');
+        }
+        
+        if (statusDiv) statusDiv.textContent = 'Extracting questions...';
+        if (progressBar) progressBar.style.width = '60%';
+        
+        // Parse questions from text
+        const parsedQuestions = parseQuestionsFromText(text);
+        
+        if (parsedQuestions.length === 0) {
+            throw new Error('No questions found in the document. Please check the format and try again.');
+        }
+        
+        if (statusDiv) statusDiv.textContent = `Found ${parsedQuestions.length} question(s). Saving...`;
+        if (progressBar) progressBar.style.width = '80%';
+        
+        // Save questions to database
+        await saveParsedQuestions(examId, parsedQuestions);
+        
+        if (statusDiv) statusDiv.textContent = `Successfully imported ${parsedQuestions.length} question(s)!`;
+        if (progressBar) progressBar.style.width = '100%';
+        
+        showSuccess(`Successfully imported ${parsedQuestions.length} question(s) from the Word document!`, 'Import Successful');
+        
+        // Close modal and refresh exam details after a short delay
+        setTimeout(() => {
+            closeWordUploadModal();
+            viewExamDetails(examId);
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Error processing Word document:', error);
+        showError('Failed to process Word document: ' + (error.message || 'Unknown error'), 'Processing Error');
+        if (statusDiv) statusDiv.textContent = 'Error: ' + (error.message || 'Unknown error');
+        if (progressBar) progressBar.style.width = '0%';
+    } finally {
+        if (processBtn) processBtn.disabled = false;
+    }
+}
+
+// Parse questions from text content
+function parseQuestionsFromText(text) {
+    const questions = [];
+    // Split by lines and clean them up
+    const lines = text.split(/\r?\n/).map(line => line.trim()).filter(line => line.length > 0);
+    
+    let currentQuestion = null;
+    let currentOptions = [];
+    let currentAnswer = null;
+    let questionNumber = 1;
+    let isCollectingQuestion = false;
+    let isCollectingOptions = false;
+    
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        
+        // Check if line is a question number (1., 2., Q1, Question 1, etc.)
+        const questionMatch = line.match(/^((?:Question\s*)?\d+|Q\d+)\.?\s*:?\s*(.+)$/i);
+        if (questionMatch) {
+            // Save previous question if exists
+            if (currentQuestion) {
+                const questionData = buildQuestionData(currentQuestion, currentOptions, currentAnswer, questionNumber);
+                if (questionData) {
+                    questions.push(questionData);
+                    questionNumber++;
+                }
+            }
+            
+            // Start new question
+            currentQuestion = questionMatch[2];
+            currentOptions = [];
+            currentAnswer = null;
+            isCollectingQuestion = true;
+            isCollectingOptions = false;
+            continue;
+        }
+        
+        // Check if line is an option (A., B., C., etc. or a) b) c))
+        const optionMatch = line.match(/^([A-F]|[a-f])\)?\.?\s*:?\s*(.+)$/i);
+        if (optionMatch && (currentQuestion || isCollectingOptions)) {
+            currentOptions.push(optionMatch[2].trim());
+            isCollectingOptions = true;
+            isCollectingQuestion = false;
+            continue;
+        }
+        
+        // Check if line contains answer (Answer:, Correct Answer:, Ans:, etc.)
+        const answerMatch = line.match(/^(?:Correct\s+)?Answer:?\s*(.+)$/i);
+        if (answerMatch) {
+            currentAnswer = answerMatch[1].trim();
+            isCollectingQuestion = false;
+            isCollectingOptions = false;
+            continue;
+        }
+        
+        // If we're collecting a question, append continuation lines
+        if (isCollectingQuestion && currentQuestion && !optionMatch && !answerMatch) {
+            // Don't append if it looks like it might be the start of options or answer
+            if (!line.match(/^([A-F]|Answer|Correct)/i)) {
+                currentQuestion += ' ' + line;
+            } else {
+                isCollectingQuestion = false;
+            }
+        }
+        // If we're collecting options, check if line continues an option (no letter prefix)
+        else if (isCollectingOptions && currentOptions.length > 0 && !optionMatch && !answerMatch) {
+            // Append to last option if it doesn't look like a new question
+            if (!line.match(/^\d+\.|^Q\d+/i)) {
+                currentOptions[currentOptions.length - 1] += ' ' + line;
+            } else {
+                isCollectingOptions = false;
+            }
+        }
+        // If we have a question but no options yet, might be continuation of question text
+        else if (currentQuestion && currentOptions.length === 0 && !answerMatch && !optionMatch) {
+            if (!line.match(/^\d+\.|^Q\d+|^Answer/i)) {
+                currentQuestion += ' ' + line;
+            }
+        }
+    }
+    
+    // Save last question
+    if (currentQuestion) {
+        const questionData = buildQuestionData(currentQuestion, currentOptions, currentAnswer, questionNumber);
+        if (questionData) {
+            questions.push(questionData);
+        }
+    }
+    
+    return questions;
+}
+
+// Build question data object from parsed components
+function buildQuestionData(questionText, options, answer, sequenceOrder) {
+    if (!questionText || !answer) {
+        return null;
+    }
+    
+    questionText = questionText.trim();
+    answer = answer.trim();
+    
+    // Determine question type based on options and answer
+    let questionType = 'short_answer';
+    let optionsJson = null;
+    let correctAnswer = answer;
+    
+    // Check for True/False (answer is True or False, and no multiple choice options)
+    const answerLower = answer.toLowerCase();
+    if ((answerLower === 'true' || answerLower === 'false' || answerLower === 't' || answerLower === 'f') && 
+        options.length === 0) {
+        questionType = 'true_false';
+        if (answerLower === 't' || answerLower === 'true') {
+            correctAnswer = 'True';
+        } else {
+            correctAnswer = 'False';
+        }
+    }
+    // Check for multiple choice (has options A, B, C, etc.)
+    else if (options.length >= 2) {
+        questionType = 'multiple_choice';
+        optionsJson = JSON.stringify(options);
+        
+        // Find correct answer in options
+        // Answer might be a letter (A, B, C) or the actual text
+        const answerLetter = answer.toUpperCase().charAt(0);
+        const letterIndex = answerLetter.charCodeAt(0) - 65; // A=0, B=1, etc.
+        
+        if (letterIndex >= 0 && letterIndex < options.length) {
+            correctAnswer = options[letterIndex];
+        } else {
+            // Answer might be the actual option text
+            const foundOption = options.find(opt => opt.toLowerCase() === answer.toLowerCase());
+            if (foundOption) {
+                correctAnswer = foundOption;
+            } else {
+                // Use first option as fallback (shouldn't happen with good formatting)
+                correctAnswer = options[0];
+            }
+        }
+    }
+    // Check for essay (long answer)
+    else if (answer.length > 100 || questionText.toLowerCase().includes('explain') || 
+             questionText.toLowerCase().includes('describe') || questionText.toLowerCase().includes('discuss')) {
+        questionType = 'essay';
+    }
+    
+    return {
+        question_text: questionText,
+        question_type: questionType,
+        options: optionsJson,
+        correct_answer: correctAnswer,
+        marks: 1, // Default marks, can be adjusted later
+        sequence_order: sequenceOrder
+    };
+}
+
+// Save parsed questions to database
+async function saveParsedQuestions(examId, questions) {
+    try {
+        const client = getSupabaseClient();
+        if (!client) {
+            throw new Error('Supabase client not available');
+        }
+        
+        // Get current question count to set sequence order
+        const { data: existingQuestions } = await client
+            .from('questions')
+            .select('id')
+            .eq('exam_id', examId);
+        
+        const startSequence = (existingQuestions?.length || 0) + 1;
+        
+        // Prepare questions for insertion
+        const questionsToInsert = questions.map((q, index) => ({
+            exam_id: examId,
+            question_text: q.question_text,
+            question_type: q.question_type,
+            options: q.options,
+            correct_answer: q.correct_answer,
+            marks: q.marks,
+            sequence_order: startSequence + index
+        }));
+        
+        // Insert questions
+        const { error } = await client
+            .from('questions')
+            .insert(questionsToInsert);
+        
+        if (error) throw error;
+        
+    } catch (error) {
+        throw new Error('Failed to save questions: ' + (error.message || 'Unknown error'));
     }
 }
 

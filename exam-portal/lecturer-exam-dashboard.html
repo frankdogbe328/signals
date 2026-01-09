@@ -29,20 +29,23 @@
         }
         .option-row {
             display: flex;
-            gap: 15px;
+            gap: 10px;
             margin-bottom: 12px;
             align-items: center;
+            width: 100%;
         }
         .option-label {
             font-weight: bold;
             font-size: 16px;
             color: #333;
-            min-width: 40px;
+            min-width: 30px;
             text-align: center;
             padding: 10px 0;
+            flex-shrink: 0;
         }
         .option-row input[type="text"] {
             flex: 1;
+            min-width: 0;
             padding: 12px;
             border: 2px solid #ddd;
             border-radius: 4px;
@@ -51,6 +54,14 @@
             transition: border-color 0.3s;
             color: #333 !important;
             background-color: #fff !important;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .option-row .btn-danger {
+            padding: 6px 10px !important;
+            font-size: 12px !important;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         .option-row input[type="text"]:focus {
             border-color: var(--primary-color, #007bff);
@@ -299,8 +310,61 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Word Document Upload Modal -->
+        <div id="wordUploadModal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 600px;">
+                <span class="close-modal" onclick="closeWordUploadModal()">&times;</span>
+                <h2>Upload Word Document</h2>
+                <div style="margin-top: 20px;">
+                    <div style="background: #f0f7ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #007bff;">
+                        <h4 style="margin-top: 0; color: #007bff;">📋 Document Format Guide</h4>
+                        <p style="margin-bottom: 10px; font-size: 14px;"><strong>Format your questions as follows:</strong></p>
+                        <div style="background: white; padding: 15px; border-radius: 4px; font-family: monospace; font-size: 12px; white-space: pre-wrap; line-height: 1.6;">
+1. What is the capital of Ghana?
+   A. Kumasi
+   B. Accra
+   C. Tamale
+   D. Takoradi
+   Answer: B
+
+2. True or False: Ghana is in West Africa.
+   Answer: True
+
+3. Explain the importance of communication in the military.
+   Answer: [Your expected answer here]
+                        </div>
+                        <p style="margin-top: 10px; font-size: 13px; color: #666;">
+                            <strong>Tips:</strong> Use numbered questions (1, 2, 3...), mark options with A, B, C, D, and include "Answer:" followed by the correct answer. For multiple choice, options should be on separate lines.
+                        </p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="wordFileInput">Select Word Document (.docx)</label>
+                        <input type="file" id="wordFileInput" accept=".docx" style="padding: 10px; border: 2px dashed #ddd; border-radius: 4px; width: 100%; cursor: pointer;">
+                        <small style="color: #666; display: block; margin-top: 5px;">Only .docx files are supported (not .doc). You can save older .doc files as .docx in Word.</small>
+                    </div>
+                    
+                    <div id="wordUploadProgress" style="display: none; margin: 15px 0;">
+                        <div style="background: #f0f0f0; border-radius: 4px; padding: 10px;">
+                            <div id="wordUploadStatus" style="color: #666; font-size: 14px;">Processing...</div>
+                            <div style="background: #e0e0e0; border-radius: 4px; height: 20px; margin-top: 10px; overflow: hidden;">
+                                <div id="wordUploadProgressBar" style="background: #007bff; height: 100%; width: 0%; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button onclick="processWordDocument()" class="btn btn-primary" id="processWordBtn">Process Document</button>
+                        <button onclick="closeWordUploadModal()" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
+    <!-- Mammoth.js Library for Word Document Parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
     <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase-config.js"></script>
