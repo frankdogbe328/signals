@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load available exams
     loadAvailableExams();
+    
+    // Load all results
+    loadAllResults();
 });
 
 // Load available exams for student
