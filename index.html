@@ -241,6 +241,22 @@
             }
         }
         
+        // Toggle password visibility
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const toggle = event.target;
+            
+            if (input && toggle) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    toggle.textContent = '🙈';
+                } else {
+                    input.type = 'password';
+                    toggle.textContent = '👁️';
+                }
+            }
+        }
+        
         // Check if video loads successfully
         document.addEventListener('DOMContentLoaded', function() {
             const video = document.getElementById('backgroundVideo');
