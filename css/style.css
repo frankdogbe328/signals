@@ -153,6 +153,33 @@ body {
         padding: 25px 15px;
         margin: 10px;
     }
+    
+    /* Mobile-friendly portal selection */
+    .form-group select#portalType {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 12px 35px 12px 12px;
+    }
+    
+    .form-group select#portalType option {
+        font-size: 16px;
+        padding: 12px;
+        white-space: normal;
+        word-wrap: break-word;
+    }
+}
+
+/* Additional mobile optimizations for portal dropdown */
+@media (max-width: 768px) {
+    .form-group select#portalType {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 12px 35px 12px 12px;
+        min-height: 48px; /* Better touch target */
+    }
+    
+    .form-group select#portalType option {
+        padding: 12px;
+        font-size: 15px;
+    }
 }
 
 .logo-section h1 {
