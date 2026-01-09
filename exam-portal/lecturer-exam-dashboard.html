@@ -29,27 +29,37 @@
         }
         .option-row {
             display: flex;
-            gap: 10px;
-            margin-bottom: 10px;
+            gap: 15px;
+            margin-bottom: 12px;
             align-items: center;
         }
-        .option-row label {
-            flex: 1;
-            cursor: pointer;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background: white;
-            display: flex;
-            align-items: center;
-        }
-        .option-row input[type="radio"] {
-            margin-right: 10px;
+        .option-label {
+            font-weight: bold;
+            font-size: 16px;
+            color: #333;
+            min-width: 40px;
+            text-align: center;
+            padding: 10px 0;
         }
         .option-row input[type="text"] {
             flex: 1;
-            border: none;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
             outline: none;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            color: #333 !important;
+            background-color: #fff !important;
+        }
+        .option-row input[type="text"]:focus {
+            border-color: var(--primary-color, #007bff);
+        }
+        .option-row input[type="text"]::placeholder {
+            color: #999;
+        }
+        .option-row input[type="text"]:not(:placeholder-shown) {
+            color: #333 !important;
         }
         .timer-display {
             font-size: 24px;
@@ -240,7 +250,13 @@
                                     <!-- Options will be dynamically added here -->
                                 </div>
                                 <button type="button" onclick="addOption()" class="btn btn-secondary" style="margin-top: 10px;">+ Add Option</button>
-                                <small style="color: #666; display: block; margin-top: 5px;">Select which option is correct</small>
+                            </div>
+                            <div class="form-group" id="correctAnswerSelector" style="display: none; margin-top: 15px;">
+                                <label for="correctAnswerSelect">Correct Answer *</label>
+                                <select id="correctAnswerSelect" required style="padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; width: 100%;">
+                                    <option value="">Select correct option (A, B, C, etc.)</option>
+                                </select>
+                                <small style="color: #666; display: block; margin-top: 5px;">Select which option (A, B, C, D, etc.) is the correct answer</small>
                             </div>
                         </div>
                         

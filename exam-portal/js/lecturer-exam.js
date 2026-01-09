@@ -395,6 +395,7 @@ function addQuestion(examId) {
     document.getElementById('trueFalseSection').style.display = 'none';
     document.getElementById('textAnswerSection').style.display = 'none';
     document.getElementById('optionsContainer').innerHTML = '';
+    optionCount = 0; // Reset option count
     
     // Show modal
     document.getElementById('questionFormModal').style.display = 'block';
@@ -418,6 +419,10 @@ function updateQuestionFormFields() {
             optionCount = 0; // Reset count
             addOption();
             addOption();
+        } else {
+            // Attach event listeners to existing inputs and update correct answer selector
+            attachOptionInputListeners();
+            updateCorrectAnswerSelector();
         }
     } else if (questionType === 'true_false') {
         document.getElementById('trueFalseSection').style.display = 'block';
@@ -426,12 +431,33 @@ function updateQuestionFormFields() {
     }
 }
 
+// Attach input event listeners to all option inputs for real-time updates
+function attachOptionInputListeners() {
+    const container = document.getElementById('optionsContainer');
+    if (!container) return;
+    
+    const optionInputs = container.querySelectorAll('.option-input');
+    optionInputs.forEach(input => {
+        // Check if listener already attached using data attribute
+        if (!input.hasAttribute('data-listener-attached')) {
+            input.setAttribute('data-listener-attached', 'true');
+            input.addEventListener('input', function() {
+                updateCorrectAnswerSelector();
+            });
+        }
+    });
+}
+
 // Add option field for multiple choice
 let optionCount = 0;
 function addOption() {
     const container = document.getElementById('optionsContainer');
     if (!container) {
-        console.error('Options container not found');
+        if (typeof showError === 'function') {
+            showError('Options container not found', 'DOM Error');
+        } else {
+            console.error('Options container not found');
+        }
         return;
     }
     
@@ -448,23 +474,76 @@ function addOption() {
     }
     
     optionCount = currentOptions + 1;
+    const optionLetter = String.fromCharCode(64 + optionCount); // A, B, C, D, E, F
     const optionDiv = document.createElement('div');
     optionDiv.className = 'option-row';
-    optionDiv.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
+    optionDiv.setAttribute('data-option-index', optionCount);
     optionDiv.innerHTML = `
-        <label style="display: flex; align-items: center; cursor: pointer; margin-right: 10px;">
-            <input type="radio" name="correctOption" value="${optionCount}" style="margin-right: 5px; cursor: pointer;" required>
-            <span style="font-weight: 500; min-width: 50px;">Correct</span>
-        </label>
-        <input type="text" class="option-input" placeholder="Enter option ${optionCount} text here..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; outline: none; font-size: 14px;" required>
+        <span class="option-label">${optionLetter}.</span>
+        <input type="text" class="option-input" data-option-letter="${optionLetter}" placeholder="Enter option ${optionLetter} text here..." style="flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 4px; outline: none; font-size: 14px; color: #333; background-color: #fff;" required>
         <button type="button" onclick="removeOption(this)" class="btn btn-danger" style="padding: 8px 12px; white-space: nowrap;">Remove</button>
     `;
     container.appendChild(optionDiv);
     
-    // Focus on the new input field for better UX
+    // Attach event listener to the new input for real-time updates
     const newInput = optionDiv.querySelector('.option-input');
     if (newInput) {
+        // Mark that listener is attached and add input event listener to update dropdown as user types
+        newInput.setAttribute('data-listener-attached', 'true');
+        newInput.addEventListener('input', function() {
+            updateCorrectAnswerSelector();
+        });
+        
+        // Focus on the new input field for better UX
         setTimeout(() => newInput.focus(), 100);
+    }
+    
+    // Update the correct answer selector dropdown
+    updateCorrectAnswerSelector();
+}
+
+// Update the correct answer selector dropdown
+function updateCorrectAnswerSelector() {
+    const container = document.getElementById('optionsContainer');
+    const correctAnswerSelect = document.getElementById('correctAnswerSelect');
+    const correctAnswerSelector = document.getElementById('correctAnswerSelector');
+    
+    if (!container || !correctAnswerSelect || !correctAnswerSelector) return;
+    
+    const currentOptions = container.querySelectorAll('.option-row');
+    const currentSelectedValue = correctAnswerSelect.value;
+    
+    // Clear existing options except the first placeholder
+    correctAnswerSelect.innerHTML = '<option value="">Select correct option (A, B, C, etc.)</option>';
+    
+    // Add options based on current rows
+    currentOptions.forEach((row, index) => {
+        const optionLetter = String.fromCharCode(65 + index); // A, B, C, D, E, F
+        const optionInput = row.querySelector('.option-input');
+        const optionText = optionInput ? optionInput.value.trim() : '';
+        const displayText = optionText ? `Option ${optionLetter}: ${optionText.substring(0, 30)}${optionText.length > 30 ? '...' : ''}` : `Option ${optionLetter}`;
+        
+        const option = document.createElement('option');
+        option.value = optionLetter;
+        option.textContent = displayText;
+        correctAnswerSelect.appendChild(option);
+    });
+    
+    // Restore previous selection if it still exists
+    if (currentSelectedValue) {
+        const optionExists = Array.from(correctAnswerSelect.options).some(opt => opt.value === currentSelectedValue);
+        if (optionExists) {
+            correctAnswerSelect.value = currentSelectedValue;
+        }
+    }
+    
+    // Show/hide the selector based on number of options
+    if (currentOptions.length >= 2) {
+        correctAnswerSelector.style.display = 'block';
+        correctAnswerSelect.required = true;
+    } else {
+        correctAnswerSelector.style.display = 'none';
+        correctAnswerSelect.required = false;
     }
 }
 
@@ -486,20 +565,29 @@ function removeOption(button) {
     
     button.closest('.option-row').remove();
     
-    // Renumber remaining options
+    // Re-label remaining options (A, B, C, D, etc.)
     const options = container.querySelectorAll('.option-row');
     options.forEach((row, index) => {
-        const radio = row.querySelector('input[type="radio"]');
+        const optionLetter = String.fromCharCode(65 + index); // A, B, C, D, E, F
+        const labelSpan = row.querySelector('.option-label');
         const textInput = row.querySelector('.option-input');
-        const labelSpan = row.querySelector('label span');
-        if (radio && textInput) {
-            radio.value = index + 1;
-            textInput.placeholder = `Enter option ${index + 1} text here...`;
+        
+        if (labelSpan) {
+            labelSpan.textContent = `${optionLetter}.`;
         }
+        if (textInput) {
+            textInput.setAttribute('data-option-letter', optionLetter);
+            textInput.placeholder = `Enter option ${optionLetter} text here...`;
+        }
+        row.setAttribute('data-option-index', index + 1);
     });
     
     // Update optionCount
     optionCount = options.length;
+    
+    // Re-attach event listeners to remaining inputs and update the correct answer selector
+    attachOptionInputListeners();
+    updateCorrectAnswerSelector();
 }
 
 // Close question form modal
@@ -536,13 +624,21 @@ async function handleQuestionFormSubmit(e) {
     
     // Get correct answer based on question type
     if (questionType === 'multiple_choice') {
-        const correctRadio = document.querySelector('input[name="correctOption"]:checked');
-        if (!correctRadio) {
-            showError('Please select the correct option', 'Missing Selection');
+        const correctAnswerSelect = document.getElementById('correctAnswerSelect');
+        if (!correctAnswerSelect || !correctAnswerSelect.value) {
+            showError('Please select the correct answer (A, B, C, etc.)', 'Missing Selection');
             return;
         }
         
+        const selectedLetter = correctAnswerSelect.value; // A, B, C, D, etc.
+        const selectedIndex = selectedLetter.charCodeAt(0) - 65; // Convert to 0-based index
+        
         const optionInputs = document.querySelectorAll('.option-input');
+        if (optionInputs.length < 2) {
+            showError('Minimum 2 options required', 'Incomplete Options');
+            return;
+        }
+        
         const optionValues = Array.from(optionInputs).map(input => {
             const value = input.value.trim();
             if (!value) {
@@ -554,8 +650,12 @@ async function handleQuestionFormSubmit(e) {
         
         if (optionValues.includes(null)) return;
         
-        const correctIndex = parseInt(correctRadio.value) - 1;
-        correctAnswer = optionValues[correctIndex];
+        if (selectedIndex < 0 || selectedIndex >= optionValues.length) {
+            showError('Invalid correct answer selection', 'Selection Error');
+            return;
+        }
+        
+        correctAnswer = optionValues[selectedIndex];
         options = JSON.stringify(optionValues);
         
     } else if (questionType === 'true_false') {
@@ -961,30 +1061,51 @@ function editQuestion(questionId) {
             container.innerHTML = '';
             optionCount = 0;
             
-            // Add options one by one
+            let correctAnswerLetter = null;
+            
+            // Add options one by one with A, B, C, D labels
             options.forEach((opt, index) => {
                 optionCount = index + 1;
+                const optionLetter = String.fromCharCode(64 + optionCount); // A, B, C, D, E, F
                 const optionDiv = document.createElement('div');
                 optionDiv.className = 'option-row';
-                optionDiv.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
+                optionDiv.setAttribute('data-option-index', optionCount);
                 optionDiv.innerHTML = `
-                    <label style="display: flex; align-items: center; cursor: pointer; margin-right: 10px;">
-                        <input type="radio" name="correctOption" value="${optionCount}" style="margin-right: 5px; cursor: pointer;" required>
-                        <span style="font-weight: 500; min-width: 50px;">Correct</span>
-                    </label>
-                    <input type="text" class="option-input" placeholder="Enter option ${optionCount} text here..." value="${escapeHtml(opt)}" style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 4px; outline: none; font-size: 14px;" required>
+                    <span class="option-label">${optionLetter}.</span>
+                    <input type="text" class="option-input" data-option-letter="${optionLetter}" placeholder="Enter option ${optionLetter} text here..." value="${escapeHtml(opt)}" style="flex: 1; padding: 12px; border: 2px solid #ddd; border-radius: 4px; outline: none; font-size: 14px; color: #333; background-color: #fff;" required>
                     <button type="button" onclick="removeOption(this)" class="btn btn-danger" style="padding: 8px 12px; white-space: nowrap;">Remove</button>
                 `;
                 container.appendChild(optionDiv);
                 
+                // Attach input event listener to this input for real-time updates
+                const inputElement = optionDiv.querySelector('.option-input');
+                if (inputElement) {
+                    inputElement.setAttribute('data-listener-attached', 'true');
+                    inputElement.addEventListener('input', function() {
+                        updateCorrectAnswerSelector();
+                    });
+                }
+                
                 // Check if this is the correct answer
                 if (opt === question.correct_answer) {
-                    const radio = optionDiv.querySelector('input[type="radio"]');
-                    if (radio) {
-                        radio.checked = true;
-                    }
+                    correctAnswerLetter = optionLetter;
                 }
             });
+            
+            // Update the correct answer selector dropdown and set the selected value
+            // Use a small delay to ensure DOM is ready
+            setTimeout(() => {
+                updateCorrectAnswerSelector();
+                if (correctAnswerLetter) {
+                    const correctAnswerSelect = document.getElementById('correctAnswerSelect');
+                    if (correctAnswerSelect) {
+                        // Set the correct answer after selector is populated
+                        setTimeout(() => {
+                            correctAnswerSelect.value = correctAnswerLetter;
+                        }, 10);
+                    }
+                }
+            }, 10);
         }
     } else if (question.question_type === 'true_false') {
         const radios = document.querySelectorAll('input[name="trueFalseAnswer"]');
