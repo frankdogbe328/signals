@@ -331,6 +331,12 @@
     </nav>
     
     <div class="container">
+        <!-- Tab Navigation -->
+        <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; flex-wrap: wrap;">
+            <button id="examsTab" onclick="showExamsTab()" class="btn btn-primary" style="width: auto; padding: 10px 20px;">📝 Available Exams</button>
+            <button id="resultsTab" onclick="showResultsTab()" class="btn btn-secondary" style="width: auto; padding: 10px 20px;">📊 My Results</button>
+        </div>
+        
         <!-- Available Exams View -->
         <div id="availableExamsView">
             <div class="dashboard-header">
@@ -341,6 +347,20 @@
             <div class="dashboard-content">
                 <div id="examsList" class="materials-list">
                     <p class="empty-state">No exams available at the moment</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- My Results View -->
+        <div id="myResultsView" style="display: none;">
+            <div class="dashboard-header">
+                <h2>My Exam Results</h2>
+                <p>View all your completed exam results</p>
+            </div>
+            
+            <div class="dashboard-content">
+                <div id="allResultsList">
+                    <!-- All results will be loaded here -->
                 </div>
             </div>
         </div>
