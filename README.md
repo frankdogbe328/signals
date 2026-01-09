@@ -94,7 +94,7 @@ system fot military/
 
 ## 👨‍💻 Developer
 
-Developed and Powered by **Frank K. Dogbe**
+Developed and Powered by **Frank K. Dogbe** | Co-developed by Solomon A. Nortey
 
 ## 📝 License
 
