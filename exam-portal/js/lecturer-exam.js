@@ -948,23 +948,35 @@ function editQuestion(questionId) {
     // Populate fields based on type
     if (question.question_type === 'multiple_choice' && question.options) {
         const options = JSON.parse(question.options);
-        document.getElementById('optionsContainer').innerHTML = '';
-        optionCount = 0;
-        
-        options.forEach((opt, index) => {
-            addOption();
-            const optionInput = document.querySelectorAll('.option-input')[index];
-            if (optionInput) {
-                optionInput.value = opt;
-            }
-            // Check if this is the correct answer
-            if (opt === question.correct_answer) {
-                const radios = document.querySelectorAll('input[name="correctOption"]');
-                if (radios[index]) {
-                    radios[index].checked = true;
+        const container = document.getElementById('optionsContainer');
+        if (container) {
+            container.innerHTML = '';
+            optionCount = 0;
+            
+            // Add options one by one
+            options.forEach((opt, index) => {
+                optionCount = index + 1;
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option-row';
+                optionDiv.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
+                optionDiv.innerHTML = `
+                    <label style="display: flex; align-items: center; flex: 1; cursor: pointer; padding: 8px; border: 1px solid #ddd; border-radius: 4px; background: white;">
+                        <input type="radio" name="correctOption" value="${optionCount}" style="margin-right: 10px;" required>
+                        <input type="text" class="option-input" placeholder="Option ${optionCount}" value="${escapeHtml(opt)}" style="flex: 1; border: none; outline: none;" required>
+                    </label>
+                    <button type="button" onclick="removeOption(this)" class="btn btn-danger" style="padding: 8px 12px;">Remove</button>
+                `;
+                container.appendChild(optionDiv);
+                
+                // Check if this is the correct answer
+                if (opt === question.correct_answer) {
+                    const radio = optionDiv.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                    }
                 }
-            }
-        });
+            });
+        }
     } else if (question.question_type === 'true_false') {
         const radios = document.querySelectorAll('input[name="trueFalseAnswer"]');
         if (question.correct_answer === 'True') {
