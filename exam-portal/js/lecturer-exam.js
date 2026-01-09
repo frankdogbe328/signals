@@ -653,7 +653,7 @@ async function releaseResults(examId) {
     }
 }
 
-// View exam statistics
+// View exam statistics and student performance
 async function viewExamStats(examId) {
     try {
         const client = getSupabaseClient();
@@ -661,11 +661,28 @@ async function viewExamStats(examId) {
             throw new Error('Supabase client not available');
         }
         
+        // Get exam details
+        const { data: exam } = await client
+            .from('exams')
+            .select('*')
+            .eq('id', examId)
+            .single();
+        
+        // Get all attempts (submitted, auto_submitted, time_expired)
         const { data: attempts, error } = await client
             .from('student_exam_attempts')
-            .select('*')
+            .select(`
+                *,
+                users:student_id (
+                    id,
+                    name,
+                    username,
+                    class
+                )
+            `)
             .eq('exam_id', examId)
-            .eq('status', 'submitted');
+            .in('status', ['submitted', 'auto_submitted', 'time_expired'])
+            .order('submitted_at', { ascending: false });
         
         if (error) throw error;
         
@@ -673,13 +690,167 @@ async function viewExamStats(examId) {
         const avgScore = totalAttempts > 0 ? attempts.reduce((sum, a) => sum + (a.score || 0), 0) / totalAttempts : 0;
         const avgPercentage = totalAttempts > 0 ? attempts.reduce((sum, a) => sum + (a.percentage || 0), 0) / totalAttempts : 0;
         
-        showInfo(
-            `Exam Statistics:\n\nTotal Submissions: ${totalAttempts}\nAverage Score: ${avgScore.toFixed(1)}\nAverage Percentage: ${avgPercentage.toFixed(1)}%`,
-            'Exam Statistics'
-        );
+        // Calculate grade distribution
+        const gradeDistribution = {
+            A: attempts.filter(a => (a.percentage || 0) >= 90).length,
+            B: attempts.filter(a => (a.percentage || 0) >= 80 && (a.percentage || 0) < 90).length,
+            C: attempts.filter(a => (a.percentage || 0) >= 70 && (a.percentage || 0) < 80).length,
+            D: attempts.filter(a => (a.percentage || 0) >= 60 && (a.percentage || 0) < 70).length,
+            F: attempts.filter(a => (a.percentage || 0) < 60).length
+        };
+        
+        // Show detailed statistics modal
+        showDetailedExamStats(exam, attempts, {
+            totalAttempts,
+            avgScore,
+            avgPercentage,
+            gradeDistribution
+        });
         
     } catch (error) {
         showError('Failed to load statistics: ' + (error.message || 'Unknown error'), 'Error Loading Statistics');
+    }
+}
+
+// Show detailed exam statistics modal
+function showDetailedExamStats(exam, attempts, stats) {
+    const modal = document.getElementById('examStatsModal');
+    if (!modal) {
+        // Create modal if it doesn't exist
+        const modalHTML = `
+            <div id="examStatsModal" class="modal" style="display: block;">
+                <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+                    <span class="close-modal" onclick="closeExamStatsModal()">&times;</span>
+                    <h2>Exam Performance: ${escapeHtml(exam.title)}</h2>
+                    <div id="examStatsContent"></div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+    }
+    
+    const content = document.getElementById('examStatsContent');
+    if (!content) return;
+    
+    // Statistics summary
+    let html = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px;">
+            <div style="background: #e6f2ff; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: var(--primary-color);">${stats.totalAttempts}</div>
+                <div style="color: #666; font-size: 14px;">Total Submissions</div>
+            </div>
+            <div style="background: #e6f2ff; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: var(--primary-color);">${stats.avgScore.toFixed(1)}</div>
+                <div style="color: #666; font-size: 14px;">Average Score</div>
+            </div>
+            <div style="background: #e6f2ff; padding: 15px; border-radius: 8px; text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: var(--primary-color);">${stats.avgPercentage.toFixed(1)}%</div>
+                <div style="color: #666; font-size: 14px;">Average Percentage</div>
+            </div>
+        </div>
+        
+        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+            <h3 style="margin-bottom: 15px;">Grade Distribution</h3>
+            <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px;">
+                <div style="text-align: center;">
+                    <div style="font-size: 20px; font-weight: bold; color: #28a745;">${stats.gradeDistribution.A}</div>
+                    <div style="font-size: 12px; color: #666;">A (90-100%)</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 20px; font-weight: bold; color: #17a2b8;">${stats.gradeDistribution.B}</div>
+                    <div style="font-size: 12px; color: #666;">B (80-89%)</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 20px; font-weight: bold; color: #ffc107;">${stats.gradeDistribution.C}</div>
+                    <div style="font-size: 12px; color: #666;">C (70-79%)</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 20px; font-weight: bold; color: #fd7e14;">${stats.gradeDistribution.D}</div>
+                    <div style="font-size: 12px; color: #666;">D (60-69%)</div>
+                </div>
+                <div style="text-align: center;">
+                    <div style="font-size: 20px; font-weight: bold; color: #dc3545;">${stats.gradeDistribution.F}</div>
+                    <div style="font-size: 12px; color: #666;">F (<60%)</div>
+                </div>
+            </div>
+        </div>
+        
+        <h3 style="margin-bottom: 15px;">Student Performance</h3>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; background: white;">
+                <thead>
+                    <tr style="background: var(--primary-color); color: white;">
+                        <th style="padding: 12px; text-align: left;">Student Name</th>
+                        <th style="padding: 12px; text-align: left;">Username</th>
+                        <th style="padding: 12px; text-align: center;">Score</th>
+                        <th style="padding: 12px; text-align: center;">Percentage</th>
+                        <th style="padding: 12px; text-align: center;">Grade</th>
+                        <th style="padding: 12px; text-align: center;">Status</th>
+                        <th style="padding: 12px; text-align: center;">Submitted</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    // Sort attempts by score (highest first)
+    const sortedAttempts = [...attempts].sort((a, b) => (b.score || 0) - (a.score || 0));
+    
+    sortedAttempts.forEach((attempt, index) => {
+        const student = attempt.users || {};
+        const percentage = attempt.percentage || 0;
+        const grade = calculateGrade(percentage);
+        const gradeColors = {
+            A: '#28a745',
+            B: '#17a2b8',
+            C: '#ffc107',
+            D: '#fd7e14',
+            F: '#dc3545'
+        };
+        const submittedDate = attempt.submitted_at ? new Date(attempt.submitted_at).toLocaleString() : 'N/A';
+        
+        html += `
+            <tr style="border-bottom: 1px solid #e0e0e0; ${index % 2 === 0 ? 'background: #f8f9fa;' : ''}">
+                <td style="padding: 12px;">${escapeHtml(student.name || 'Unknown')}</td>
+                <td style="padding: 12px;">${escapeHtml(student.username || 'N/A')}</td>
+                <td style="padding: 12px; text-align: center; font-weight: 600;">${attempt.score || 0} / ${exam.total_marks}</td>
+                <td style="padding: 12px; text-align: center; font-weight: 600;">${percentage.toFixed(1)}%</td>
+                <td style="padding: 12px; text-align: center;">
+                    <span style="background: ${gradeColors[grade]}; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${grade}</span>
+                </td>
+                <td style="padding: 12px; text-align: center;">
+                    <span style="color: ${attempt.status === 'time_expired' ? '#dc3545' : '#28a745'};">
+                        ${attempt.status === 'time_expired' ? '⏱ Time Expired' : attempt.status === 'auto_submitted' ? '🤖 Auto-Submitted' : '✓ Submitted'}
+                    </span>
+                </td>
+                <td style="padding: 12px; text-align: center; font-size: 12px; color: #666;">${submittedDate}</td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    content.innerHTML = html;
+    document.getElementById('examStatsModal').style.display = 'block';
+}
+
+// Calculate grade from percentage
+function calculateGrade(percentage) {
+    if (percentage >= 90) return 'A';
+    if (percentage >= 80) return 'B';
+    if (percentage >= 70) return 'C';
+    if (percentage >= 60) return 'D';
+    return 'F';
+}
+
+// Close exam stats modal
+function closeExamStatsModal() {
+    const modal = document.getElementById('examStatsModal');
+    if (modal) {
+        modal.style.display = 'none';
     }
 }
 

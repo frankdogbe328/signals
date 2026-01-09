@@ -781,7 +781,119 @@ function calculateGrade(percentage) {
     return 'F';
 }
 
-// Show results
+// Show detailed results with question breakdown
+function showDetailedResults(attempt, exam, questions, responseMap) {
+    document.getElementById('availableExamsView').style.display = 'none';
+    document.getElementById('examTakingView').style.display = 'none';
+    document.getElementById('resultsView').style.display = 'block';
+    
+    const score = attempt.score || 0;
+    const totalMarks = exam.total_marks || 0;
+    const percentage = attempt.percentage || 0;
+    const grade = calculateGrade(percentage);
+    
+    // Update summary stats
+    document.getElementById('resultsExamTitle').textContent = exam.title;
+    document.getElementById('resultsScore').textContent = score;
+    document.getElementById('resultsTotal').textContent = totalMarks;
+    document.getElementById('resultsPercentage').textContent = percentage.toFixed(1) + '%';
+    
+    // Add grade display
+    const resultsContent = document.getElementById('resultsView').querySelector('.dashboard-content');
+    if (resultsContent) {
+        // Check if detailed results already exist
+        let detailedSection = document.getElementById('detailedResultsSection');
+        if (!detailedSection) {
+            detailedSection = document.createElement('div');
+            detailedSection.id = 'detailedResultsSection';
+            detailedSection.className = 'card';
+            detailedSection.style.marginTop = '20px';
+            resultsContent.appendChild(detailedSection);
+        }
+        
+        // Grade badge
+        const gradeColors = {
+            A: '#28a745',
+            B: '#17a2b8',
+            C: '#ffc107',
+            D: '#fd7e14',
+            F: '#dc3545'
+        };
+        
+        let html = `
+            <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, ${gradeColors[grade]} 0%, ${gradeColors[grade]}dd 100%); border-radius: 10px; color: white;">
+                <div style="font-size: 48px; font-weight: bold; margin-bottom: 10px;">${grade}</div>
+                <div style="font-size: 18px;">Grade</div>
+            </div>
+            
+            <h3 style="margin-bottom: 20px;">Question Breakdown</h3>
+            <div id="questionBreakdown">
+        `;
+        
+        // Show each question with answer comparison
+        questions.forEach((question, index) => {
+            const studentAnswer = responseMap[question.id] || 'Not answered';
+            const correctAnswer = question.correct_answer;
+            const isCorrect = checkAnswerCorrect(question, studentAnswer, correctAnswer);
+            
+            html += `
+                <div class="question-item" style="margin-bottom: 20px; border-left: 4px solid ${isCorrect ? '#28a745' : '#dc3545'};">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                        <h4 style="margin: 0; color: var(--primary-color);">Question ${index + 1}</h4>
+                        <span style="background: ${isCorrect ? '#28a745' : '#dc3545'}; color: white; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                            ${isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                        </span>
+                    </div>
+                    <p style="font-weight: 600; margin-bottom: 10px;">${escapeHtml(question.question_text)}</p>
+                    <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 10px;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;"><strong>Your Answer:</strong></div>
+                        <div style="color: ${isCorrect ? '#28a745' : '#dc3545'}; font-weight: 600;">${escapeHtml(studentAnswer)}</div>
+                    </div>
+                    <div style="background: #e6f2ff; padding: 15px; border-radius: 5px;">
+                        <div style="color: #666; font-size: 14px; margin-bottom: 5px;"><strong>Correct Answer:</strong></div>
+                        <div style="color: var(--primary-color); font-weight: 600;">${escapeHtml(correctAnswer)}</div>
+                    </div>
+                    ${question.question_type === 'multiple_choice' && question.options ? `
+                        <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                            Options: ${JSON.parse(question.options).map(opt => escapeHtml(opt)).join(', ')}
+                        </div>
+                    ` : ''}
+                    <div style="margin-top: 10px; font-size: 12px; color: #666;">
+                        <strong>Marks:</strong> ${isCorrect ? question.marks : 0} / ${question.marks}
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+            </div>
+        `;
+        
+        detailedSection.innerHTML = html;
+    }
+}
+
+// Check if answer is correct
+function checkAnswerCorrect(question, studentAnswer, correctAnswer) {
+    if (!studentAnswer || studentAnswer.trim() === '') return false;
+    
+    // For multiple choice and true/false, exact match
+    if (question.question_type === 'multiple_choice' || question.question_type === 'true_false') {
+        return studentAnswer.trim() === correctAnswer.trim();
+    }
+    
+    // For short answer and essay, case-insensitive partial match
+    // (In a real system, you might want more sophisticated matching)
+    if (question.question_type === 'short_answer' || question.question_type === 'essay') {
+        const studentLower = studentAnswer.trim().toLowerCase();
+        const correctLower = correctAnswer.trim().toLowerCase();
+        return studentLower.includes(correctLower) || correctLower.includes(studentLower);
+    }
+    
+    return false;
+}
+
+// Show results (backward compatibility)
 function showResults(score, totalMarks, percentage) {
     document.getElementById('availableExamsView').style.display = 'none';
     document.getElementById('examTakingView').style.display = 'none';
@@ -825,8 +937,27 @@ async function viewResults(examId) {
             .eq('id', examId)
             .single();
         
+        // Get all questions for this exam
+        const { data: questions } = await client
+            .from('questions')
+            .select('*')
+            .eq('exam_id', examId)
+            .order('sequence_order', { ascending: true });
+        
+        // Get student responses
+        const { data: responses } = await client
+            .from('student_responses')
+            .select('*')
+            .eq('attempt_id', attempt.id);
+        
+        // Create response map
+        const responseMap = {};
+        (responses || []).forEach(r => {
+            responseMap[r.question_id] = r.student_answer;
+        });
+        
         currentExam = exam;
-        showResults(attempt.score || 0, attempt.total_marks || 0, attempt.percentage || 0);
+        showDetailedResults(attempt, exam, questions || [], responseMap);
         
     } catch (error) {
         showError('Failed to load results: ' + (error.message || 'Unknown error'), 'Error Loading Results');
