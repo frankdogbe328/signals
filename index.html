@@ -16,7 +16,7 @@
         <div class="login-box">
             <div class="logo-section">
                 <h1 class="welcome-title">Ghana Armed Forces Signals Training School</h1>
-                <img src="images/logo.jpeg" alt="Signal Training School Logo" class="logo-img" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <img src="images/logo.jpeg" alt="Signal Training School Logo" class="logo-img" onclick="window.location.href='index.html'" style="cursor: pointer;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
                 <div class="logo-text" style="display: none;">
                     <h1>🇬🇭 Signal Training School</h1>
                     <h2>Learning Management System</h2>
@@ -29,9 +29,10 @@
                     <input type="text" id="username" name="username" required>
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group" style="position: relative;">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
+                    <input type="password" id="password" name="password" required style="padding-right: 45px;">
+                    <span class="password-toggle" onclick="togglePassword('password')" style="position: absolute; right: 15px; top: 38px; cursor: pointer; font-size: 18px; color: #666; user-select: none;">👁️</span>
                 </div>
                 
                 <div class="form-group">
@@ -124,13 +125,19 @@
                 
                 <div class="form-group">
                     <label for="regPassword">Password</label>
-                    <input type="password" id="regPassword" name="password" placeholder="Choose a password" required>
+                    <div style="position: relative;">
+                        <input type="password" id="regPassword" name="password" placeholder="Choose a password" required style="padding-right: 45px;">
+                        <span class="password-toggle" onclick="togglePassword('regPassword')" style="position: absolute; right: 15px; top: 12px; cursor: pointer; font-size: 18px; color: #666; user-select: none;">👁️</span>
+                    </div>
                     <small style="color: #666; font-size: 12px;">Minimum 6 characters</small>
                 </div>
                 
                 <div class="form-group">
                     <label for="regConfirmPassword">Confirm Password</label>
-                    <input type="password" id="regConfirmPassword" name="confirmPassword" placeholder="Re-enter password" required>
+                    <div style="position: relative;">
+                        <input type="password" id="regConfirmPassword" name="confirmPassword" placeholder="Re-enter password" required style="padding-right: 45px;">
+                        <span class="password-toggle" onclick="togglePassword('regConfirmPassword')" style="position: absolute; right: 15px; top: 12px; cursor: pointer; font-size: 18px; color: #666; user-select: none;">👁️</span>
+                    </div>
                 </div>
                 
                 <div class="form-group" id="regClassGroup">
