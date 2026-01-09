@@ -131,13 +131,15 @@ async function handleEmailReset() {
                         <input type="text" id="resetPIN" name="pin" placeholder="000000" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 5px; font-weight: bold;">
                         <small style="color: #666; font-size: 12px;">PIN expires in 1 hour</small>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="position: relative;">
                         <label for="newPasswordWithPIN">New Password</label>
-                        <input type="password" id="newPasswordWithPIN" name="newPassword" placeholder="Enter new password (min 6 characters)">
+                        <input type="password" id="newPasswordWithPIN" name="newPassword" placeholder="Enter new password (min 6 characters)" style="padding-right: 45px;">
+                        <span class="password-toggle" onclick="togglePassword('newPasswordWithPIN')" style="position: absolute; right: 15px; top: 38px; cursor: pointer; font-size: 18px; color: #666; user-select: none;">👁️</span>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="position: relative;">
                         <label for="confirmPasswordWithPIN">Confirm New Password</label>
-                        <input type="password" id="confirmPasswordWithPIN" name="confirmPassword" placeholder="Re-enter new password">
+                        <input type="password" id="confirmPasswordWithPIN" name="confirmPassword" placeholder="Re-enter new password" style="padding-right: 45px;">
+                        <span class="password-toggle" onclick="togglePassword('confirmPasswordWithPIN')" style="position: absolute; right: 15px; top: 38px; cursor: pointer; font-size: 18px; color: #666; user-select: none;">👁️</span>
                     </div>
                     <button type="button" class="btn btn-success" onclick="verifyPINAndReset()">Verify PIN & Reset Password</button>
                     <button type="button" class="btn btn-secondary" onclick="resendPIN()" style="margin-left: 10px;">Resend PIN</button>
@@ -167,13 +169,15 @@ async function handleEmailReset() {
                         <input type="text" id="resetPIN" name="pin" placeholder="000000" maxlength="6" style="text-align: center; font-size: 24px; letter-spacing: 5px; font-weight: bold;">
                         <small style="color: #666; font-size: 12px;">PIN expires in 1 hour</small>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="position: relative;">
                         <label for="newPasswordWithPIN">New Password</label>
-                        <input type="password" id="newPasswordWithPIN" name="newPassword" placeholder="Enter new password (min 6 characters)">
+                        <input type="password" id="newPasswordWithPIN" name="newPassword" placeholder="Enter new password (min 6 characters)" style="padding-right: 45px;">
+                        <span class="password-toggle" onclick="togglePassword('newPasswordWithPIN')" style="position: absolute; right: 15px; top: 38px; cursor: pointer; font-size: 18px; color: #666; user-select: none;">👁️</span>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" style="position: relative;">
                         <label for="confirmPasswordWithPIN">Confirm New Password</label>
-                        <input type="password" id="confirmPasswordWithPIN" name="confirmPassword" placeholder="Re-enter new password">
+                        <input type="password" id="confirmPasswordWithPIN" name="confirmPassword" placeholder="Re-enter new password" style="padding-right: 45px;">
+                        <span class="password-toggle" onclick="togglePassword('confirmPasswordWithPIN')" style="position: absolute; right: 15px; top: 38px; cursor: pointer; font-size: 18px; color: #666; user-select: none;">👁️</span>
                     </div>
                     <button type="button" class="btn btn-success" onclick="verifyPINAndReset()">Verify PIN & Reset Password</button>
                 </div>
