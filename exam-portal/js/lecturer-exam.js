@@ -412,8 +412,10 @@ function updateQuestionFormFields() {
     // Show relevant section based on type
     if (questionType === 'multiple_choice') {
         document.getElementById('multipleChoiceSection').style.display = 'block';
-        // Initialize with 2 options
-        if (document.getElementById('optionsContainer').children.length === 0) {
+        // Initialize with 2 options if container is empty
+        const container = document.getElementById('optionsContainer');
+        if (container && container.children.length === 0) {
+            optionCount = 0; // Reset count
             addOption();
             addOption();
         }
@@ -427,13 +429,25 @@ function updateQuestionFormFields() {
 // Add option field for multiple choice
 let optionCount = 0;
 function addOption() {
-    if (optionCount >= 6) {
-        showInfo('Maximum 6 options allowed', 'Limit Reached');
+    const container = document.getElementById('optionsContainer');
+    if (!container) {
+        console.error('Options container not found');
         return;
     }
     
-    optionCount++;
-    const container = document.getElementById('optionsContainer');
+    // Count current options
+    const currentOptions = container.querySelectorAll('.option-row').length;
+    
+    if (currentOptions >= 6) {
+        if (typeof showInfo === 'function') {
+            showInfo('Maximum 6 options allowed', 'Limit Reached');
+        } else {
+            alert('Maximum 6 options allowed');
+        }
+        return;
+    }
+    
+    optionCount = currentOptions + 1;
     const optionDiv = document.createElement('div');
     optionDiv.className = 'option-row';
     optionDiv.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center;';
@@ -449,14 +463,24 @@ function addOption() {
 
 // Remove option field
 function removeOption(button) {
-    if (document.getElementById('optionsContainer').children.length <= 2) {
-        showError('Minimum 2 options required', 'Cannot Remove');
+    const container = document.getElementById('optionsContainer');
+    if (!container) return;
+    
+    const currentOptions = container.querySelectorAll('.option-row').length;
+    
+    if (currentOptions <= 2) {
+        if (typeof showError === 'function') {
+            showError('Minimum 2 options required', 'Cannot Remove');
+        } else {
+            alert('Minimum 2 options required');
+        }
         return;
     }
-    button.parentElement.remove();
-    optionCount--;
+    
+    button.closest('.option-row').remove();
+    
     // Renumber remaining options
-    const options = document.querySelectorAll('.option-row');
+    const options = container.querySelectorAll('.option-row');
     options.forEach((row, index) => {
         const radio = row.querySelector('input[type="radio"]');
         const textInput = row.querySelector('.option-input');
@@ -465,6 +489,9 @@ function removeOption(button) {
             textInput.placeholder = `Option ${index + 1}`;
         }
     });
+    
+    // Update optionCount
+    optionCount = options.length;
 }
 
 // Close question form modal
