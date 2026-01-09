@@ -46,10 +46,45 @@
                 <div class="form-group">
                     <label for="portalType">Portal</label>
                     <select id="portalType" name="portalType">
-                        <option value="lms" data-short="LMS">📚 LMS Portal (Learning Materials)</option>
-                        <option value="exam" data-short="Exam">📝 Exam Portal (Exams & Quizzes)</option>
+                        <option value="lms" data-full="📚 LMS Portal (Learning Materials)" data-short="📚 LMS Portal">📚 LMS Portal (Learning Materials)</option>
+                        <option value="exam" data-full="📝 Exam Portal (Exams & Quizzes)" data-short="📝 Exam Portal">📝 Exam Portal (Exams & Quizzes)</option>
                     </select>
                 </div>
+                <script>
+                    // Update portal dropdown text for mobile
+                    (function() {
+                        const portalSelect = document.getElementById('portalType');
+                        if (!portalSelect) return;
+                        
+                        function updatePortalText() {
+                            if (window.innerWidth <= 480) {
+                                // On small screens, use shorter text
+                                Array.from(portalSelect.options).forEach(option => {
+                                    if (option.dataset.short) {
+                                        option.textContent = option.dataset.short;
+                                    }
+                                });
+                            } else {
+                                // On larger screens, use full text
+                                Array.from(portalSelect.options).forEach(option => {
+                                    if (option.dataset.full) {
+                                        option.textContent = option.dataset.full;
+                                    }
+                                });
+                            }
+                        }
+                        
+                        // Update on load
+                        updatePortalText();
+                        
+                        // Update on resize
+                        let resizeTimer;
+                        window.addEventListener('resize', function() {
+                            clearTimeout(resizeTimer);
+                            resizeTimer = setTimeout(updatePortalText, 100);
+                        });
+                    })();
+                </script>
                 
                 <button type="submit" class="btn btn-primary">Login</button>
                 
