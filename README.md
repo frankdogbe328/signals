@@ -2,6 +2,8 @@
 
 A comprehensive Learning Management System (LMS) and Exam Portal for the Ghana Armed Forces Signals Training School.
 
+**Last Updated:** January 2026
+
 ## 📁 Project Structure
 
 ```
