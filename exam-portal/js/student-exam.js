@@ -884,6 +884,15 @@ function showDetailedResults(attempt, exam, questions, responseMap) {
         };
         
         let html = `
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+                <h3 style="margin: 0;">Exam Results</h3>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="exportMyResultPDF('${exam.id}', '${escapeHtml(exam.title)}')" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px; min-width: 120px; display: inline-block;" title="Download Results as PDF">
+                        📄 Download PDF
+                    </button>
+                </div>
+            </div>
+            
             <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, ${gradeColors[grade]} 0%, ${gradeColors[grade]}dd 100%); border-radius: 10px; color: white;">
                 <div style="font-size: 48px; font-weight: bold; margin-bottom: 10px;">${grade}</div>
                 <div style="font-size: 18px;">Grade</div>
@@ -1188,6 +1197,9 @@ function displayAllResults(attempts, examMap) {
                             <button onclick="viewResults('${exam.id}')" class="btn btn-primary" style="width: auto; min-width: 150px;">
                                 View Details
                             </button>
+                            <button onclick="exportMyResultPDF('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="width: auto; min-width: 150px; font-size: 12px; padding: 6px 12px;" title="Download Results as PDF">
+                                📄 Download PDF
+                            </button>
                         ` : `
                             <div style="background: #fff3cd; color: #856404; padding: 10px; border-radius: 5px; text-align: center; font-size: 14px;">
                                 ⏳ Results Pending
@@ -1252,3 +1264,156 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Export student's own result to PDF
+async function exportMyResultPDF(examId, examTitle = 'My Exam Result') {
+    const currentUser = getCurrentUser();
+    if (!currentUser || currentUser.role !== 'student') {
+        showError('Only students can export their own results.', 'Authorization Required');
+        return;
+    }
+    
+    try {
+        // Check if jsPDF is available
+        if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') {
+            // Load jsPDF from CDN
+            await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+        }
+        
+        const { jsPDF } = window.jspdf || window;
+        if (!jsPDF) {
+            throw new Error('jsPDF library not loaded');
+        }
+        
+        // Get exam and student's attempt
+        const client = getSupabaseClient();
+        if (!client) {
+            throw new Error('Supabase client not available');
+        }
+        
+        // Get exam details
+        const { data: exam, error: examError } = await client
+            .from('exams')
+            .select('*')
+            .eq('id', examId)
+            .single();
+        
+        if (examError || !exam) {
+            throw new Error('Exam not found');
+        }
+        
+        // Get student's attempt
+        const { data: attempts, error: attemptError } = await client
+            .from('student_exam_attempts')
+            .select('*')
+            .eq('exam_id', examId)
+            .eq('student_id', currentUser.id)
+            .in('status', ['submitted', 'auto_submitted', 'time_expired'])
+            .order('submitted_at', { ascending: false })
+            .limit(1);
+        
+        if (attemptError || !attempts || attempts.length === 0) {
+            throw new Error('No attempt found for this exam');
+        }
+        
+        const attempt = attempts[0];
+        
+        // Get questions
+        const { data: questions, error: questionsError } = await client
+            .from('exam_questions')
+            .select('*')
+            .eq('exam_id', examId)
+            .order('sequence', { ascending: true });
+        
+        if (questionsError) throw questionsError;
+        
+        // Parse responses
+        const responseMap = attempt.responses ? JSON.parse(attempt.responses) : {};
+        
+        // Create PDF
+        const doc = new jsPDF();
+        
+        // Header
+        doc.setFontSize(18);
+        doc.text(examTitle, 14, 20);
+        doc.setFontSize(12);
+        doc.text(`Student: ${currentUser.name}`, 14, 30);
+        doc.text(`Subject: ${exam.subject}`, 14, 36);
+        doc.text(`Class: ${formatClassName(exam.class_id)}`, 14, 42);
+        doc.text(`Date: ${new Date(attempt.submitted_at).toLocaleDateString()}`, 14, 48);
+        
+        // Results Summary
+        doc.setFontSize(14);
+        doc.text('Results Summary', 14, 58);
+        doc.setFontSize(12);
+        const score = attempt.score || 0;
+        const percentage = attempt.percentage || 0;
+        const grade = calculateGrade(percentage);
+        doc.text(`Score: ${score} / ${exam.total_marks}`, 14, 66);
+        doc.text(`Percentage: ${percentage.toFixed(1)}%`, 14, 72);
+        doc.text(`Grade: ${grade}`, 14, 78);
+        
+        // Question Breakdown
+        let yPos = 88;
+        doc.setFontSize(14);
+        doc.text('Question Breakdown', 14, yPos);
+        yPos += 8;
+        
+        doc.setFontSize(10);
+        questions.forEach((question, index) => {
+            if (yPos > 270) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            const studentAnswer = responseMap[question.id] || 'Not answered';
+            const correctAnswer = question.correct_answer;
+            const isCorrect = checkAnswerCorrect(question, studentAnswer, correctAnswer);
+            
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text(`Question ${index + 1}${isCorrect ? ' ✓' : ' ✗'}`, 14, yPos);
+            yPos += 6;
+            
+            doc.setFont(undefined, 'normal');
+            doc.setFontSize(9);
+            const questionLines = doc.splitTextToSize(question.question_text, 180);
+            doc.text(questionLines, 14, yPos);
+            yPos += questionLines.length * 5;
+            
+            doc.text(`Your Answer: ${studentAnswer}`, 20, yPos);
+            yPos += 5;
+            doc.text(`Correct Answer: ${correctAnswer}`, 20, yPos);
+            yPos += 5;
+            doc.text(`Marks: ${isCorrect ? question.marks : 0} / ${question.marks}`, 20, yPos);
+            yPos += 8;
+        });
+        
+        // Footer
+        const pageCount = doc.internal.pages.length - 1;
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.text(`Page ${i} of ${pageCount}`, 190, 285, { align: 'right' });
+        }
+        
+        // Save PDF
+        const fileName = `${examTitle.replace(/[^a-z0-9]/gi, '_')}_Result_${currentUser.name.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(fileName);
+        
+        showSuccess('Results exported successfully!', 'Export Complete');
+    } catch (error) {
+        console.error('Error exporting result:', error);
+        showError('Failed to export results: ' + (error.message || 'Unknown error'), 'Export Error');
+    }
+}
+
+// Helper function to load script dynamically
+function loadScript(url) {
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
