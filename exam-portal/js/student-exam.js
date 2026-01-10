@@ -1266,9 +1266,18 @@ function escapeHtml(text) {
 
 // Export student's own result to PDF
 async function exportMyResultPDF(examId, examTitle = 'My Exam Result') {
+    console.log('exportMyResultPDF called with:', examId, examTitle);
+    
     const currentUser = getCurrentUser();
     if (!currentUser || currentUser.role !== 'student') {
-        showError('Only students can export their own results.', 'Authorization Required');
+        const errorMsg = 'Only students can export their own results.';
+        if (typeof showError === 'function') {
+            showError(errorMsg, 'Authorization Required');
+        } else if (typeof alert === 'function') {
+            alert('Authorization Required: ' + errorMsg);
+        } else {
+            console.error('Authorization Required:', errorMsg);
+        }
         return;
     }
     
@@ -1435,10 +1444,29 @@ async function exportMyResultPDF(examId, examTitle = 'My Exam Result') {
 // Helper function to load script dynamically
 function loadScript(url) {
     return new Promise((resolve, reject) => {
+        // Check if script already exists
+        const existingScript = document.querySelector(`script[src="${url}"]`);
+        if (existingScript) {
+            console.log('Script already loaded:', url);
+            resolve();
+            return;
+        }
+        
         const script = document.createElement('script');
         script.src = url;
-        script.onload = resolve;
-        script.onerror = reject;
+        script.onload = () => {
+            console.log('Script loaded successfully:', url);
+            resolve();
+        };
+        script.onerror = (error) => {
+            console.error('Script loading failed:', url, error);
+            reject(new Error(`Failed to load script: ${url}`));
+        };
         document.head.appendChild(script);
     });
+}
+
+// Make function globally accessible
+if (typeof window !== 'undefined') {
+    window.exportMyResultPDF = exportMyResultPDF;
 }
