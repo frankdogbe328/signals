@@ -309,10 +309,11 @@ window.registerForCourse = async function() {
             localStorage.setItem('users', JSON.stringify(users));
             setCurrentUser(currentUser);
         } else {
+            console.error('User data update failed: User not found in local storage');
             if (typeof showError === 'function') {
-                showError('User not found in system', 'Error');
+                showError('Failed to update profile. Please refresh the page and try again.', 'Update Error');
             } else {
-                alert('Error: User not found in system');
+                alert('Failed to update profile. Please refresh the page and try again.');
             }
             return;
         }

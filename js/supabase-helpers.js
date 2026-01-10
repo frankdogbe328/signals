@@ -209,13 +209,13 @@ async function createUserInSupabase(userData) {
         
         if (error) {
             console.error('Supabase error creating user:', error);
-            // Throw error so caller knows it failed
-            throw new Error(error.message || 'Failed to create user in database');
+            // Throw generic error - caller should catch and show user-friendly message
+            throw new Error('Failed to create user account. Please try again.');
         }
         
         if (!data) {
             console.error('No data returned from Supabase insert');
-            throw new Error('No data returned from database');
+            throw new Error('Account creation incomplete. Please try again.');
         }
         
         console.log('User successfully created in Supabase:', data.username);
@@ -721,7 +721,7 @@ async function uploadSupabaseFile(file, fileName, folder = 'learning-materials')
         
         if (error) {
             console.error('Error uploading file to storage:', error);
-            throw new Error(error.message || 'Failed to upload file to storage');
+            throw new Error('File upload failed. Please check your connection and try again.');
         }
         
         // Get public URL for the uploaded file

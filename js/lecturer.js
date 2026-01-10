@@ -583,9 +583,9 @@ async function handleMaterialUpload(e) {
         } catch (error) {
             console.error('Error uploading file:', error);
             if (typeof showError === 'function') {
-                showError(error.message || 'Please check your internet connection and try again.', 'Upload Error');
+                showError('File upload failed. Please check your internet connection and try again.', 'Upload Error');
             } else {
-                alert(`Error uploading file: ${error.message || 'Please check your internet connection and try again.'}`);
+                alert('File upload failed. Please check your internet connection and try again.');
             }
             submitBtn.disabled = false;
             submitBtn.textContent = originalBtnText;

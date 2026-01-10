@@ -239,7 +239,8 @@ async function handleCreateExam(e) {
         }, 1000);
         
     } catch (error) {
-        showError('Failed to create exam: ' + (error.message || 'Unknown error'), 'Error Creating Exam');
+        console.error('Error creating exam:', error);
+        showError('Failed to create exam. Please check your inputs and try again.', 'Error Creating Exam');
     }
 }
 
@@ -265,7 +266,8 @@ async function loadExams() {
         displayExams(data || []);
         
     } catch (error) {
-        showError('Failed to load exams: ' + (error.message || 'Unknown error'), 'Error Loading Exams');
+        console.error('Error loading exams:', error);
+        showError('Failed to load exams. Please refresh the page and try again.', 'Error Loading Exams');
     }
 }
 
@@ -797,7 +799,8 @@ async function handleQuestionFormSubmit(e) {
         viewExamDetails(examId);
         
     } catch (error) {
-        showError('Failed to save question: ' + (error.message || 'Unknown error'), 'Error Saving Question');
+        console.error('Error saving question:', error);
+        showError('Failed to save question. Please check all fields and try again.', 'Error Saving Question');
     }
 }
 
@@ -826,7 +829,8 @@ async function saveQuestion(examId, questionData) {
         viewExamDetails(examId);
         
     } catch (error) {
-        showError('Failed to save question: ' + (error.message || 'Unknown error'), 'Error Saving Question');
+        console.error('Error saving question:', error);
+        showError('Failed to save question. Please check all fields and try again.', 'Error Saving Question');
     }
 }
 
@@ -1007,7 +1011,8 @@ async function viewExamStats(examId) {
         });
         
     } catch (error) {
-        showError('Failed to load statistics: ' + (error.message || 'Unknown error'), 'Error Loading Statistics');
+        console.error('Error loading statistics:', error);
+        showError('Failed to load statistics. Please try again later.', 'Error Loading Statistics');
     }
 }
 
@@ -1550,8 +1555,8 @@ async function processWordDocument() {
         
     } catch (error) {
         console.error('Error processing Word document:', error);
-        showError('Failed to process Word document: ' + (error.message || 'Unknown error'), 'Processing Error');
-        if (statusDiv) statusDiv.textContent = 'Error: ' + (error.message || 'Unknown error');
+        showError('Failed to process Word document. Please ensure the file is a valid .docx file and try again.', 'Processing Error');
+        if (statusDiv) statusDiv.textContent = 'Error: Failed to process document. Please try again.';
         if (progressBar) progressBar.style.width = '0%';
     } finally {
         if (processBtn) processBtn.disabled = false;
@@ -1749,7 +1754,8 @@ async function saveParsedQuestions(examId, questions) {
         if (error) throw error;
         
     } catch (error) {
-        throw new Error('Failed to save questions: ' + (error.message || 'Unknown error'));
+        console.error('Error saving questions to database:', error);
+        throw new Error('Failed to save questions to database. Please try again.');
     }
 }
 

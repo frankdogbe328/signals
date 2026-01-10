@@ -100,7 +100,8 @@ async function loadAvailableExams() {
         displayAvailableExams(availableExams, attemptsMap);
         
     } catch (error) {
-        showError('Failed to load exams: ' + (error.message || 'Unknown error'), 'Error Loading Exams');
+        console.error('Error loading available exams:', error);
+        showError('Failed to load exams. Please refresh the page and try again.', 'Error Loading Exams');
     }
 }
 
@@ -261,7 +262,8 @@ async function startExam(examId) {
         loadQuestion(0);
         
     } catch (error) {
-        showError('Failed to start exam: ' + (error.message || 'Unknown error'), 'Error Starting Exam');
+        console.error('Error starting exam:', error);
+        showError('Failed to start exam. Please try again or contact support if the issue persists.', 'Error Starting Exam');
     }
 }
 
@@ -346,7 +348,8 @@ async function loadExamForAttempt(examId, attemptId) {
         loadQuestion(currentQuestionIndex);
         
     } catch (error) {
-        showError('Failed to load exam: ' + (error.message || 'Unknown error'), 'Error Loading Exam');
+        console.error('Error loading exam for attempt:', error);
+        showError('Failed to load exam. Please refresh the page and try again.', 'Error Loading Exam');
     }
 }
 
@@ -827,7 +830,8 @@ async function finalizeExam(status) {
         }
         
     } catch (error) {
-        showError('Failed to submit exam: ' + (error.message || 'Unknown error'), 'Error Submitting Exam');
+        console.error('Error submitting exam:', error);
+        showError('Failed to submit exam. Please try again. If the issue persists, contact your lecturer.', 'Error Submitting Exam');
     }
 }
 
@@ -1023,7 +1027,8 @@ async function viewResults(examId) {
         showDetailedResults(attempt, exam, questions || [], responseMap);
         
     } catch (error) {
-        showError('Failed to load results: ' + (error.message || 'Unknown error'), 'Error Loading Results');
+        console.error('Error loading exam results:', error);
+        showError('Failed to load results. Please refresh the page and try again.', 'Error Loading Results');
     }
 }
 
@@ -1125,7 +1130,8 @@ async function loadAllResults() {
         displayAllResults(attempts, examMap);
         
     } catch (error) {
-        showError('Failed to load results: ' + (error.message || 'Unknown error'), 'Error Loading Results');
+        console.error('Error loading all results:', error);
+        showError('Failed to load results. Please refresh the page and try again.', 'Error Loading Results');
     }
 }
 
