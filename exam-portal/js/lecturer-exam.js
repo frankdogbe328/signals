@@ -374,8 +374,8 @@ function displayExams(exams) {
                     </button>
                     ${!exam.results_released ? `<button onclick="releaseResults('${exam.id}')" class="btn btn-success">Release Results</button>` : ''}
                     <button onclick="viewExamStats('${exam.id}')" class="btn btn-secondary">View Stats</button>
-                    <button onclick="quickExportPDF('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="font-size: 12px; padding: 6px 12px;" title="Export Results to PDF">📄 PDF</button>
-                    <button onclick="quickExportExcel('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-success" style="font-size: 12px; padding: 6px 12px;" title="Export Results to Excel">📊 Excel</button>
+                    <button onclick="quickExportPDF('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="font-size: 12px; padding: 6px 12px; min-width: 60px; display: inline-block;" title="Export Results to PDF">📄 PDF</button>
+                    <button onclick="quickExportExcel('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-success" style="font-size: 12px; padding: 6px 12px; min-width: 60px; display: inline-block;" title="Export Results to Excel">📊 Excel</button>
                 </div>
             </div>
         </div>
@@ -455,8 +455,8 @@ function showExamDetailsModal(exam, questions) {
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     <button onclick="viewExamStats('${exam.id}')" class="btn btn-secondary" style="padding: 8px 16px;">📊 View Statistics</button>
-                    <button onclick="quickExportPDF('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="padding: 8px 16px;">📄 Export to PDF</button>
-                    <button onclick="quickExportExcel('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-success" style="padding: 8px 16px;">📊 Export to Excel</button>
+                    <button onclick="quickExportPDF('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="padding: 8px 16px; min-width: 140px; display: inline-block;">📄 Export to PDF</button>
+                    <button onclick="quickExportExcel('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-success" style="padding: 8px 16px; min-width: 140px; display: inline-block;">📊 Export to Excel</button>
                 </div>
             </div>
         </div>
@@ -1179,10 +1179,10 @@ function showDetailedExamStats(exam, attempts, stats, examId) {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
             <h3 style="margin: 0;">Exam Statistics</h3>
             <div style="display: flex; gap: 10px;">
-                <button onclick="quickExportPDF('${examId}', '${examTitleEscaped}')" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px;" id="exportPdfBtn">
+                <button onclick="quickExportPDF('${examId}', '${examTitleEscaped}')" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px; min-width: 140px; display: inline-block;" id="exportPdfBtn">
                     📄 Export to PDF
                 </button>
-                <button onclick="quickExportExcel('${examId}', '${examTitleEscaped}')" class="btn btn-success" style="padding: 8px 16px; font-size: 14px;" id="exportExcelBtn">
+                <button onclick="quickExportExcel('${examId}', '${examTitleEscaped}')" class="btn btn-success" style="padding: 8px 16px; font-size: 14px; min-width: 140px; display: inline-block;" id="exportExcelBtn">
                     📊 Export to Excel
                 </button>
             </div>
