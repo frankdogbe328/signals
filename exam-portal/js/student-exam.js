@@ -887,7 +887,7 @@ function showDetailedResults(attempt, exam, questions, responseMap) {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
                 <h3 style="margin: 0;">Exam Results</h3>
                 <div style="display: flex; gap: 10px;">
-                    <button onclick="exportMyResultPDF('${exam.id}', '${escapeHtml(exam.title)}')" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px; min-width: 120px; display: inline-block;" title="Download Results as PDF">
+                    <button onclick="exportMyResultPDF('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px; min-width: 120px; display: inline-block;" title="Download Results as PDF">
                         📄 Download PDF
                     </button>
                 </div>
