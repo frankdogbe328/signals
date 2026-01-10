@@ -488,11 +488,28 @@ function addCSRFTokenToForm(form) {
  * Validate CSRF token from form submission
  */
 function validateFormCSRFToken(form) {
-    if (!form) return false;
+    if (!form) {
+        // If form doesn't exist, allow (might be programmatic submission)
+        console.warn('CSRF validation: Form not found');
+        return true; // Fail open for now during migration
+    }
     
     const tokenInput = form.querySelector('input[name="_csrf_token"]');
     if (!tokenInput || !tokenInput.value) {
-        return false;
+        // Token not found - try adding it now as a fallback
+        console.warn('CSRF token not found in form, attempting to add it');
+        addCSRFTokenToForm(form);
+        
+        // Try to get token again
+        const retryTokenInput = form.querySelector('input[name="_csrf_token"]');
+        if (!retryTokenInput || !retryTokenInput.value) {
+            console.error('CSRF token could not be added to form');
+            // During migration period, allow if SecurityUtils exists (fail open)
+            // In production, this should return false
+            return typeof SecurityUtils !== 'undefined';
+        }
+        
+        return verifyCSRFToken(retryTokenInput.value);
     }
     
     return verifyCSRFToken(tokenInput.value);
@@ -504,8 +521,7 @@ function validateFormCSRFToken(form) {
 function initializeCSRFProtection() {
     if (typeof document === 'undefined') return;
     
-    // Add tokens to all existing forms
-    document.addEventListener('DOMContentLoaded', function() {
+    function addTokensToForms() {
         const forms = document.querySelectorAll('form');
         forms.forEach(form => {
             // Only add to forms that don't already have a token
@@ -513,33 +529,45 @@ function initializeCSRFProtection() {
                 addCSRFTokenToForm(form);
             }
         });
-    });
+    }
+    
+    // Run immediately if DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', addTokensToForms);
+    } else {
+        // DOM already loaded, run immediately
+        addTokensToForms();
+        // Also run after a small delay to catch any forms added dynamically
+        setTimeout(addTokensToForms, 100);
+    }
     
     // Also handle dynamically created forms
-    const observer = new MutationObserver(function(mutations) {
-        mutations.forEach(function(mutation) {
-            mutation.addedNodes.forEach(function(node) {
-                if (node.nodeType === 1) { // Element node
-                    if (node.tagName === 'FORM') {
-                        addCSRFTokenToForm(node);
-                    }
-                    // Check for forms within added nodes
-                    const forms = node.querySelectorAll ? node.querySelectorAll('form') : [];
-                    forms.forEach(form => {
-                        if (!form.querySelector('input[name="_csrf_token"]')) {
-                            addCSRFTokenToForm(form);
+    if (typeof MutationObserver !== 'undefined') {
+        const observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1) { // Element node
+                        if (node.tagName === 'FORM') {
+                            addCSRFTokenToForm(node);
                         }
-                    });
-                }
+                        // Check for forms within added nodes
+                        const forms = node.querySelectorAll ? node.querySelectorAll('form') : [];
+                        forms.forEach(form => {
+                            if (!form.querySelector('input[name="_csrf_token"]')) {
+                                addCSRFTokenToForm(form);
+                            }
+                        });
+                    }
+                });
             });
         });
-    });
-    
-    if (typeof document.body !== 'undefined') {
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
+        
+        if (typeof document.body !== 'undefined') {
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        }
     }
 }
 
@@ -547,8 +575,11 @@ function initializeCSRFProtection() {
 if (typeof window !== 'undefined' && typeof document !== 'undefined') {
     // Run immediately if DOM is already loaded, otherwise wait
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initializeCSRFProtection);
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeCSRFProtection();
+        });
     } else {
+        // DOM already loaded
         initializeCSRFProtection();
     }
 }

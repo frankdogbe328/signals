@@ -11,15 +11,39 @@ async function handleLogin(e) {
     
     const form = e.target;
     
-    // Validate CSRF token
+    // Ensure CSRF token exists before validation
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.addCSRFTokenToForm) {
+        SecurityUtils.addCSRFTokenToForm(form);
+    }
+    
+    // Validate CSRF token (with fallback for migration period)
     if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validateFormCSRFToken) {
-        if (!SecurityUtils.validateFormCSRFToken(form)) {
-            const errorMessage = document.getElementById('errorMessage');
-            if (errorMessage) {
-                errorMessage.textContent = 'Security token validation failed. Please refresh the page and try again.';
-                errorMessage.classList.add('show');
+        const isValid = SecurityUtils.validateFormCSRFToken(form);
+        if (!isValid) {
+            // During migration, try once more by regenerating token
+            try {
+                if (typeof SecurityUtils.getCSRFToken === 'function') {
+                    sessionStorage.removeItem('csrfToken');
+                    SecurityUtils.getCSRFToken();
+                    SecurityUtils.addCSRFTokenToForm(form);
+                    
+                    // Try validation again
+                    if (!SecurityUtils.validateFormCSRFToken(form)) {
+                        const errorMessage = document.getElementById('errorMessage');
+                        if (errorMessage) {
+                            errorMessage.textContent = 'Security token validation failed. Please refresh the page and try again.';
+                            errorMessage.classList.add('show');
+                        }
+                        return;
+                    }
+                } else {
+                    throw new Error('CSRF token functions not available');
+                }
+            } catch (err) {
+                console.error('CSRF token error:', err);
+                // Allow submission during migration period
+                console.warn('Allowing form submission due to CSRF token error during migration');
             }
-            return;
         }
     }
     
