@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Signal Training School - LMS Login</title>
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    <link rel="icon" type="image/png" href="images/led.jpg">
+    <link rel="apple-touch-icon" href="images/led.jpg">
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -289,7 +292,50 @@
     <footer class="footer">
         <p>&copy; 2026 Ghana Armed Forces Signals Training School. All rights reserved.</p>
         <p>Developed and Powered by <strong style="color: var(--primary-color); font-size: 1.1em; font-weight: 700;">Frank Kojo Dogbe</strong> | Co-developed by Solomon A. Nortey</p>
+        <p style="margin-top: 10px;"><a href="#help" onclick="showHelpModal(); return false;" style="color: white; text-decoration: underline; cursor: pointer;">📞 Need Help?</a></p>
     </footer>
+    
+    <!-- Help Modal -->
+    <div id="helpModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeHelpModal()">&times;</span>
+            <h2>📞 Need Help?</h2>
+            <div style="text-align: left; margin-top: 20px;">
+                <h3>Common Issues:</h3>
+                <ul style="line-height: 1.8;">
+                    <li><strong>Login Problems:</strong> Check your username/password, ensure you've selected the correct role (Lecturer/Student)</li>
+                    <li><strong>Password Reset:</strong> Contact your administrator if you've forgotten your password</li>
+                    <li><strong>Loading Issues:</strong> Check your internet connection and try refreshing the page</li>
+                    <li><strong>Browser Console Errors:</strong> Press F12 to open developer tools and check the Console tab</li>
+                </ul>
+                <h3 style="margin-top: 20px;">Technical Support:</h3>
+                <p>If you continue to experience issues, please:</p>
+                <ol style="line-height: 1.8;">
+                    <li>Check your browser console for error messages (F12 → Console tab)</li>
+                    <li>Verify all script files are loaded (F12 → Network tab)</li>
+                    <li>Clear your browser cache and try again</li>
+                    <li>Contact your system administrator</li>
+                </ol>
+            </div>
+            <button onclick="closeHelpModal()" class="btn btn-primary" style="margin-top: 20px;">Close</button>
+        </div>
+    </div>
+    
+    <script>
+    function showHelpModal() {
+        document.getElementById('helpModal').style.display = 'flex';
+    }
+    function closeHelpModal() {
+        document.getElementById('helpModal').style.display = 'none';
+    }
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const modal = document.getElementById('helpModal');
+        if (event.target == modal) {
+            closeHelpModal();
+        }
+    }
+    </script>
 </body>
 </html>
 
