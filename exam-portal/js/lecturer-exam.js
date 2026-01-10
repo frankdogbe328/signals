@@ -1372,7 +1372,7 @@ function renderStudentResultsTable(attempts, exam) {
                     <span style="background: ${gradeColors[grade]}; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${grade}</span>
                 </td>
                 <td style="padding: 12px; text-align: center;">
-                    <span style="color: ${attempt.status === 'time_expired' ? '#dc3545' : '#28a745';}">
+                    <span style="color: ${attempt.status === 'time_expired' ? '#dc3545' : '#28a745'}">
                         ${attempt.status === 'time_expired' ? '⏱ Time Expired' : attempt.status === 'auto_submitted' ? '🤖 Auto-Submitted' : '✓ Submitted'}
                     </span>
                 </td>
