@@ -115,6 +115,8 @@
         </div>
     </div>
     
+    <!-- Security Utilities (must load first) -->
+    <script src="../js/security.js" onerror="console.error('Failed to load security.js')"></script>
     <!-- Supabase JS Library -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="../js/supabase-config.js" onerror="console.error('Failed to load supabase-config.js')"></script>
@@ -155,10 +157,29 @@
         async function handleExamPortalLogin(e) {
             e.preventDefault();
             
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const userType = document.getElementById('userType').value;
+            const form = e.target;
+            
+            // Validate CSRF token
+            if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validateFormCSRFToken) {
+                if (!SecurityUtils.validateFormCSRFToken(form)) {
+                    const errorMessage = document.getElementById('errorMessage');
+                    if (errorMessage) {
+                        errorMessage.textContent = 'Security token validation failed. Please refresh the page and try again.';
+                        errorMessage.classList.add('show');
+                    }
+                    return;
+                }
+            }
+            
+            const usernameInput = document.getElementById('username');
+            const passwordInput = document.getElementById('password');
+            const userTypeInput = document.getElementById('userType');
             const errorMessage = document.getElementById('errorMessage');
+            
+            // Sanitize inputs
+            const username = usernameInput ? (typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? SecurityUtils.sanitizeInput(usernameInput.value) : usernameInput.value.trim()) : '';
+            const password = passwordInput ? passwordInput.value : '';
+            const userType = userTypeInput ? userTypeInput.value : '';
             
             // Clear previous errors
             errorMessage.classList.remove('show');
@@ -171,6 +192,17 @@
                 return;
             }
             
+            // Rate limiting check
+            if (typeof SecurityUtils !== 'undefined' && SecurityUtils.checkRateLimit) {
+                const rateLimitKey = `login_${username}`;
+                const rateLimit = SecurityUtils.checkRateLimit(rateLimitKey, 5, 15);
+                if (!rateLimit.allowed) {
+                    errorMessage.textContent = `Too many login attempts. Please try again in ${rateLimit.timeRemaining} minutes.`;
+                    errorMessage.classList.add('show');
+                    return;
+                }
+            }
+            
             // Try Supabase first, fallback to localStorage
             let user = null;
             
@@ -179,21 +211,45 @@
                     user = await getUserFromSupabase(username, password, userType);
                 } catch (err) {
                     console.error('Supabase login error:', err);
+                    errorMessage.textContent = 'Login failed. Please try again.';
+                    errorMessage.classList.add('show');
+                    return;
                 }
             }
             
-            // Fallback to localStorage
-            if (!user) {
-                const users = JSON.parse(localStorage.getItem('users') || '[]');
-                user = users.find(u => 
-                    u.username === username && 
-                    u.password === password && 
-                    u.role === userType
-                );
+            // Fallback to localStorage (with password verification if SecurityUtils available)
+            if (!user && typeof localStorage !== 'undefined') {
+                try {
+                    const users = JSON.parse(localStorage.getItem('users') || '[]');
+                    const potentialUser = users.find(u => u.username === username && u.role === userType);
+                    if (potentialUser && typeof SecurityUtils !== 'undefined' && SecurityUtils.verifyPassword) {
+                        const passwordMatch = await SecurityUtils.verifyPassword(password, potentialUser.password);
+                        if (passwordMatch) {
+                            user = potentialUser;
+                            delete user.password;
+                        }
+                    } else if (potentialUser && potentialUser.password === password) {
+                        // Legacy plaintext support
+                        user = potentialUser;
+                        delete user.password;
+                    }
+                } catch (err) {
+                    console.error('LocalStorage login error:', err);
+                }
             }
             
             if (user) {
-                // Set current user
+                // Clear rate limit on successful login
+                if (typeof SecurityUtils !== 'undefined' && SecurityUtils.clearRateLimit) {
+                    SecurityUtils.clearRateLimit(`login_${username}`);
+                }
+                
+                // Set secure session
+                if (typeof SecurityUtils !== 'undefined' && SecurityUtils.setSecureSession) {
+                    SecurityUtils.setSecureSession(user, 480); // 8 hour session
+                }
+                
+                // Set current user (legacy support)
                 setCurrentUser(user);
                 
                 // Redirect to exam portal based on role

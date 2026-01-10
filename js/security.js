@@ -458,6 +458,101 @@ function verifyResourceOwnership(user, resource, userIdField = 'user_id') {
     return resource[userIdField] === user.id || resource.lecturer_id === user.id;
 }
 
+// ========== FORM CSRF PROTECTION ==========
+
+/**
+ * Add CSRF token to a form
+ */
+function addCSRFTokenToForm(form) {
+    if (!form) return;
+    
+    // Remove existing CSRF token if any
+    const existingToken = form.querySelector('input[name="_csrf_token"]');
+    if (existingToken) {
+        existingToken.remove();
+    }
+    
+    // Get or generate CSRF token
+    const token = getCSRFToken();
+    if (!token) return;
+    
+    // Create hidden input field
+    const tokenInput = document.createElement('input');
+    tokenInput.type = 'hidden';
+    tokenInput.name = '_csrf_token';
+    tokenInput.value = token;
+    form.appendChild(tokenInput);
+}
+
+/**
+ * Validate CSRF token from form submission
+ */
+function validateFormCSRFToken(form) {
+    if (!form) return false;
+    
+    const tokenInput = form.querySelector('input[name="_csrf_token"]');
+    if (!tokenInput || !tokenInput.value) {
+        return false;
+    }
+    
+    return verifyCSRFToken(tokenInput.value);
+}
+
+/**
+ * Initialize CSRF protection for all forms on page load
+ */
+function initializeCSRFProtection() {
+    if (typeof document === 'undefined') return;
+    
+    // Add tokens to all existing forms
+    document.addEventListener('DOMContentLoaded', function() {
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            // Only add to forms that don't already have a token
+            if (!form.querySelector('input[name="_csrf_token"]')) {
+                addCSRFTokenToForm(form);
+            }
+        });
+    });
+    
+    // Also handle dynamically created forms
+    const observer = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            mutation.addedNodes.forEach(function(node) {
+                if (node.nodeType === 1) { // Element node
+                    if (node.tagName === 'FORM') {
+                        addCSRFTokenToForm(node);
+                    }
+                    // Check for forms within added nodes
+                    const forms = node.querySelectorAll ? node.querySelectorAll('form') : [];
+                    forms.forEach(form => {
+                        if (!form.querySelector('input[name="_csrf_token"]')) {
+                            addCSRFTokenToForm(form);
+                        }
+                    });
+                }
+            });
+        });
+    });
+    
+    if (typeof document.body !== 'undefined') {
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+    }
+}
+
+// Auto-initialize CSRF protection
+if (typeof window !== 'undefined' && typeof document !== 'undefined') {
+    // Run immediately if DOM is already loaded, otherwise wait
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initializeCSRFProtection);
+    } else {
+        initializeCSRFProtection();
+    }
+}
+
 // ========== EXPORT FUNCTIONS ==========
 // Make functions available globally for use in other files
 if (typeof window !== 'undefined') {
@@ -480,6 +575,8 @@ if (typeof window !== 'undefined') {
         generateCSRFToken,
         getCSRFToken,
         verifyCSRFToken,
+        addCSRFTokenToForm,
+        validateFormCSRFToken,
         validateFileType,
         validateFileSize,
         sanitizeFilename,

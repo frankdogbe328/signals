@@ -72,6 +72,20 @@ function showLoginForm() {
 async function handleRegistration(e) {
     e.preventDefault();
     
+    const form = e.target;
+    
+    // Validate CSRF token
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validateFormCSRFToken) {
+        if (!SecurityUtils.validateFormCSRFToken(form)) {
+            const errorMessage = document.getElementById('registerErrorMessage');
+            if (errorMessage) {
+                errorMessage.textContent = 'Security token validation failed. Please refresh the page and try again.';
+                errorMessage.classList.add('show');
+            }
+            return;
+        }
+    }
+    
     const name = document.getElementById('regName').value.trim();
     const username = document.getElementById('regUsername').value.trim();
     const email = document.getElementById('regEmail').value.trim();

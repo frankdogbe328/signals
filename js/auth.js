@@ -9,6 +9,20 @@ document.addEventListener('DOMContentLoaded', function() {
 async function handleLogin(e) {
     e.preventDefault();
     
+    const form = e.target;
+    
+    // Validate CSRF token
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validateFormCSRFToken) {
+        if (!SecurityUtils.validateFormCSRFToken(form)) {
+            const errorMessage = document.getElementById('errorMessage');
+            if (errorMessage) {
+                errorMessage.textContent = 'Security token validation failed. Please refresh the page and try again.';
+                errorMessage.classList.add('show');
+            }
+            return;
+        }
+    }
+    
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
     const userTypeInput = document.getElementById('userType');
