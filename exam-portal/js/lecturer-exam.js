@@ -15,13 +15,24 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Wait a bit to ensure sessionStorage is ready and prevent conflicts with app.js
     setTimeout(function() {
-        // Check authentication
-        let currentUser = getCurrentUser();
-        
-        // Debug log
-        // Debug logs removed - use browser DevTools if needed
+        // Check authentication - try secure session first, then fallback
+        let currentUser = null;
+        if (typeof SecurityUtils !== 'undefined' && SecurityUtils.getSecureSession) {
+            const session = SecurityUtils.getSecureSession();
+            if (session && session.user) {
+                currentUser = session.user;
+            }
+        }
+        // Fallback to legacy getCurrentUser
+        if (!currentUser) {
+            currentUser = getCurrentUser();
+        }
         
         if (!currentUser || currentUser.role !== 'lecturer') {
+            // Clear any invalid sessions
+            if (typeof SecurityUtils !== 'undefined' && SecurityUtils.clearSecureSession) {
+                SecurityUtils.clearSecureSession();
+            }
             // Redirect to exam portal login page
             window.location.href = 'login.html';
             return;

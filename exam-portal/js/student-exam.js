@@ -10,18 +10,35 @@ let timerInterval = null;
 let timeRemaining = 0;
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Check authentication
-    let currentUser = getCurrentUser();
+    // Check authentication - try secure session first, then fallback
+    let currentUser = null;
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.getSecureSession) {
+        const session = SecurityUtils.getSecureSession();
+        if (session && session.user) {
+            currentUser = session.user;
+        }
+    }
+    // Fallback to legacy getCurrentUser
+    if (!currentUser) {
+        currentUser = getCurrentUser();
+    }
+    
     if (!currentUser || currentUser.role !== 'student') {
+        // Clear any invalid sessions
+        if (typeof SecurityUtils !== 'undefined' && SecurityUtils.clearSecureSession) {
+            SecurityUtils.clearSecureSession();
+        }
         // Redirect to exam portal login page
         window.location.href = 'login.html';
         return;
     }
     
-    // Display student name
+    // Display student name (sanitized)
     const studentNameEl = document.getElementById('studentName');
     if (studentNameEl) {
-        studentNameEl.textContent = `Welcome, ${currentUser.name}`;
+        const displayName = typeof SecurityUtils !== 'undefined' && SecurityUtils.escapeHtml ? 
+            SecurityUtils.escapeHtml(currentUser.name) : currentUser.name;
+        studentNameEl.textContent = `Welcome, ${displayName}`;
     }
     
     // Load available exams

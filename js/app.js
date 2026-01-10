@@ -27,11 +27,40 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (isLoginPage) {
         // Check if user is already logged in and redirect
-        const currentUser = getCurrentUser();
+        let currentUser = null;
+        // Try secure session first
+        if (typeof SecurityUtils !== 'undefined' && SecurityUtils.getSecureSession) {
+            const session = SecurityUtils.getSecureSession();
+            if (session && session.user) {
+                currentUser = session.user;
+            }
+        }
+        // Fallback to legacy session
+        if (!currentUser) {
+            currentUser = getCurrentUser();
+        }
+        
         if (currentUser) {
-            // Check for redirect parameter
+            // Check for redirect parameter - sanitize to prevent open redirect
             const urlParams = new URLSearchParams(window.location.search);
-            const redirectTo = urlParams.get('redirect');
+            let redirectTo = urlParams.get('redirect');
+            
+            // Validate redirect URL
+            if (redirectTo) {
+                try {
+                    const redirectUrl = new URL(redirectTo, window.location.origin);
+                    if (redirectUrl.origin !== window.location.origin) {
+                        redirectTo = null; // Block cross-origin redirects
+                    } else {
+                        redirectTo = redirectUrl.pathname + redirectUrl.search;
+                    }
+                } catch (e) {
+                    // If URL parsing fails, treat as relative path
+                    if (!redirectTo.startsWith('/') && !redirectTo.startsWith('./')) {
+                        redirectTo = null;
+                    }
+                }
+            }
             
             // Use setTimeout to prevent navigation throttling
             setTimeout(() => {
@@ -442,25 +471,73 @@ function initializeDemoData() {
     }
 }
 
-// Get current logged in user
+// Get current logged in user - Enhanced with secure session support
 function getCurrentUser() {
+    // Try secure session first
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.getSecureSession) {
+        const session = SecurityUtils.getSecureSession();
+        if (session && session.user) {
+            return session.user;
+        }
+    }
+    
+    // Fallback to legacy sessionStorage
     const userStr = sessionStorage.getItem('currentUser');
-    return userStr ? JSON.parse(userStr) : null;
+    if (!userStr) return null;
+    try {
+        return JSON.parse(userStr);
+    } catch (e) {
+        return null;
+    }
 }
 
-// Set current user
+// Set current user - Enhanced with secure session support
 function setCurrentUser(user) {
-    sessionStorage.setItem('currentUser', JSON.stringify(user));
+    // Set secure session if available
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.setSecureSession) {
+        SecurityUtils.setSecureSession(user, 480); // 8 hour session
+    }
+    
+    // Also set legacy session for backward compatibility
+    try {
+        sessionStorage.setItem('currentUser', JSON.stringify(user));
+    } catch (e) {
+        console.error('Error setting user session:', e);
+    }
 }
 
-// Clear current user
+// Clear current user - Enhanced with secure session cleanup
 function clearCurrentUser() {
-    sessionStorage.removeItem('currentUser');
+    // Clear secure session
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.clearSecureSession) {
+        SecurityUtils.clearSecureSession();
+    }
+    
+    // Clear legacy session
+    try {
+        sessionStorage.removeItem('currentUser');
+        localStorage.removeItem('currentUser');
+    } catch (e) {
+        console.error('Error clearing user session:', e);
+    }
 }
 
-// Logout function
+// Logout function - Enhanced with complete session cleanup
 function logout() {
+    // Clear secure session
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.clearSecureSession) {
+        SecurityUtils.clearSecureSession();
+    }
+    
+    // Clear legacy sessions
     clearCurrentUser();
+    
+    // Clear CSRF token
+    try {
+        sessionStorage.removeItem('csrfToken');
+    } catch (e) {
+        console.error('Error clearing CSRF token:', e);
+    }
     
     // Check if we're in the exam portal
     const currentPath = window.location.pathname;
