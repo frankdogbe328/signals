@@ -196,17 +196,88 @@ async function handleCreateExam(e) {
         return;
     }
     
+    // Get and sanitize form inputs
+    const rawTitle = document.getElementById('examTitle').value;
+    const rawDescription = document.getElementById('examDescription').value;
+    const examTitle = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
+        SecurityUtils.sanitizeInput(rawTitle.trim()) : rawTitle.trim();
+    const examDescription = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
+        SecurityUtils.sanitizeInput(rawDescription.trim()) : rawDescription.trim();
+    
+    // Validate exam title
+    if (!examTitle || examTitle.length < 3 || examTitle.length > 200) {
+        showError('Exam title must be between 3 and 200 characters.', 'Validation Error');
+        return;
+    }
+    
+    // Validate description length (optional field, but if provided, limit length)
+    if (examDescription && examDescription.length > 1000) {
+        showError('Exam description must not exceed 1000 characters.', 'Validation Error');
+        return;
+    }
+    
+    // Validate numeric inputs
+    const durationMinutes = parseInt(document.getElementById('examDuration').value);
+    const totalMarks = parseInt(document.getElementById('examTotalMarks').value);
+    const passingScore = document.getElementById('examPassingScore').value ? 
+        parseInt(document.getElementById('examPassingScore').value) : null;
+    
+    if (!durationMinutes || durationMinutes < 1 || durationMinutes > 600) {
+        showError('Duration must be between 1 and 600 minutes.', 'Validation Error');
+        return;
+    }
+    
+    if (!totalMarks || totalMarks < 1 || totalMarks > 10000) {
+        showError('Total marks must be between 1 and 10,000.', 'Validation Error');
+        return;
+    }
+    
+    if (passingScore !== null && (passingScore < 0 || passingScore > totalMarks)) {
+        showError('Passing score must be between 0 and total marks.', 'Validation Error');
+        return;
+    }
+    
+    // Validate dates if provided
+    let startDate = null;
+    let endDate = null;
+    const startDateInput = document.getElementById('examStartDate').value;
+    const endDateInput = document.getElementById('examEndDate').value;
+    
+    if (startDateInput) {
+        startDate = new Date(startDateInput);
+        if (isNaN(startDate.getTime())) {
+            showError('Invalid start date format.', 'Validation Error');
+            return;
+        }
+        startDate = startDate.toISOString();
+    }
+    
+    if (endDateInput) {
+        endDate = new Date(endDateInput);
+        if (isNaN(endDate.getTime())) {
+            showError('Invalid end date format.', 'Validation Error');
+            return;
+        }
+        endDate = endDate.toISOString();
+        
+        // Validate that end date is after start date
+        if (startDate && endDate && new Date(endDate) < new Date(startDate)) {
+            showError('End date must be after start date.', 'Validation Error');
+            return;
+        }
+    }
+    
     const examData = {
         lecturer_id: currentUser.id,
-        title: document.getElementById('examTitle').value.trim(),
-        description: document.getElementById('examDescription').value.trim(),
-        subject: document.getElementById('examSubject').value,
-        class_id: document.getElementById('examClass').value,
-        duration_minutes: parseInt(document.getElementById('examDuration').value),
-        total_marks: parseInt(document.getElementById('examTotalMarks').value),
-        passing_score: document.getElementById('examPassingScore').value ? parseInt(document.getElementById('examPassingScore').value) : null,
-        start_date: document.getElementById('examStartDate').value ? new Date(document.getElementById('examStartDate').value).toISOString() : null,
-        end_date: document.getElementById('examEndDate').value ? new Date(document.getElementById('examEndDate').value).toISOString() : null,
+        title: examTitle,
+        description: examDescription || null,
+        subject: document.getElementById('examSubject').value, // Already validated as dropdown selection
+        class_id: document.getElementById('examClass').value, // Already validated as dropdown selection
+        duration_minutes: durationMinutes,
+        total_marks: totalMarks,
+        passing_score: passingScore,
+        start_date: startDate,
+        end_date: endDate,
         is_active: true,
         results_released: false
     };
@@ -702,14 +773,28 @@ async function handleQuestionFormSubmit(e) {
     }
     
     const questionType = document.getElementById('questionType').value;
+    const rawQuestionText = document.getElementById('questionText').value;
     const questionText = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
-        SecurityUtils.sanitizeInput(document.getElementById('questionText').value) : 
-        document.getElementById('questionText').value.trim();
-    const marks = parseInt(document.getElementById('questionMarks').value);
+        SecurityUtils.sanitizeInput(rawQuestionText.trim()) : rawQuestionText.trim();
+    const marksInput = document.getElementById('questionMarks').value;
+    const marks = marksInput ? parseInt(marksInput) : 0;
     const editId = document.getElementById('questionEditId').value;
     
+    // Validate required fields
     if (!examId || !questionType || !questionText) {
         showError('Please fill in all required fields', 'Missing Information');
+        return;
+    }
+    
+    // Validate question text length
+    if (questionText.length < 5 || questionText.length > 2000) {
+        showError('Question text must be between 5 and 2000 characters.', 'Validation Error');
+        return;
+    }
+    
+    // Validate marks
+    if (!marks || marks < 1 || marks > 1000) {
+        showError('Marks must be between 1 and 1000.', 'Validation Error');
         return;
     }
     
@@ -734,11 +819,34 @@ async function handleQuestionFormSubmit(e) {
         }
         
         const optionValues = Array.from(optionInputs).map(input => {
-            const value = input.value.trim();
+            const rawValue = input.value;
+            const value = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
+                SecurityUtils.sanitizeInput(rawValue.trim()) : rawValue.trim();
+            
             if (!value) {
                 showError('All options must be filled', 'Incomplete Options');
                 return null;
             }
+            
+            // Validate option length
+            if (value.length > 500) {
+                showError('Each option must not exceed 500 characters.', 'Validation Error');
+                return null;
+            }
+            
+            return value;
+            
+            if (!value) {
+                showError('All options must be filled', 'Incomplete Options');
+                return null;
+            }
+            
+            // Validate option length
+            if (value.length > 500) {
+                showError('Each option must not exceed 500 characters.', 'Validation Error');
+                return null;
+            }
+            
             return value;
         });
         
@@ -761,11 +869,24 @@ async function handleQuestionFormSubmit(e) {
         correctAnswer = trueFalseRadio.value;
         
     } else if (questionType === 'short_answer' || questionType === 'essay') {
-        const textAnswer = document.getElementById('textAnswer').value.trim();
+        const rawTextAnswer = document.getElementById('textAnswer').value;
+        const textAnswer = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
+            SecurityUtils.sanitizeInput(rawTextAnswer.trim()) : rawTextAnswer.trim();
+        
         if (!textAnswer) {
             showError('Please enter the expected answer or key points', 'Missing Answer');
             return;
         }
+        
+        // Validate answer length based on question type
+        if (questionType === 'short_answer' && textAnswer.length > 500) {
+            showError('Short answer must not exceed 500 characters.', 'Validation Error');
+            return;
+        } else if (questionType === 'essay' && textAnswer.length > 5000) {
+            showError('Essay answer key points must not exceed 5000 characters.', 'Validation Error');
+            return;
+        }
+        
         correctAnswer = textAnswer;
     }
     

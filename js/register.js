@@ -86,9 +86,18 @@ async function handleRegistration(e) {
         }
     }
     
-    const name = document.getElementById('regName').value.trim();
-    const username = document.getElementById('regUsername').value.trim();
-    const email = document.getElementById('regEmail').value.trim();
+    // Get and sanitize inputs
+    const rawName = document.getElementById('regName').value;
+    const rawUsername = document.getElementById('regUsername').value;
+    const rawEmail = document.getElementById('regEmail').value;
+    
+    const name = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
+        SecurityUtils.sanitizeInput(rawName.trim()) : rawName.trim();
+    const username = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
+        SecurityUtils.sanitizeInput(rawUsername.trim()) : rawUsername.trim();
+    const email = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
+        SecurityUtils.sanitizeInput(rawEmail.trim()) : rawEmail.trim();
+    
     const password = document.getElementById('regPassword').value;
     const confirmPassword = document.getElementById('regConfirmPassword').value;
     const classSelect = document.getElementById('regClass').value;
@@ -108,6 +117,13 @@ async function handleRegistration(e) {
     // Validate inputs based on role
     if (!name || !username || !email || !password || !confirmPassword) {
         errorMessage.textContent = 'Please fill in all required fields';
+        errorMessage.classList.add('show');
+        return;
+    }
+    
+    // Validate name length
+    if (name.length < 2 || name.length > 100) {
+        errorMessage.textContent = 'Name must be between 2 and 100 characters';
         errorMessage.classList.add('show');
         return;
     }
