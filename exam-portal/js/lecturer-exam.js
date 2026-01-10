@@ -171,7 +171,7 @@ function populateExamSubjectDropdown() {
     console.log('Registered subjects for dropdown:', registeredSubjects);
     
     if (registeredSubjects.length === 0) {
-        console.warn('No subjects registered for lecturer');
+        console.warn('No subjects registered for lecturer:', currentUser.username || currentUser.id);
         const option = document.createElement('option');
         option.value = '';
         option.textContent = 'No subjects registered - Register in LMS Portal first';
@@ -179,7 +179,7 @@ function populateExamSubjectDropdown() {
         
         // Show info message instead of error
         if (typeof showInfo === 'function') {
-            showInfo('Please register for subjects in the LMS portal first. Go to LMS Portal → Register Subjects.', 'No Subjects Registered');
+            showInfo(`Please register for subjects in the LMS portal first. Go to LMS Portal → Register Subjects. (User: ${currentUser.username || currentUser.name || currentUser.id})`, 'No Subjects Registered');
         }
         return;
     }
