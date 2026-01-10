@@ -405,18 +405,31 @@ async function createMaterialInSupabase(materialData) {
     if (!client) return null;
     
     try {
+        // Authorization check: Verify user is a lecturer
+        if (typeof getCurrentUser === 'function') {
+            const currentUser = getCurrentUser();
+            if (!currentUser || currentUser.role !== 'lecturer') {
+                console.error('Unauthorized attempt to create material');
+                return null;
+            }
+            // Ensure uploaded_by is set to user ID (if not already set)
+            if (!materialData.uploadedBy || (materialData.uploadedBy !== currentUser.id && materialData.uploadedBy !== currentUser.name)) {
+                materialData.uploadedBy = currentUser.id;
+            }
+        }
+        
         const { data, error } = await client
             .from('materials')
             .insert([{
                 course: materialData.course,
                 class: materialData.class,
-                title: materialData.title,
+                title: materialData.title, // Should already be sanitized
                 type: materialData.type,
                 content: materialData.content || null,
                 description: materialData.description || null,
                 category: materialData.category || null,
                 sequence: materialData.sequence || 999,
-                uploaded_by: materialData.uploadedBy,
+                uploaded_by: materialData.uploadedBy, // Should be user ID
                 is_file: materialData.isFile || false,
                 file_name: materialData.fileName || null,
                 file_type: materialData.fileType || null,
@@ -440,7 +453,7 @@ async function createMaterialInSupabase(materialData) {
             description: data.description,
             category: data.category,
             sequence: data.sequence,
-            uploadedBy: data.uploaded_by, // This should be user ID in Supabase
+            uploadedBy: data.uploaded_by,
             uploadedAt: data.uploaded_at,
             isFile: data.is_file,
             fileName: data.file_name,
