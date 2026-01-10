@@ -30,18 +30,19 @@ function getSupabaseClient() {
 
 // ========== USER OPERATIONS ==========
 
-// Get user by username and password
+// Get user by username/fullname and password
 async function getUserFromSupabase(username, password, role) {
     const client = getSupabaseClient();
     if (!client) return null;
     
     try {
+        // Search by username OR fullname (name field)
         // Use .maybeSingle() instead of .single() to handle 0 or 1 records
         // .single() throws 406 error if no record found
         const { data, error } = await client
             .from('users')
             .select('*')
-            .eq('username', username)
+            .or(`username.eq.${username},name.eq.${username}`)
             .eq('role', role)
             .maybeSingle(); // Returns null if no record, single object if found
         
