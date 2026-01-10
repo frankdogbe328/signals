@@ -403,8 +403,8 @@ function displayExams(exams) {
     
     examsListEl.innerHTML = exams.map(exam => `
         <div class="question-item">
-            <div style="display: flex; justify-content: space-between; align-items: start;">
-                <div style="flex: 1;">
+            <div class="exam-card-content">
+                <div class="exam-card-info">
                     <h4 style="margin-bottom: 10px;">${escapeHtml(exam.title)}</h4>
                     <p style="color: #666; margin-bottom: 5px;"><strong>Subject:</strong> ${escapeHtml(exam.subject)}</p>
                     <p style="color: #666; margin-bottom: 5px;"><strong>Class:</strong> ${formatClassName(exam.class_id)}</p>
@@ -416,15 +416,17 @@ function displayExams(exams) {
                         ${exam.results_released ? ' | <span style="color: blue;">Results Released</span>' : ' | <span style="color: orange;">Results Pending</span>'}
                     </p>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 10px; margin-left: 15px;">
+                <div class="exam-card-actions">
                     <button onclick="viewExamDetails('${exam.id}')" class="btn btn-primary">Manage</button>
                     <button onclick="toggleExamStatus('${exam.id}', ${exam.is_active})" class="btn btn-secondary">
                         ${exam.is_active ? 'Deactivate' : 'Activate'}
                     </button>
                     ${!exam.results_released ? `<button onclick="releaseResults('${exam.id}')" class="btn btn-success">Release Results</button>` : ''}
                     <button onclick="viewExamStats('${exam.id}')" class="btn btn-secondary">View Stats</button>
-                    <button onclick="quickExportPDF('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="font-size: 12px; padding: 6px 12px; min-width: 60px; display: inline-block;" title="Export Results to PDF">📄 PDF</button>
-                    <button onclick="quickExportExcel('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-success" style="font-size: 12px; padding: 6px 12px; min-width: 60px; display: inline-block;" title="Export Results to Excel">📊 Excel</button>
+                    <div class="export-buttons">
+                        <button onclick="quickExportPDF('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="font-size: 12px; padding: 6px 12px; min-width: 60px; display: inline-block;" title="Export Results to PDF">📄 PDF</button>
+                        <button onclick="quickExportExcel('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-success" style="font-size: 12px; padding: 6px 12px; min-width: 60px; display: inline-block;" title="Export Results to Excel">📊 Excel</button>
+                    </div>
                 </div>
             </div>
         </div>
