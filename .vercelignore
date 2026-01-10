@@ -1,0 +1,11 @@
+# Ignore Supabase Edge Functions (they're deployed separately via Supabase CLI)
+supabase/functions/
+
+# Ignore documentation files
+*.md
+!README.md
+
+# Ignore development files
+.DS_Store
+*.log
+node_modules/
