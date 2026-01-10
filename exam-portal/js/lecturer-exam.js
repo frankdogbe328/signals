@@ -175,9 +175,24 @@ function populateExamSubjectDropdown() {
 async function handleCreateExam(e) {
     e.preventDefault();
     
+    const form = e.target;
+    
+    // Validate CSRF token
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validateFormCSRFToken) {
+        // Ensure token exists
+        if (typeof SecurityUtils.addCSRFTokenToForm === 'function') {
+            SecurityUtils.addCSRFTokenToForm(form);
+        }
+        
+        if (!SecurityUtils.validateFormCSRFToken(form)) {
+            showError('Security token validation failed. Please refresh the page and try again.', 'Security Error');
+            return;
+        }
+    }
+    
     const currentUser = getCurrentUser();
-    if (!currentUser) {
-        showError('User session expired. Please log in again.', 'Session Expired');
+    if (!currentUser || currentUser.role !== 'lecturer') {
+        showError('You must be logged in as a lecturer to create exams.', 'Authorization Required');
         return;
     }
     
@@ -302,6 +317,13 @@ async function viewExamDetails(examId) {
             throw new Error('Supabase client not available');
         }
         
+        // Get current user for authorization check
+        const currentUser = getCurrentUser();
+        if (!currentUser || currentUser.role !== 'lecturer') {
+            showError('You must be logged in as a lecturer to view exam details.', 'Authorization Required');
+            return;
+        }
+        
         // Get exam details
         const { data: exam, error: examError } = await client
             .from('exams')
@@ -310,6 +332,12 @@ async function viewExamDetails(examId) {
             .single();
         
         if (examError) throw examError;
+        
+        // Authorization check: Verify exam belongs to current lecturer
+        if (!exam || exam.lecturer_id !== currentUser.id) {
+            showError('You do not have permission to view this exam.', 'Access Denied');
+            return;
+        }
         
         // Get questions
         const { data: questions, error: questionsError } = await client
@@ -326,7 +354,8 @@ async function viewExamDetails(examId) {
         showExamDetailsModal(exam, currentQuestions);
         
     } catch (error) {
-        showError('Failed to load exam details: ' + (error.message || 'Unknown error'), 'Error Loading Exam Details');
+        console.error('Error loading exam details:', error);
+        showError('Failed to load exam details. Please try again.', 'Error Loading Exam Details');
     }
 }
 
@@ -626,9 +655,54 @@ document.addEventListener('DOMContentLoaded', function() {
 async function handleQuestionFormSubmit(e) {
     e.preventDefault();
     
+    const form = e.target;
+    
+    // Validate CSRF token
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validateFormCSRFToken) {
+        // Ensure token exists
+        if (typeof SecurityUtils.addCSRFTokenToForm === 'function') {
+            SecurityUtils.addCSRFTokenToForm(form);
+        }
+        
+        if (!SecurityUtils.validateFormCSRFToken(form)) {
+            showError('Security token validation failed. Please refresh the page and try again.', 'Security Error');
+            return;
+        }
+    }
+    
+    // Authorization check
+    const currentUser = getCurrentUser();
+    if (!currentUser || currentUser.role !== 'lecturer') {
+        showError('You must be logged in as a lecturer to create questions.', 'Authorization Required');
+        return;
+    }
+    
+    // Verify exam belongs to lecturer
     const examId = document.getElementById('questionExamId').value;
+    if (examId && currentExamId) {
+        try {
+            const client = getSupabaseClient();
+            if (client) {
+                const { data: exam } = await client
+                    .from('exams')
+                    .select('lecturer_id')
+                    .eq('id', examId)
+                    .single();
+                
+                if (exam && exam.lecturer_id !== currentUser.id) {
+                    showError('You do not have permission to add questions to this exam.', 'Access Denied');
+                    return;
+                }
+            }
+        } catch (err) {
+            console.error('Error verifying exam ownership:', err);
+        }
+    }
+    
     const questionType = document.getElementById('questionType').value;
-    const questionText = document.getElementById('questionText').value.trim();
+    const questionText = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
+        SecurityUtils.sanitizeInput(document.getElementById('questionText').value) : 
+        document.getElementById('questionText').value.trim();
     const marks = parseInt(document.getElementById('questionMarks').value);
     const editId = document.getElementById('questionEditId').value;
     
@@ -764,6 +838,26 @@ async function toggleExamStatus(examId, currentStatus) {
             throw new Error('Supabase client not available');
         }
         
+        // Get current user for authorization check
+        const currentUser = getCurrentUser();
+        if (!currentUser || currentUser.role !== 'lecturer') {
+            showError('You must be logged in as a lecturer to change exam status.', 'Authorization Required');
+            return;
+        }
+        
+        // Verify exam belongs to current lecturer
+        const { data: exam, error: examError } = await client
+            .from('exams')
+            .select('lecturer_id')
+            .eq('id', examId)
+            .single();
+        
+        if (examError) throw examError;
+        if (!exam || exam.lecturer_id !== currentUser.id) {
+            showError('You do not have permission to modify this exam.', 'Access Denied');
+            return;
+        }
+        
         const { error } = await client
             .from('exams')
             .update({ is_active: !currentStatus })
@@ -775,7 +869,8 @@ async function toggleExamStatus(examId, currentStatus) {
         loadExams();
         
     } catch (error) {
-        showError('Failed to update exam status: ' + (error.message || 'Unknown error'), 'Error Updating Status');
+        console.error('Error updating exam status:', error);
+        showError('Failed to update exam status. Please try again.', 'Error Updating Status');
     }
 }
 
@@ -791,6 +886,26 @@ async function releaseResults(examId) {
             throw new Error('Supabase client not available');
         }
         
+        // Get current user for authorization check
+        const currentUser = getCurrentUser();
+        if (!currentUser || currentUser.role !== 'lecturer') {
+            showError('You must be logged in as a lecturer to release results.', 'Authorization Required');
+            return;
+        }
+        
+        // Verify exam belongs to current lecturer
+        const { data: exam, error: examError } = await client
+            .from('exams')
+            .select('lecturer_id')
+            .eq('id', examId)
+            .single();
+        
+        if (examError) throw examError;
+        if (!exam || exam.lecturer_id !== currentUser.id) {
+            showError('You do not have permission to release results for this exam.', 'Access Denied');
+            return;
+        }
+        
         const { error } = await client
             .from('exams')
             .update({ results_released: true })
@@ -802,7 +917,8 @@ async function releaseResults(examId) {
         loadExams();
         
     } catch (error) {
-        showError('Failed to release results: ' + (error.message || 'Unknown error'), 'Error Releasing Results');
+        console.error('Error releasing results:', error);
+        showError('Failed to release results. Please try again.', 'Error Releasing Results');
     }
 }
 
@@ -814,12 +930,31 @@ async function viewExamStats(examId) {
             throw new Error('Supabase client not available');
         }
         
-        // Get exam details
-        const { data: exam } = await client
+        // Get current user for authorization check
+        const currentUser = getCurrentUser();
+        if (!currentUser || currentUser.role !== 'lecturer') {
+            showError('You must be logged in as a lecturer to view exam statistics.', 'Authorization Required');
+            return;
+        }
+        
+        // Get exam details and verify ownership
+        const { data: exam, error: examError } = await client
             .from('exams')
             .select('*')
             .eq('id', examId)
             .single();
+        
+        if (examError) throw examError;
+        if (!exam) {
+            showError('Exam not found.', 'Error');
+            return;
+        }
+        
+        // Authorization check: Verify exam belongs to current lecturer
+        if (exam.lecturer_id !== currentUser.id) {
+            showError('You do not have permission to view statistics for this exam.', 'Access Denied');
+            return;
+        }
         
         // Get all attempts (submitted, auto_submitted, time_expired)
         const { data: attempts, error } = await client
@@ -1142,19 +1277,68 @@ function editQuestion(questionId) {
 
 // Update question in database
 async function updateQuestion(questionId, questionData) {
-    const client = getSupabaseClient();
-    if (!client) {
-        throw new Error('Supabase client not available');
+    try {
+        const client = getSupabaseClient();
+        if (!client) {
+            throw new Error('Supabase client not available');
+        }
+        
+        // Get current user for authorization check
+        const currentUser = getCurrentUser();
+        if (!currentUser || currentUser.role !== 'lecturer') {
+            showError('You must be logged in as a lecturer to update questions.', 'Authorization Required');
+            return;
+        }
+        
+        // Get the question first to verify ownership
+        const { data: question, error: questionError } = await client
+            .from('questions')
+            .select('exam_id, exams!inner(lecturer_id)')
+            .eq('id', questionId)
+            .single();
+        
+        if (questionError) throw questionError;
+        if (!question) {
+            showError('Question not found.', 'Error');
+            return;
+        }
+        
+        // Authorization check: Verify question belongs to lecturer's exam
+        const examLecturerId = question.exams?.lecturer_id || question.exam_id;
+        // If we got the lecturer_id from join, use it; otherwise check via exam
+        if (question.exams && question.exams.lecturer_id !== currentUser.id) {
+            showError('You do not have permission to update this question.', 'Access Denied');
+            return;
+        }
+        
+        // If we don't have lecturer_id from join, verify via exam
+        if (!question.exams) {
+            const { data: exam, error: examError } = await client
+                .from('exams')
+                .select('lecturer_id')
+                .eq('id', question.exam_id)
+                .single();
+            
+            if (examError || !exam || exam.lecturer_id !== currentUser.id) {
+                showError('You do not have permission to update this question.', 'Access Denied');
+                return;
+            }
+        }
+        
+        // Update the question
+        const { error } = await client
+            .from('questions')
+            .update(questionData)
+            .eq('id', questionId);
+        
+        if (error) throw error;
+        
+        showSuccess('Question updated successfully!', 'Success');
+    } catch (error) {
+        console.error('Error updating question:', error);
+        showError('Failed to update question. Please try again.', 'Error Updating Question');
+        throw error;
     }
-    
-    const { error } = await client
-        .from('questions')
-        .update(questionData)
-        .eq('id', questionId);
-    
-    if (error) throw error;
-    
-    showSuccess('Question updated successfully!', 'Success');
 }
 
 // Delete question
@@ -1169,6 +1353,40 @@ async function deleteQuestion(questionId) {
             throw new Error('Supabase client not available');
         }
         
+        // Get current user for authorization check
+        const currentUser = getCurrentUser();
+        if (!currentUser || currentUser.role !== 'lecturer') {
+            showError('You must be logged in as a lecturer to delete questions.', 'Authorization Required');
+            return;
+        }
+        
+        // Get the question first to verify ownership
+        const { data: question, error: questionError } = await client
+            .from('questions')
+            .select('exam_id')
+            .eq('id', questionId)
+            .single();
+        
+        if (questionError) throw questionError;
+        if (!question) {
+            showError('Question not found.', 'Error');
+            return;
+        }
+        
+        // Verify question belongs to lecturer's exam
+        const { data: exam, error: examError } = await client
+            .from('exams')
+            .select('lecturer_id')
+            .eq('id', question.exam_id)
+            .single();
+        
+        if (examError) throw examError;
+        if (!exam || exam.lecturer_id !== currentUser.id) {
+            showError('You do not have permission to delete this question.', 'Access Denied');
+            return;
+        }
+        
+        // Delete the question
         const { error } = await client
             .from('questions')
             .delete()
@@ -1184,7 +1402,8 @@ async function deleteQuestion(questionId) {
         }
         
     } catch (error) {
-        showError('Failed to delete question: ' + (error.message || 'Unknown error'), 'Error Deleting Question');
+        console.error('Error deleting question:', error);
+        showError('Failed to delete question. Please try again.', 'Error Deleting Question');
     }
 }
 

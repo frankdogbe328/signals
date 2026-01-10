@@ -346,6 +346,10 @@ async function getMaterialsFromSupabase(filters = {}) {
             query = query.eq('category', filters.category);
         }
         
+        // Authorization filter: If current user is lecturer, only show their materials
+        // Note: This is a client-side filter. For better security, implement Row Level Security (RLS) in Supabase
+        // For now, we'll filter client-side after fetching
+        
         // Order by sequence, then uploaded_at
         query = query.order('sequence', { ascending: true })
                      .order('uploaded_at', { ascending: false });
@@ -358,7 +362,7 @@ async function getMaterialsFromSupabase(filters = {}) {
         }
         
         // Convert to format expected by app
-        return (data || []).map(m => ({
+        let materials = (data || []).map(m => ({
             id: m.id,
             course: m.course,
             class: m.class,
@@ -375,6 +379,20 @@ async function getMaterialsFromSupabase(filters = {}) {
             fileType: m.file_type,
             file_url: m.file_url // Include file URL from storage
         }));
+        
+        // Client-side authorization filter (for lecturers)
+        // In production, use Supabase Row Level Security (RLS) for server-side filtering
+        if (typeof getCurrentUser === 'function') {
+            const currentUser = getCurrentUser();
+            if (currentUser && currentUser.role === 'lecturer') {
+                // Filter to only show materials uploaded by this lecturer
+                materials = materials.filter(m => 
+                    m.uploadedBy === currentUser.id || m.uploadedBy === currentUser.name
+                );
+            }
+        }
+        
+        return materials;
     } catch (err) {
         console.error('Error getting materials:', err);
         return [];
@@ -422,7 +440,7 @@ async function createMaterialInSupabase(materialData) {
             description: data.description,
             category: data.category,
             sequence: data.sequence,
-            uploadedBy: data.uploaded_by,
+            uploadedBy: data.uploaded_by, // This should be user ID in Supabase
             uploadedAt: data.uploaded_at,
             isFile: data.is_file,
             fileName: data.file_name,
@@ -441,6 +459,30 @@ async function updateMaterialInSupabase(materialId, materialData) {
     if (!client) return false;
     
     try {
+        // Authorization check: Verify material belongs to current user
+        // Note: This function should be called from lecturer.js where currentUser is available
+        // For additional security, we can check here too if currentUser is available globally
+        if (typeof getCurrentUser === 'function') {
+            const currentUser = getCurrentUser();
+            if (currentUser && currentUser.role === 'lecturer') {
+                const { data: material, error: materialError } = await client
+                    .from('materials')
+                    .select('uploaded_by')
+                    .eq('id', materialId)
+                    .single();
+                
+                if (materialError) {
+                    console.error('Error checking material ownership:', materialError);
+                    return false;
+                }
+                
+                if (!material || material.uploaded_by !== currentUser.id) {
+                    console.error('Unauthorized attempt to update material:', materialId);
+                    return false;
+                }
+            }
+        }
+        
         const updateData = {
             course: materialData.course,
             class: materialData.class,

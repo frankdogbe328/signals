@@ -187,6 +187,25 @@ async function startExam(examId) {
         
         if (examError) throw examError;
         
+        // Authorization check: Verify exam is for student's class
+        if (!exam || exam.class_id !== currentUser.class) {
+            showError('You do not have permission to take this exam. This exam is not for your class.', 'Access Denied');
+            return;
+        }
+        
+        // Authorization check: Verify student is registered for the exam's subject
+        const registeredSubjects = currentUser.courses || [];
+        if (!registeredSubjects.includes(exam.subject)) {
+            showError('You do not have permission to take this exam. You are not registered for this subject.', 'Access Denied');
+            return;
+        }
+        
+        // Authorization check: Verify exam is active
+        if (!exam.is_active) {
+            showError('This exam is not currently active.', 'Exam Not Available');
+            return;
+        }
+        
         // Get questions
         const { data: questionsData, error: questionsError } = await client
             .from('questions')
@@ -709,6 +728,26 @@ async function finalizeExam(status) {
             throw new Error('Supabase client not available');
         }
         
+        // Get current user for authorization check
+        const currentUser = getCurrentUser();
+        if (!currentUser || currentUser.role !== 'student') {
+            showError('You must be logged in as a student to submit exams.', 'Authorization Required');
+            return;
+        }
+        
+        // Authorization check: Verify attempt belongs to current student
+        const { data: attempt, error: attemptError } = await client
+            .from('student_exam_attempts')
+            .select('student_id, exam_id')
+            .eq('id', currentAttempt.id)
+            .single();
+        
+        if (attemptError) throw attemptError;
+        if (!attempt || attempt.student_id !== currentUser.id) {
+            showError('You do not have permission to submit this exam attempt.', 'Access Denied');
+            return;
+        }
+        
         // Grade all answers
         const { data: responses } = await client
             .from('student_responses')
@@ -928,7 +967,10 @@ function showResults(score, totalMarks, percentage) {
 // View results for completed exam
 async function viewResults(examId) {
     const currentUser = getCurrentUser();
-    if (!currentUser) return;
+    if (!currentUser || currentUser.role !== 'student') {
+        showError('You must be logged in as a student to view results.', 'Authorization Required');
+        return;
+    }
     
     try {
         const client = getSupabaseClient();
@@ -936,10 +978,11 @@ async function viewResults(examId) {
             throw new Error('Supabase client not available');
         }
         
+        // Get attempt - already filtered by student_id for authorization
         const { data: attempt } = await client
             .from('student_exam_attempts')
             .select('*')
-            .eq('student_id', currentUser.id)
+            .eq('student_id', currentUser.id) // Authorization: Only current student's attempts
             .eq('exam_id', examId)
             .in('status', ['submitted', 'auto_submitted', 'time_expired'])
             .order('submitted_at', { ascending: false })
@@ -947,7 +990,7 @@ async function viewResults(examId) {
             .maybeSingle();
         
         if (!attempt) {
-            showError('No results found', 'Error');
+            showError('No results found for this exam.', 'No Results');
             return;
         }
         
@@ -1031,7 +1074,10 @@ function showResultsTab() {
 // Load all exam results for student
 async function loadAllResults() {
     const currentUser = getCurrentUser();
-    if (!currentUser) return;
+    if (!currentUser || currentUser.role !== 'student') {
+        console.error('Unauthorized access attempt to load results');
+        return;
+    }
     
     try {
         const client = getSupabaseClient();
@@ -1039,7 +1085,7 @@ async function loadAllResults() {
             throw new Error('Supabase client not available');
         }
         
-        // Get all completed exam attempts
+        // Get all completed exam attempts - filtered by student_id for authorization
         const { data: attempts, error } = await client
             .from('student_exam_attempts')
             .select('*')

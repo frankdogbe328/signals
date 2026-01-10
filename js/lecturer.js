@@ -25,25 +25,27 @@ function populateLecturerSubjectDropdown() {
 
 // Register lecturer for a subject
 async function registerLecturerForSubject() {
+    // Authorization check
+    const currentUser = getCurrentUser();
+    if (!currentUser || currentUser.role !== 'lecturer') {
+        if (typeof showError === 'function') {
+            showError('You must be logged in as a lecturer to register for subjects.', 'Authorization Required');
+        } else {
+            alert('You must be logged in as a lecturer to register for subjects.');
+        }
+        return;
+    }
+    
     const classSelect = document.getElementById('lecturerClassSelect').value;
     const subjectSelect = document.getElementById('lecturerSubjectSelect');
-    const selectedSubject = subjectSelect.value.trim();
+    const selectedSubject = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
+        SecurityUtils.sanitizeInput(subjectSelect.value.trim()) : subjectSelect.value.trim();
     
     if (!classSelect || !selectedSubject) {
         if (typeof showError === 'function') {
             showError('Please select both class and subject', 'Missing Information');
         } else {
             alert('Please select both class and subject');
-        }
-        return;
-    }
-    
-    const currentUser = getCurrentUser();
-    if (!currentUser) {
-        if (typeof showError === 'function') {
-            showError('User information not found. Please log in again.', 'Session Expired');
-        } else {
-            alert('User information not found. Please log in again.');
         }
         return;
     }
@@ -395,6 +397,36 @@ function previewFile() {
 async function handleMaterialUpload(e) {
     e.preventDefault();
     
+    const form = e.target;
+    
+    // Validate CSRF token
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validateFormCSRFToken) {
+        // Ensure token exists
+        if (typeof SecurityUtils.addCSRFTokenToForm === 'function') {
+            SecurityUtils.addCSRFTokenToForm(form);
+        }
+        
+        if (!SecurityUtils.validateFormCSRFToken(form)) {
+            if (typeof showError === 'function') {
+                showError('Security token validation failed. Please refresh the page and try again.', 'Security Error');
+            } else {
+                alert('Security token validation failed. Please refresh the page and try again.');
+            }
+            return;
+        }
+    }
+    
+    // Authorization check
+    const currentUser = getCurrentUser();
+    if (!currentUser || currentUser.role !== 'lecturer') {
+        if (typeof showError === 'function') {
+            showError('You must be logged in as a lecturer to upload materials.', 'Authorization Required');
+        } else {
+            alert('You must be logged in as a lecturer to upload materials.');
+        }
+        return;
+    }
+    
     const course = document.getElementById('courseSelect').value;
     const classSelect = document.getElementById('classSelect').value;
     const title = document.getElementById('materialTitle').value;
@@ -404,6 +436,35 @@ async function handleMaterialUpload(e) {
     const sequence = parseInt(document.getElementById('materialSequence').value) || 999;
     const submitBtn = document.getElementById('submitBtn');
     const originalBtnText = submitBtn.textContent;
+    
+    // Sanitize inputs
+    const sanitizedTitle = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
+        SecurityUtils.sanitizeInput(title) : title.trim();
+    const sanitizedDescription = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
+        SecurityUtils.sanitizeInput(description || '') : (description || '').trim();
+    const sanitizedCategory = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
+        SecurityUtils.sanitizeInput(category || '') : (category || '').trim();
+    
+    // Validate title length
+    if (sanitizedTitle.length < 3 || sanitizedTitle.length > 200) {
+        if (typeof showError === 'function') {
+            showError('Material title must be between 3 and 200 characters.', 'Validation Error');
+        } else {
+            alert('Material title must be between 3 and 200 characters.');
+        }
+        return;
+    }
+    
+    // Authorization check: Verify lecturer is registered for this subject
+    const registeredSubjects = currentUser.courses || [];
+    if (registeredSubjects.length > 0 && !registeredSubjects.includes(course)) {
+        if (typeof showError === 'function') {
+            showError(`You are not registered for the subject "${course}". Please register for this subject first.`, 'Subject Not Registered');
+        } else {
+            alert(`You are not registered for the subject "${course}". Please register for this subject first.`);
+        }
+        return;
+    }
     
     // Show loading state
     submitBtn.disabled = true;
@@ -418,19 +479,37 @@ async function handleMaterialUpload(e) {
     if (type === 'file' && materialFile.files.length > 0) {
         const file = materialFile.files[0];
         
-        // Check file size (50MB limit for Supabase Storage)
-        if (file.size > 50 * 1024 * 1024) {
-            if (typeof showError === 'function') {
-                showError('File size exceeds 50MB limit. Please choose a smaller file.\n\nCurrent file size: ' + 
-                          (file.size / (1024 * 1024)).toFixed(2) + ' MB', 'File Too Large');
-            } else {
-                alert('❌ File size exceeds 50MB limit. Please choose a smaller file.\n\nCurrent file size: ' + 
-                      (file.size / (1024 * 1024)).toFixed(2) + ' MB');
+        // Validate file using security utils
+        if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validateFileSize) {
+            if (!SecurityUtils.validateFileSize(file, 50)) { // 50MB limit
+                if (typeof showError === 'function') {
+                    showError('File size exceeds 50MB limit. Please choose a smaller file.', 'File Too Large');
+                } else {
+                    alert('❌ File size exceeds 50MB limit. Please choose a smaller file.');
+                }
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+                return;
             }
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalBtnText;
-            return;
+        } else {
+            // Fallback validation
+            if (file.size > 50 * 1024 * 1024) {
+                if (typeof showError === 'function') {
+                    showError('File size exceeds 50MB limit. Please choose a smaller file.\n\nCurrent file size: ' + 
+                              (file.size / (1024 * 1024)).toFixed(2) + ' MB', 'File Too Large');
+                } else {
+                    alert('❌ File size exceeds 50MB limit. Please choose a smaller file.\n\nCurrent file size: ' + 
+                          (file.size / (1024 * 1024)).toFixed(2) + ' MB');
+                }
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalBtnText;
+                return;
+            }
         }
+        
+        // Sanitize filename
+        fileName = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeFilename ? 
+            SecurityUtils.sanitizeFilename(file.name) : file.name;
         
         // Check file size is reasonable (minimum 1 byte)
         if (file.size === 0) {
@@ -459,10 +538,10 @@ async function handleMaterialUpload(e) {
                     await saveMaterialWithFile(
                         course, 
                         classSelect, 
-                        title, 
+                        sanitizedTitle, 
                         type, 
-                        description, 
-                        category, 
+                        sanitizedDescription, 
+                        sanitizedCategory, 
                         sequence, 
                         null, // No base64 data needed
                         uploadResult.fileName, 
@@ -485,7 +564,7 @@ async function handleMaterialUpload(e) {
                 const reader = new FileReader();
                 reader.onload = async function(e) {
                     const fileData = e.target.result;
-                    await saveMaterialWithFile(course, classSelect, title, type, description, category, sequence, fileData, fileName, fileType, null);
+                    await saveMaterialWithFile(course, classSelect, sanitizedTitle, type, sanitizedDescription, sanitizedCategory, sequence, fileData, fileName, fileType, null);
                     submitBtn.disabled = false;
                     submitBtn.textContent = originalBtnText;
                 };
@@ -525,17 +604,21 @@ async function handleMaterialUpload(e) {
             return;
         }
         
+        // Sanitize content
+        const sanitizedContent = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
+            SecurityUtils.sanitizeInput(content) : content.trim();
+        
         // Continue with normal upload (non-file)
         try {
-            await saveMaterial(course, classSelect, title, type, content, description, category, sequence);
+            await saveMaterial(course, classSelect, sanitizedTitle, type, sanitizedContent, sanitizedDescription, sanitizedCategory, sequence);
             submitBtn.disabled = false;
             submitBtn.textContent = originalBtnText;
         } catch (error) {
             console.error('Error saving material:', error);
             if (typeof showError === 'function') {
-                showError(error.message || 'Please try again.', 'Save Error');
+                showError('Failed to save material. Please try again.', 'Save Error');
             } else {
-                alert(`Error saving material: ${error.message || 'Please try again.'}`);
+                alert('Failed to save material. Please try again.');
             }
             submitBtn.disabled = false;
             submitBtn.textContent = originalBtnText;
@@ -562,21 +645,45 @@ function getFileTypeFromName(fileName) {
 
 async function saveMaterialWithFile(course, classSelect, title, type, description, category, sequence, fileData, fileName, fileType, fileUrl) {
     const currentUser = getCurrentUser();
+    
+    // Authorization check: Verify user is a lecturer
+    if (!currentUser || currentUser.role !== 'lecturer') {
+        const errorMessage = 'You must be logged in as a lecturer to upload materials.';
+        if (typeof showError === 'function') {
+            showError(errorMessage, 'Authorization Required');
+        } else {
+            alert(errorMessage);
+        }
+        return false;
+    }
+    
+    // Authorization check: Verify lecturer is registered for this subject
+    const registeredSubjects = currentUser.courses || [];
+    if (!registeredSubjects.includes(course)) {
+        const errorMessage = `You are not registered for the subject "${course}". Please register for this subject first before uploading materials.`;
+        if (typeof showError === 'function') {
+            showError(errorMessage, 'Subject Not Registered');
+        } else {
+            alert(errorMessage);
+        }
+        return false;
+    }
+    
     const editingId = document.getElementById('uploadForm').dataset.editingId;
     
     // Use Supabase Storage URL if available, otherwise fall back to base64
     const materialData = {
         course: course,
         class: classSelect,
-        title: title,
+        title: typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? SecurityUtils.sanitizeInput(title) : title.trim(),
         type: type,
         content: fileUrl ? null : fileData, // Only store base64 if no storage URL
-        description: description,
-        category: category,
+        description: typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? SecurityUtils.sanitizeInput(description || '') : (description || '').trim(),
+        category: typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? SecurityUtils.sanitizeInput(category || '') : (category || '').trim(),
         sequence: sequence,
-        uploadedBy: currentUser.name,
+        uploadedBy: currentUser.id, // Use user ID instead of name for better tracking
         isFile: true,
-        fileName: fileName,
+        fileName: typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeFilename ? SecurityUtils.sanitizeFilename(fileName) : fileName,
         fileType: fileType,
         file_url: fileUrl || null // Store Supabase Storage URL
     };
@@ -588,6 +695,26 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
     if (typeof createMaterialInSupabase === 'function' && typeof updateMaterialInSupabase === 'function') {
         try {
             if (editingId) {
+                // Authorization check for editing: Verify material belongs to lecturer
+                const client = getSupabaseClient();
+                if (client) {
+                    const { data: oldMaterial, error: materialError } = await client
+                        .from('materials')
+                        .select('uploaded_by')
+                        .eq('id', editingId)
+                        .single();
+                    
+                    if (materialError) throw materialError;
+                    if (!oldMaterial || oldMaterial.uploaded_by !== currentUser.id) {
+                        const errorMsg = 'You do not have permission to edit this material.';
+                        if (typeof showError === 'function') {
+                            showError(errorMsg, 'Access Denied');
+                        } else {
+                            alert(errorMsg);
+                        }
+                        return false;
+                    }
+                }
                 // If editing, delete old file from storage if it exists
                 if (fileUrl) {
                     // Get old material to check for old file URL
@@ -709,6 +836,28 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
 
 async function saveMaterial(course, classSelect, title, type, content, description, category, sequence) {
     const currentUser = getCurrentUser();
+    
+    // Authorization check
+    if (!currentUser || currentUser.role !== 'lecturer') {
+        if (typeof showError === 'function') {
+            showError('You must be logged in as a lecturer to save materials.', 'Authorization Required');
+        } else {
+            alert('You must be logged in as a lecturer to save materials.');
+        }
+        return false;
+    }
+    
+    // Verify lecturer is registered for this subject
+    const registeredSubjects = currentUser.courses || [];
+    if (registeredSubjects.length > 0 && !registeredSubjects.includes(course)) {
+        if (typeof showError === 'function') {
+            showError(`You are not registered for the subject "${course}".`, 'Subject Not Registered');
+        } else {
+            alert(`You are not registered for the subject "${course}".`);
+        }
+        return false;
+    }
+    
     const editingId = document.getElementById('uploadForm').dataset.editingId;
     const submitBtn = document.getElementById('submitBtn');
     const originalBtnText = submitBtn ? submitBtn.textContent : 'Upload Material';
@@ -716,13 +865,13 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
     const materialData = {
         course: course,
         class: classSelect,
-        title: title,
+        title: title, // Already sanitized by caller
         type: type,
-        content: content,
-        description: description,
-        category: category,
+        content: content, // Already sanitized by caller
+        description: description, // Already sanitized by caller
+        category: category, // Already sanitized by caller
         sequence: sequence,
-        uploadedBy: currentUser.name
+        uploadedBy: currentUser.id // Use ID instead of name for better tracking
     };
     
     let success = false;
@@ -732,6 +881,26 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
     if (typeof createMaterialInSupabase === 'function' && typeof updateMaterialInSupabase === 'function') {
         try {
             if (editingId) {
+                // Authorization check for editing: Verify material belongs to lecturer
+                const client = getSupabaseClient();
+                if (client) {
+                    const { data: oldMaterial, error: materialError } = await client
+                        .from('materials')
+                        .select('uploaded_by')
+                        .eq('id', editingId)
+                        .single();
+                    
+                    if (materialError) throw materialError;
+                    if (!oldMaterial || oldMaterial.uploaded_by !== currentUser.id) {
+                        if (typeof showError === 'function') {
+                            showError('You do not have permission to edit this material.', 'Access Denied');
+                        } else {
+                            alert('You do not have permission to edit this material.');
+                        }
+                        return false;
+                    }
+                }
+                
                 success = await updateMaterialInSupabase(editingId, materialData);
                 if (success) {
                     if (typeof showSuccess === 'function') {
@@ -1123,6 +1292,14 @@ async function loadMaterials() {
     
     // Get current lecturer's registered subjects
     const currentUser = getCurrentUser();
+    if (!currentUser || currentUser.role !== 'lecturer') {
+        console.error('Unauthorized access attempt to load materials');
+        if (materialsList) {
+            materialsList.innerHTML = '<p class="empty-state">You must be logged in as a lecturer to view materials.</p>';
+        }
+        return;
+    }
+    
     const registeredSubjects = currentUser.courses || [];
     
     // Try Supabase first, fallback to localStorage
@@ -1151,10 +1328,15 @@ async function loadMaterials() {
         }
     }
     
-    // Filter materials to only show courses/subjects the lecturer is registered for
-    if (registeredSubjects.length > 0) {
-        materials = materials.filter(m => registeredSubjects.includes(m.course));
-    }
+    // Authorization filter: Only show materials uploaded by current lecturer
+    // AND only for subjects the lecturer is registered for
+    materials = materials.filter(m => {
+        // Check if material belongs to lecturer (by uploaded_by field)
+        const belongsToLecturer = m.uploadedBy === currentUser.id || m.uploadedBy === currentUser.name;
+        // Check if lecturer is registered for this subject
+        const isRegistered = registeredSubjects.length === 0 || registeredSubjects.includes(m.course);
+        return belongsToLecturer && isRegistered;
+    });
     
     // Update category filter options (get all materials for filter - but only for registered subjects)
     let allMaterials = [];
@@ -1310,6 +1492,17 @@ window.deleteMaterial = async function(materialId) {
         return;
     }
     
+    // Get current user for authorization check
+    const currentUser = getCurrentUser();
+    if (!currentUser || currentUser.role !== 'lecturer') {
+        if (typeof showError === 'function') {
+            showError('You must be logged in as a lecturer to delete materials.', 'Authorization Required');
+        } else {
+            alert('You must be logged in as a lecturer to delete materials.');
+        }
+        return;
+    }
+    
     // Show loading state
     const deleteBtn = event.target;
     const originalText = deleteBtn.textContent;
@@ -1322,6 +1515,30 @@ window.deleteMaterial = async function(materialId) {
     // Try Supabase first
     if (typeof deleteMaterialFromSupabase === 'function' && typeof deleteProgressForMaterial === 'function') {
         try {
+            // Get material first to verify ownership
+            const client = getSupabaseClient();
+            if (client) {
+                const { data: material, error: materialError } = await client
+                    .from('materials')
+                    .select('uploaded_by')
+                    .eq('id', materialId)
+                    .single();
+                
+                if (materialError) throw materialError;
+                
+                // Authorization check: Verify material belongs to current lecturer
+                if (!material || material.uploaded_by !== currentUser.id) {
+                    if (typeof showError === 'function') {
+                        showError('You do not have permission to delete this material.', 'Access Denied');
+                    } else {
+                        alert('You do not have permission to delete this material.');
+                    }
+                    deleteBtn.disabled = false;
+                    deleteBtn.textContent = originalText;
+                    return;
+                }
+            }
+            
             // Delete progress tracking first (foreign key constraint)
             await deleteProgressForMaterial(materialId);
             // Delete material (this will also delete file from storage if it exists)
@@ -1331,11 +1548,7 @@ window.deleteMaterial = async function(materialId) {
                 if (typeof showSuccess === 'function') {
                     showSuccess('Material deleted successfully!', 'Delete Successful');
                 } else {
-                    if (typeof showSuccess === 'function') {
-                        showSuccess('Material deleted successfully!', 'Delete Successful');
-                    } else {
-                        alert('✅ Material deleted successfully!');
-                    }
+                    alert('✅ Material deleted successfully!');
                 }
             } else {
                 errorMessage = 'Failed to delete material from database';
