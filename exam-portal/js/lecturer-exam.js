@@ -1134,6 +1134,9 @@ async function viewExamStats(examId) {
             F: attempts.filter(a => (a.percentage || 0) < 60).length
         };
         
+        // Store exam globally for filtering
+        window.currentExam = exam;
+        
         // Show detailed statistics modal
         showDetailedExamStats(exam, attempts, {
             totalAttempts,
@@ -1226,13 +1229,41 @@ function showDetailedExamStats(exam, attempts, stats, examId) {
             </div>
         </div>
         
-        <h3 style="margin-bottom: 15px;">Student Performance</h3>
+        <div style="margin-bottom: 20px;">
+            <h3 style="margin-bottom: 15px; display: inline-block;">Student Performance</h3>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <input type="text" id="studentSearchInput" placeholder="🔍 Search by name or username..." 
+                       style="padding: 8px 12px; border: 2px solid #ddd; border-radius: 4px; font-size: 14px; flex: 1; min-width: 200px;"
+                       onkeyup="filterStudentResults()">
+                <select id="sortBySelect" onchange="sortStudentResults()" 
+                        style="padding: 8px 12px; border: 2px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    <option value="score-desc">Sort by: Score (High to Low)</option>
+                    <option value="score-asc">Sort by: Score (Low to High)</option>
+                    <option value="name-asc">Sort by: Name (A-Z)</option>
+                    <option value="name-desc">Sort by: Name (Z-A)</option>
+                    <option value="date-desc">Sort by: Date (Newest)</option>
+                    <option value="date-asc">Sort by: Date (Oldest)</option>
+                </select>
+                <select id="gradeFilterSelect" onchange="filterStudentResults()" 
+                        style="padding: 8px 12px; border: 2px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    <option value="all">All Grades</option>
+                    <option value="A">Grade A</option>
+                    <option value="B">Grade B</option>
+                    <option value="C">Grade C</option>
+                    <option value="D">Grade D</option>
+                    <option value="F">Grade F</option>
+                </select>
+            </div>
+            <div id="studentResultsCount" style="margin-top: 10px; color: #666; font-size: 14px;"></div>
+        </div>
+        
         <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; background: white;">
+            <table id="studentResultsTable" style="width: 100%; border-collapse: collapse; background: white;">
                 <thead>
                     <tr style="background: var(--primary-color); color: white;">
                         <th style="padding: 12px; text-align: left;">Student Name</th>
                         <th style="padding: 12px; text-align: left;">Username</th>
+                        <th style="padding: 12px; text-align: left;">Class</th>
                         <th style="padding: 12px; text-align: center;">Score</th>
                         <th style="padding: 12px; text-align: center;">Percentage</th>
                         <th style="padding: 12px; text-align: center;">Grade</th>
@@ -1240,13 +1271,35 @@ function showDetailedExamStats(exam, attempts, stats, examId) {
                         <th style="padding: 12px; text-align: center;">Submitted</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="studentResultsTableBody">
     `;
     
-    // Sort attempts by score (highest first)
+    // Store attempts globally for filtering/sorting
+    window.currentExamAttempts = attempts;
+    
+    // Sort attempts by score (highest first) - default
     const sortedAttempts = [...attempts].sort((a, b) => (b.score || 0) - (a.score || 0));
     
-    sortedAttempts.forEach((attempt, index) => {
+    // Render table rows
+    renderStudentResultsTable(sortedAttempts, exam);
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    content.innerHTML = html;
+    updateStudentResultsCount(sortedAttempts.length, attempts.length);
+    document.getElementById('examStatsModal').style.display = 'block';
+}
+
+// Render student results table rows
+function renderStudentResultsTable(attempts, exam) {
+    const tbody = document.getElementById('studentResultsTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = attempts.map((attempt, index) => {
         const student = attempt.users || {};
         const percentage = attempt.percentage || 0;
         const grade = calculateGrade(percentage);
@@ -1259,33 +1312,115 @@ function showDetailedExamStats(exam, attempts, stats, examId) {
         };
         const submittedDate = attempt.submitted_at ? new Date(attempt.submitted_at).toLocaleString() : 'N/A';
         
-        html += `
+        return `
             <tr style="border-bottom: 1px solid #e0e0e0; ${index % 2 === 0 ? 'background: #f8f9fa;' : ''}">
                 <td style="padding: 12px;">${escapeHtml(student.name || 'Unknown')}</td>
                 <td style="padding: 12px;">${escapeHtml(student.username || 'N/A')}</td>
+                <td style="padding: 12px;">${escapeHtml(student.class || 'N/A')}</td>
                 <td style="padding: 12px; text-align: center; font-weight: 600;">${attempt.score || 0} / ${exam.total_marks}</td>
                 <td style="padding: 12px; text-align: center; font-weight: 600;">${percentage.toFixed(1)}%</td>
                 <td style="padding: 12px; text-align: center;">
                     <span style="background: ${gradeColors[grade]}; color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${grade}</span>
                 </td>
                 <td style="padding: 12px; text-align: center;">
-                    <span style="color: ${attempt.status === 'time_expired' ? '#dc3545' : '#28a745'};">
+                    <span style="color: ${attempt.status === 'time_expired' ? '#dc3545' : '#28a745';}">
                         ${attempt.status === 'time_expired' ? '⏱ Time Expired' : attempt.status === 'auto_submitted' ? '🤖 Auto-Submitted' : '✓ Submitted'}
                     </span>
                 </td>
                 <td style="padding: 12px; text-align: center; font-size: 12px; color: #666;">${submittedDate}</td>
             </tr>
         `;
+    }).join('');
+}
+
+// Filter student results by search query and grade
+function filterStudentResults() {
+    if (!window.currentExamAttempts) return;
+    
+    const searchQuery = document.getElementById('studentSearchInput')?.value.toLowerCase().trim() || '';
+    const gradeFilter = document.getElementById('gradeFilterSelect')?.value || 'all';
+    const exam = window.currentExam || {};
+    
+    let filtered = window.currentExamAttempts.filter(attempt => {
+        const student = attempt.users || {};
+        const studentName = (student.name || '').toLowerCase();
+        const username = (student.username || '').toLowerCase();
+        
+        // Search filter
+        const matchesSearch = !searchQuery || 
+            studentName.includes(searchQuery) || 
+            username.includes(searchQuery);
+        
+        // Grade filter
+        const percentage = attempt.percentage || 0;
+        const grade = calculateGrade(percentage);
+        const matchesGrade = gradeFilter === 'all' || grade === gradeFilter;
+        
+        return matchesSearch && matchesGrade;
     });
     
-    html += `
-                </tbody>
-            </table>
-        </div>
-    `;
+    // Apply current sort
+    sortStudentResults(filtered);
+}
+
+// Sort student results
+function sortStudentResults(preFiltered = null) {
+    if (!window.currentExamAttempts) return;
     
-    content.innerHTML = html;
-    document.getElementById('examStatsModal').style.display = 'block';
+    const sortBy = document.getElementById('sortBySelect')?.value || 'score-desc';
+    let sorted = preFiltered ? [...preFiltered] : [...window.currentExamAttempts];
+    
+    switch (sortBy) {
+        case 'score-desc':
+            sorted.sort((a, b) => (b.score || 0) - (a.score || 0));
+            break;
+        case 'score-asc':
+            sorted.sort((a, b) => (a.score || 0) - (b.score || 0));
+            break;
+        case 'name-asc':
+            sorted.sort((a, b) => {
+                const nameA = (a.users?.name || '').toLowerCase();
+                const nameB = (b.users?.name || '').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+            break;
+        case 'name-desc':
+            sorted.sort((a, b) => {
+                const nameA = (a.users?.name || '').toLowerCase();
+                const nameB = (b.users?.name || '').toLowerCase();
+                return nameB.localeCompare(nameA);
+            });
+            break;
+        case 'date-desc':
+            sorted.sort((a, b) => {
+                const dateA = a.submitted_at ? new Date(a.submitted_at) : new Date(0);
+                const dateB = b.submitted_at ? new Date(b.submitted_at) : new Date(0);
+                return dateB - dateA;
+            });
+            break;
+        case 'date-asc':
+            sorted.sort((a, b) => {
+                const dateA = a.submitted_at ? new Date(a.submitted_at) : new Date(0);
+                const dateB = b.submitted_at ? new Date(b.submitted_at) : new Date(0);
+                return dateA - dateB;
+            });
+            break;
+    }
+    
+    renderStudentResultsTable(sorted, window.currentExam || {});
+    updateStudentResultsCount(sorted.length, window.currentExamAttempts.length);
+}
+
+// Update results count display
+function updateStudentResultsCount(shown, total) {
+    const countEl = document.getElementById('studentResultsCount');
+    if (countEl) {
+        if (shown === total) {
+            countEl.textContent = `Showing ${total} student${total !== 1 ? 's' : ''}`;
+        } else {
+            countEl.textContent = `Showing ${shown} of ${total} student${total !== 1 ? 's' : ''}`;
+        }
+    }
 }
 
 // Calculate grade from percentage
