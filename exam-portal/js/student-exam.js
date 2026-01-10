@@ -1288,21 +1288,48 @@ async function exportMyResultPDF(examId, examTitle = 'My Exam Result') {
         }
         
         // Check if jsPDF is available
-        if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') {
+        let jsPDF;
+        if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) {
+            jsPDF = window.jspdf.jsPDF;
+        } else if (typeof window.jsPDF !== 'undefined') {
+            jsPDF = window.jsPDF;
+        } else {
             // Load jsPDF from CDN (try both CDNs for better reliability)
             try {
+                console.log('Loading jsPDF from CDN...');
                 await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+                // Wait a bit for the library to initialize
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Try to access jsPDF after loading
+                if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) {
+                    jsPDF = window.jspdf.jsPDF;
+                } else if (typeof window.jsPDF !== 'undefined') {
+                    jsPDF = window.jsPDF;
+                } else {
+                    throw new Error('jsPDF not found after loading');
+                }
             } catch (cdnError) {
                 // Fallback to alternative CDN
                 console.warn('First CDN failed, trying alternative:', cdnError);
                 await loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                if (typeof window.jspdf !== 'undefined' && window.jspdf.jsPDF) {
+                    jsPDF = window.jspdf.jsPDF;
+                } else if (typeof window.jsPDF !== 'undefined') {
+                    jsPDF = window.jsPDF;
+                } else {
+                    throw new Error('jsPDF library failed to load. Please check your internet connection and try again.');
+                }
             }
         }
         
-        const { jsPDF } = window.jspdf || window;
         if (!jsPDF) {
-            throw new Error('jsPDF library failed to load. Please check your internet connection and try again.');
+            throw new Error('jsPDF library not available');
         }
+        
+        console.log('jsPDF loaded successfully:', typeof jsPDF);
         
         // Get exam and student's attempt
         const client = getSupabaseClient();
