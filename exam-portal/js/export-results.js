@@ -69,7 +69,7 @@ async function exportResultsToPDF(examId, examTitle = 'Exam Results') {
         }
         
         // Get exam and results data
-        const client = getSupabaseClient();
+        const client = safeGetSupabaseClient();
         if (!client) {
             throw new Error('Supabase client not available');
         }
@@ -82,7 +82,7 @@ async function exportResultsToPDF(examId, examTitle = 'Exam Results') {
             .single();
         
         if (examError || !exam || exam.lecturer_id !== currentUser.id) {
-            showError('You do not have permission to export results for this exam.', 'Access Denied');
+            safeShowError('You do not have permission to export results for this exam.', 'Access Denied');
             return;
         }
         
@@ -252,7 +252,7 @@ async function exportResultsToExcel(examId, examTitle = 'Exam Results') {
         }
         
         // Get exam and results data
-        const client = getSupabaseClient();
+        const client = safeGetSupabaseClient();
         if (!client) {
             throw new Error('Supabase client not available');
         }
@@ -265,7 +265,7 @@ async function exportResultsToExcel(examId, examTitle = 'Exam Results') {
             .single();
         
         if (examError || !exam || exam.lecturer_id !== currentUser.id) {
-            showError('You do not have permission to export results for this exam.', 'Access Denied');
+            safeShowError('You do not have permission to export results for this exam.', 'Access Denied');
             return;
         }
         
