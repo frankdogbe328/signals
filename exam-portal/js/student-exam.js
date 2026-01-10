@@ -1273,15 +1273,26 @@ async function exportMyResultPDF(examId, examTitle = 'My Exam Result') {
     }
     
     try {
+        // Show loading message
+        if (typeof showInfo === 'function') {
+            showInfo('Preparing PDF download...', 'Loading');
+        }
+        
         // Check if jsPDF is available
         if (typeof window.jspdf === 'undefined' && typeof window.jsPDF === 'undefined') {
-            // Load jsPDF from CDN
-            await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+            // Load jsPDF from CDN (try both CDNs for better reliability)
+            try {
+                await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+            } catch (cdnError) {
+                // Fallback to alternative CDN
+                console.warn('First CDN failed, trying alternative:', cdnError);
+                await loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
+            }
         }
         
         const { jsPDF } = window.jspdf || window;
         if (!jsPDF) {
-            throw new Error('jsPDF library not loaded');
+            throw new Error('jsPDF library failed to load. Please check your internet connection and try again.');
         }
         
         // Get exam and student's attempt
@@ -1400,10 +1411,24 @@ async function exportMyResultPDF(examId, examTitle = 'My Exam Result') {
         const fileName = `${examTitle.replace(/[^a-z0-9]/gi, '_')}_Result_${currentUser.name.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
         doc.save(fileName);
         
-        showSuccess('Results exported successfully!', 'Export Complete');
+        // Show success message (with fallback)
+        if (typeof showSuccess === 'function') {
+            showSuccess('Results exported successfully!', 'Export Complete');
+        } else if (typeof alert === 'function') {
+            alert('Results exported successfully!');
+        } else {
+            console.log('Results exported successfully!');
+        }
     } catch (error) {
         console.error('Error exporting result:', error);
-        showError('Failed to export results: ' + (error.message || 'Unknown error'), 'Export Error');
+        // Show error message (with fallback)
+        if (typeof showError === 'function') {
+            showError('Failed to export results: ' + (error.message || 'Unknown error'), 'Export Error');
+        } else if (typeof alert === 'function') {
+            alert('Export Error: ' + (error.message || 'Failed to export results'));
+        } else {
+            console.error('Export Error:', error);
+        }
     }
 }
 
