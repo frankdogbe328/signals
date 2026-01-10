@@ -402,6 +402,30 @@
         if (typeof PerformanceUtils !== 'undefined') {
             PerformanceUtils.monitorPerformance();
         }
+        
+        // Verify export functions are loaded
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                if (typeof exportResultsToPDF === 'undefined') {
+                    console.warn('⚠️ Export to PDF function not loaded. Check if export-results.js is properly loaded.');
+                } else {
+                    console.log('✅ Export to PDF function loaded successfully');
+                }
+                
+                if (typeof exportResultsToExcel === 'undefined') {
+                    console.warn('⚠️ Export to Excel function not loaded. Check if export-results.js is properly loaded.');
+                } else {
+                    console.log('✅ Export to Excel function loaded successfully');
+                }
+                
+                // Also check enhanced parser
+                if (typeof parseQuestionsFromTextEnhanced === 'undefined') {
+                    console.warn('⚠️ Enhanced Word parser not loaded. Check if enhanced-word-parser.js is properly loaded.');
+                } else {
+                    console.log('✅ Enhanced Word parser loaded successfully');
+                }
+            }, 500);
+        });
     </script>
     
     <!-- Modal for Messages -->

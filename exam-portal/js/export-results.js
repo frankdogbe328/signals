@@ -44,15 +44,32 @@ async function exportResultsToPDF(examId, examTitle = 'Exam Results') {
         // Get all attempts for this exam
         const { data: attempts, error: attemptsError } = await client
             .from('student_exam_attempts')
-            .select(`
-                *,
-                users!inner(id, name, username, class)
-            `)
+            .select('*')
             .eq('exam_id', examId)
             .in('status', ['submitted', 'auto_submitted', 'time_expired'])
             .order('score', { ascending: false });
         
         if (attemptsError) throw attemptsError;
+        
+        // Get user details for each attempt (separate query for compatibility)
+        if (attempts && attempts.length > 0) {
+            const userIds = [...new Set(attempts.map(a => a.student_id))];
+            const { data: users, error: usersError } = await client
+                .from('users')
+                .select('id, name, username, class')
+                .in('id', userIds);
+            
+            if (!usersError && users) {
+                const userMap = {};
+                users.forEach(u => {
+                    userMap[u.id] = u;
+                });
+                
+                attempts.forEach(attempt => {
+                    attempt.users = userMap[attempt.student_id] || {};
+                });
+            }
+        }
         
         // Create PDF
         const doc = new jsPDF();

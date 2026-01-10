@@ -374,6 +374,8 @@ function displayExams(exams) {
                     </button>
                     ${!exam.results_released ? `<button onclick="releaseResults('${exam.id}')" class="btn btn-success">Release Results</button>` : ''}
                     <button onclick="viewExamStats('${exam.id}')" class="btn btn-secondary">View Stats</button>
+                    <button onclick="quickExportPDF('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="font-size: 12px; padding: 6px 12px;" title="Export Results to PDF">📄 PDF</button>
+                    <button onclick="quickExportExcel('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-success" style="font-size: 12px; padding: 6px 12px;" title="Export Results to Excel">📊 Excel</button>
                 </div>
             </div>
         </div>
@@ -444,10 +446,19 @@ function showExamDetailsModal(exam, questions) {
     
     modalContent.innerHTML = `
         <div style="margin-bottom: 20px;">
-            <p><strong>Subject:</strong> ${escapeHtml(exam.subject)}</p>
-            <p><strong>Class:</strong> ${formatClassName(exam.class_id)}</p>
-            <p><strong>Duration:</strong> ${exam.duration_minutes} minutes</p>
-            <p><strong>Total Marks:</strong> ${exam.total_marks}</p>
+            <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <p><strong>Subject:</strong> ${escapeHtml(exam.subject)}</p>
+                    <p><strong>Class:</strong> ${formatClassName(exam.class_id)}</p>
+                    <p><strong>Duration:</strong> ${exam.duration_minutes} minutes</p>
+                    <p><strong>Total Marks:</strong> ${exam.total_marks}</p>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <button onclick="viewExamStats('${exam.id}')" class="btn btn-secondary" style="padding: 8px 16px;">📊 View Statistics</button>
+                    <button onclick="quickExportPDF('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="padding: 8px 16px;">📄 Export to PDF</button>
+                    <button onclick="quickExportExcel('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-success" style="padding: 8px 16px;">📊 Export to Excel</button>
+                </div>
+            </div>
         </div>
         
         <div style="border-top: 2px solid #e0e0e0; padding-top: 20px;">
@@ -1165,16 +1176,12 @@ function showDetailedExamStats(exam, attempts, stats, examId) {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
             <h3 style="margin: 0;">Exam Statistics</h3>
             <div style="display: flex; gap: 10px;">
-                ${typeof window.exportResultsToPDF !== 'undefined' ? `
-                    <button onclick="exportResultsToPDF('${examId}', '${examTitleEscaped}')" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px;">
-                        📄 Export to PDF
-                    </button>
-                ` : ''}
-                ${typeof window.exportResultsToExcel !== 'undefined' ? `
-                    <button onclick="exportResultsToExcel('${examId}', '${examTitleEscaped}')" class="btn btn-success" style="padding: 8px 16px; font-size: 14px;">
-                        📊 Export to Excel
-                    </button>
-                ` : ''}
+                <button onclick="exportResultsToPDF('${examId}', '${examTitleEscaped}')" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px;" id="exportPdfBtn">
+                    📄 Export to PDF
+                </button>
+                <button onclick="exportResultsToExcel('${examId}', '${examTitleEscaped}')" class="btn btn-success" style="padding: 8px 16px; font-size: 14px;" id="exportExcelBtn">
+                    📊 Export to Excel
+                </button>
             </div>
         </div>
         
@@ -1306,6 +1313,25 @@ function closeExamModal() {
     }
     currentExamId = null;
     currentQuestions = [];
+}
+
+// Quick export wrapper functions (check if export functions are loaded)
+function quickExportPDF(examId, examTitle) {
+    if (typeof exportResultsToPDF === 'undefined') {
+        showError('Export functionality is still loading. Please wait a moment and try again, or check the browser console for errors.', 'Export Not Available');
+        console.error('exportResultsToPDF function not found. Make sure export-results.js is loaded.');
+        return;
+    }
+    exportResultsToPDF(examId, examTitle);
+}
+
+function quickExportExcel(examId, examTitle) {
+    if (typeof exportResultsToExcel === 'undefined') {
+        showError('Export functionality is still loading. Please wait a moment and try again, or check the browser console for errors.', 'Export Not Available');
+        console.error('exportResultsToExcel function not found. Make sure export-results.js is loaded.');
+        return;
+    }
+    exportResultsToExcel(examId, examTitle);
 }
 
 // Helper functions
