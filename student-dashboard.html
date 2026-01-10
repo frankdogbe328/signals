@@ -40,8 +40,19 @@
             </div>
         </div>
         
-        <div class="progress-section">
-            <div class="card">
+        <!-- Progress Dashboard Tabs -->
+        <div class="card" style="margin-bottom: 20px;">
+            <div style="display: flex; gap: 10px; border-bottom: 2px solid #e0e0e0; margin-bottom: 20px;">
+                <button id="materialsProgressTab" onclick="showProgressTab('materials')" class="btn btn-primary" style="border-radius: 0; border-bottom: 3px solid var(--primary-color);">
+                    📚 Materials Progress
+                </button>
+                <button id="examProgressTab" onclick="showProgressTab('exams')" class="btn btn-secondary" style="border-radius: 0;">
+                    📝 Exam Performance
+                </button>
+            </div>
+            
+            <!-- Materials Progress Section -->
+            <div id="materialsProgressSection">
                 <h3>Learning Progress</h3>
                 <div id="progressStats" class="progress-stats">
                     <div class="stat-item">
@@ -56,6 +67,14 @@
                         <span class="stat-value" id="progressPercentage">0%</span>
                         <span class="stat-label">Progress</span>
                     </div>
+                </div>
+            </div>
+            
+            <!-- Exam Progress Dashboard Section -->
+            <div id="examProgressSection" style="display: none;">
+                <h3>Exam Performance Dashboard</h3>
+                <div id="progressDashboard">
+                    <p>Loading progress data...</p>
                 </div>
             </div>
         </div>
@@ -125,6 +144,63 @@
     <script src="js/mobile.js"></script>
     <script src="js/student.js"></script>
     <script src="js/modal.js"></script>
+    <!-- Performance Utilities -->
+    <script src="js/performance.js"></script>
+    <!-- Error Monitoring -->
+    <script src="js/error-monitoring.js"></script>
+    <!-- Student Progress Dashboard -->
+    <script src="exam-portal/js/student-progress-dashboard.js"></script>
+    <script>
+        // Initialize error monitoring
+        if (typeof ErrorMonitoring !== 'undefined') {
+            ErrorMonitoring.init({
+                environment: window.location.hostname === 'localhost' ? 'development' : 'production'
+            });
+            
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                ErrorMonitoring.setUser(currentUser);
+            }
+        }
+        
+        // Initialize performance monitoring
+        if (typeof PerformanceUtils !== 'undefined') {
+            PerformanceUtils.monitorPerformance();
+        }
+        
+        // Progress dashboard tab switching
+        function showProgressTab(tab) {
+            const materialsSection = document.getElementById('materialsProgressSection');
+            const examSection = document.getElementById('examProgressSection');
+            const materialsTab = document.getElementById('materialsProgressTab');
+            const examTab = document.getElementById('examProgressTab');
+            
+            if (tab === 'exams') {
+                materialsSection.style.display = 'none';
+                examSection.style.display = 'block';
+                materialsTab.classList.remove('btn-primary');
+                materialsTab.classList.add('btn-secondary');
+                materialsTab.style.borderBottom = 'none';
+                examTab.classList.remove('btn-secondary');
+                examTab.classList.add('btn-primary');
+                examTab.style.borderBottom = '3px solid var(--primary-color)';
+                
+                // Load exam progress data
+                if (typeof initializeStudentProgressDashboard !== 'undefined') {
+                    initializeStudentProgressDashboard();
+                }
+            } else {
+                materialsSection.style.display = 'block';
+                examSection.style.display = 'none';
+                examTab.classList.remove('btn-primary');
+                examTab.classList.add('btn-secondary');
+                examTab.style.borderBottom = 'none';
+                materialsTab.classList.remove('btn-secondary');
+                materialsTab.classList.add('btn-primary');
+                materialsTab.style.borderBottom = '3px solid var(--primary-color)';
+            }
+        }
+    </script>
     
     <!-- Modal for Messages -->
     <div id="messageModal" class="modal">

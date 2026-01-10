@@ -1129,7 +1129,7 @@ async function viewExamStats(examId) {
             avgScore,
             avgPercentage,
             gradeDistribution
-        });
+        }, examId);
         
     } catch (error) {
         console.error('Error loading statistics:', error);
@@ -1138,7 +1138,7 @@ async function viewExamStats(examId) {
 }
 
 // Show detailed exam statistics modal
-function showDetailedExamStats(exam, attempts, stats) {
+function showDetailedExamStats(exam, attempts, stats, examId) {
     const modal = document.getElementById('examStatsModal');
     if (!modal) {
         // Create modal if it doesn't exist
@@ -1157,8 +1157,27 @@ function showDetailedExamStats(exam, attempts, stats) {
     const content = document.getElementById('examStatsContent');
     if (!content) return;
     
-    // Statistics summary
+    // Statistics summary with export buttons
+    const examTitleEscaped = typeof SecurityUtils !== 'undefined' && SecurityUtils.escapeHtml ? 
+        SecurityUtils.escapeHtml(exam.title) : escapeHtml(exam.title);
+    
     let html = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
+            <h3 style="margin: 0;">Exam Statistics</h3>
+            <div style="display: flex; gap: 10px;">
+                ${typeof window.exportResultsToPDF !== 'undefined' ? `
+                    <button onclick="exportResultsToPDF('${examId}', '${examTitleEscaped}')" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px;">
+                        📄 Export to PDF
+                    </button>
+                ` : ''}
+                ${typeof window.exportResultsToExcel !== 'undefined' ? `
+                    <button onclick="exportResultsToExcel('${examId}', '${examTitleEscaped}')" class="btn btn-success" style="padding: 8px 16px; font-size: 14px;">
+                        📊 Export to Excel
+                    </button>
+                ` : ''}
+            </div>
+        </div>
+        
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 30px;">
             <div style="background: #e6f2ff; padding: 15px; border-radius: 8px; text-align: center;">
                 <div style="font-size: 24px; font-weight: bold; color: var(--primary-color);">${stats.totalAttempts}</div>
@@ -1650,8 +1669,13 @@ async function processWordDocument() {
         if (statusDiv) statusDiv.textContent = 'Extracting questions...';
         if (progressBar) progressBar.style.width = '60%';
         
-        // Parse questions from text
-        const parsedQuestions = parseQuestionsFromText(text);
+        // Parse questions from text (use enhanced parser if available)
+        let parsedQuestions = [];
+        if (typeof parseQuestionsFromTextEnhanced !== 'undefined') {
+            parsedQuestions = parseQuestionsFromTextEnhanced(text);
+        } else {
+            parsedQuestions = parseQuestionsFromText(text);
+        }
         
         if (parsedQuestions.length === 0) {
             throw new Error('No questions found in the document. Please check the format and try again.');

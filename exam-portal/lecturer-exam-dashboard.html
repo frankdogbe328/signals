@@ -374,7 +374,35 @@
     <script src="../js/modal.js"></script>
     <!-- Load app.js for getCoursesForClass function (redirect logic is skipped for exam-portal pages) -->
     <script src="../js/app.js"></script>
+    <!-- Enhanced Word Parser -->
+    <script src="js/enhanced-word-parser.js"></script>
+    <!-- Export Results Functionality -->
+    <script src="js/export-results.js"></script>
+    <!-- Performance Utilities -->
+    <script src="../js/performance.js"></script>
+    <!-- Error Monitoring -->
+    <script src="../js/error-monitoring.js"></script>
+    <!-- Main Lecturer Exam Script (must load after dependencies) -->
     <script src="js/lecturer-exam.js"></script>
+    <script>
+        // Initialize error monitoring for exam portal
+        if (typeof ErrorMonitoring !== 'undefined') {
+            ErrorMonitoring.init({
+                environment: window.location.hostname === 'localhost' ? 'development' : 'production'
+            });
+            
+            // Set user context if logged in
+            const currentUser = getCurrentUser();
+            if (currentUser) {
+                ErrorMonitoring.setUser(currentUser);
+            }
+        }
+        
+        // Initialize performance monitoring
+        if (typeof PerformanceUtils !== 'undefined') {
+            PerformanceUtils.monitorPerformance();
+        }
+    </script>
     
     <!-- Modal for Messages -->
     <div id="messageModal" class="modal">
