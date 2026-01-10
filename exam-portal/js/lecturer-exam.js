@@ -1176,10 +1176,10 @@ function showDetailedExamStats(exam, attempts, stats, examId) {
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
             <h3 style="margin: 0;">Exam Statistics</h3>
             <div style="display: flex; gap: 10px;">
-                <button onclick="exportResultsToPDF('${examId}', '${examTitleEscaped}')" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px;" id="exportPdfBtn">
+                <button onclick="quickExportPDF('${examId}', '${examTitleEscaped}')" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px;" id="exportPdfBtn">
                     📄 Export to PDF
                 </button>
-                <button onclick="exportResultsToExcel('${examId}', '${examTitleEscaped}')" class="btn btn-success" style="padding: 8px 16px; font-size: 14px;" id="exportExcelBtn">
+                <button onclick="quickExportExcel('${examId}', '${examTitleEscaped}')" class="btn btn-success" style="padding: 8px 16px; font-size: 14px;" id="exportExcelBtn">
                     📊 Export to Excel
                 </button>
             </div>

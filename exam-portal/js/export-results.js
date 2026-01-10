@@ -1,14 +1,59 @@
 // Export Exam Results to PDF/Excel
 // Uses libraries: jsPDF for PDF, SheetJS (xlsx) for Excel
 
+// Helper functions with fallbacks
+function safeGetCurrentUser() {
+    if (typeof getCurrentUser === 'function') {
+        return getCurrentUser();
+    }
+    // Fallback: try to get from sessionStorage
+    try {
+        const userStr = sessionStorage.getItem('currentUser');
+        return userStr ? JSON.parse(userStr) : null;
+    } catch (e) {
+        return null;
+    }
+}
+
+function safeShowError(message, title) {
+    if (typeof showError === 'function') {
+        showError(message, title);
+    } else if (typeof alert === 'function') {
+        alert(title + ': ' + message);
+    } else {
+        console.error(title + ':', message);
+    }
+}
+
+function safeShowSuccess(message, title) {
+    if (typeof showSuccess === 'function') {
+        showSuccess(message, title);
+    } else if (typeof alert === 'function') {
+        alert(title + ': ' + message);
+    } else {
+        console.log(title + ':', message);
+    }
+}
+
+function safeGetSupabaseClient() {
+    if (typeof getSupabaseClient === 'function') {
+        return getSupabaseClient();
+    }
+    // Try to get from global scope
+    if (typeof window.supabase !== 'undefined') {
+        return window.supabase;
+    }
+    throw new Error('Supabase client not available');
+}
+
 /**
  * Export exam results to PDF
  */
 async function exportResultsToPDF(examId, examTitle = 'Exam Results') {
     try {
-        const currentUser = getCurrentUser();
+        const currentUser = safeGetCurrentUser();
         if (!currentUser || currentUser.role !== 'lecturer') {
-            showError('Only lecturers can export results.', 'Authorization Required');
+            safeShowError('Only lecturers can export results.', 'Authorization Required');
             return;
         }
         
@@ -174,14 +219,14 @@ async function exportResultsToPDF(examId, examTitle = 'Exam Results') {
         const fileName = `${examTitle.replace(/[^a-z0-9]/gi, '_')}_Results_${new Date().toISOString().split('T')[0]}.pdf`;
         doc.save(fileName);
         
-        showSuccess('Results exported to PDF successfully!', 'Export Successful');
+        safeShowSuccess('Results exported to PDF successfully!', 'Export Successful');
         
     } catch (error) {
         console.error('Error exporting to PDF:', error);
-        if (typeof ErrorMonitoring !== 'undefined') {
+        if (typeof ErrorMonitoring !== 'undefined' && ErrorMonitoring.captureException) {
             ErrorMonitoring.captureException(error, { tags: { context: 'exportResultsToPDF' } });
         }
-        showError('Failed to export results to PDF. Please try again.', 'Export Error');
+        safeShowError('Failed to export results to PDF: ' + (error.message || 'Unknown error'), 'Export Error');
     }
 }
 
@@ -190,9 +235,9 @@ async function exportResultsToPDF(examId, examTitle = 'Exam Results') {
  */
 async function exportResultsToExcel(examId, examTitle = 'Exam Results') {
     try {
-        const currentUser = getCurrentUser();
+        const currentUser = safeGetCurrentUser();
         if (!currentUser || currentUser.role !== 'lecturer') {
-            showError('Only lecturers can export results.', 'Authorization Required');
+            safeShowError('Only lecturers can export results.', 'Authorization Required');
             return;
         }
         
@@ -328,14 +373,14 @@ async function exportResultsToExcel(examId, examTitle = 'Exam Results') {
         const fileName = `${examTitle.replace(/[^a-z0-9]/gi, '_')}_Results_${new Date().toISOString().split('T')[0]}.xlsx`;
         XLSX.writeFile(wb, fileName);
         
-        showSuccess('Results exported to Excel successfully!', 'Export Successful');
+        safeShowSuccess('Results exported to Excel successfully!', 'Export Successful');
         
     } catch (error) {
         console.error('Error exporting to Excel:', error);
-        if (typeof ErrorMonitoring !== 'undefined') {
+        if (typeof ErrorMonitoring !== 'undefined' && ErrorMonitoring.captureException) {
             ErrorMonitoring.captureException(error, { tags: { context: 'exportResultsToExcel' } });
         }
-        showError('Failed to export results to Excel. Please try again.', 'Export Error');
+        safeShowError('Failed to export results to Excel: ' + (error.message || 'Unknown error'), 'Export Error');
     }
 }
 
