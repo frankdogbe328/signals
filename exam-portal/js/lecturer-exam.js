@@ -1234,11 +1234,29 @@ async function processWordDocument() {
         return;
     }
     
-    // Validate file type
-    const fileName = file.name.toLowerCase();
-    if (!fileName.endsWith('.docx')) {
-        showError('Please upload a .docx file only. Older .doc files are not supported. You can save .doc files as .docx in Microsoft Word.', 'Invalid File Type');
-        return;
+    // Validate file using security utils
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validateWordDocument) {
+        const validation = SecurityUtils.validateWordDocument(file);
+        if (!validation.valid) {
+            showError(validation.error || 'Invalid file', 'File Validation Error');
+            return;
+        }
+    } else {
+        // Fallback validation
+        const fileName = file.name.toLowerCase();
+        if (!fileName.endsWith('.docx')) {
+            showError('Please upload a .docx file only. Older .doc files are not supported. You can save .doc files as .docx in Microsoft Word.', 'Invalid File Type');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) { // 5MB
+            showError('File size exceeds 5MB limit.', 'File Too Large');
+            return;
+        }
+    }
+    
+    // Sanitize filename
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeFilename) {
+        file.name = SecurityUtils.sanitizeFilename(file.name);
     }
     
     // Check if mammoth is available

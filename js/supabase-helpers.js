@@ -55,19 +55,50 @@ async function getUserFromSupabase(username, password, role) {
             return null;
         }
         
-        // Verify password (in production, use hashed passwords)
-        if (data.password === password) {
-            // Convert to format expected by app
-            return {
+        // Verify password using hashed comparison
+        // Check if password is already hashed (64 char hex string) or plaintext (for migration)
+        let passwordMatch = false;
+        
+        if (data.password && data.password.length === 64 && /^[a-f0-9]{64}$/i.test(data.password)) {
+            // Password is hashed, verify using hash
+            if (typeof SecurityUtils !== 'undefined' && SecurityUtils.verifyPassword) {
+                passwordMatch = await SecurityUtils.verifyPassword(password, data.password);
+            } else {
+                // Fallback: hash the input and compare (for migration period)
+                const CryptoJS = window.CryptoJS;
+                if (CryptoJS) {
+                    const inputHash = CryptoJS.SHA256(password).toString();
+                    passwordMatch = inputHash === data.password;
+                } else {
+                    // Temporary fallback for plaintext during migration
+                    passwordMatch = data.password === password;
+                }
+            }
+        } else {
+            // Legacy plaintext password (migration support)
+            // Try hashed comparison first, then fallback to plaintext
+            if (typeof SecurityUtils !== 'undefined' && SecurityUtils.hashPassword) {
+                const hashedInput = await SecurityUtils.hashPassword(password);
+                passwordMatch = hashedInput === data.password || data.password === password;
+            } else {
+                passwordMatch = data.password === password;
+            }
+        }
+        
+        if (passwordMatch) {
+            // Convert to format expected by app (don't return password hash)
+            const userObj = {
                 id: data.id,
                 username: data.username,
-                password: data.password,
                 role: data.role,
                 name: data.name,
                 class: data.class,
                 courses: data.courses || [],
-                email: data.email || null // Include email
+                email: data.email || null
             };
+            // Store password hash in session only if needed (not recommended)
+            // userObj.passwordHash = data.password;
+            return userObj;
         }
         return null;
     } catch (err) {
@@ -142,15 +173,30 @@ async function createUserInSupabase(userData) {
     
     console.log('Validated role to insert:', role);
     
+    // Hash password before storing
+    let hashedPassword = userData.password;
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.hashPassword) {
+        try {
+            hashedPassword = await SecurityUtils.hashPassword(userData.password);
+        } catch (hashError) {
+            console.error('Password hashing error:', hashError);
+            throw new Error('Failed to secure password. Please try again.');
+        }
+    } else {
+        console.warn('SecurityUtils not available - password stored in plaintext (INSECURE)');
+    }
+    
     try {
         const insertData = {
-            username: userData.username,
-            password: userData.password,
+            username: userData.username.trim(),
+            password: hashedPassword, // Store hashed password
             role: role, // Use validated role
-            name: userData.name,
+            name: SecurityUtils ? SecurityUtils.sanitizeInput(userData.name) : userData.name.trim(),
             class: userData.class || null,
             courses: userData.courses || [],
-            email: userData.email || null // Include email
+            email: userData.email ? (SecurityUtils && SecurityUtils.validateEmail ? 
+                (SecurityUtils.validateEmail(userData.email) ? userData.email.trim().toLowerCase() : null) : 
+                userData.email.trim().toLowerCase()) : null
         };
         
         console.log('Inserting user data:', { ...insertData, password: '[HIDDEN]' });
@@ -174,10 +220,10 @@ async function createUserInSupabase(userData) {
         
         console.log('User successfully created in Supabase:', data.username);
         
+        // Return user without password
         return {
             id: data.id,
             username: data.username,
-            password: data.password,
             role: data.role,
             name: data.name,
             class: data.class,

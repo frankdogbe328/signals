@@ -9,10 +9,15 @@ document.addEventListener('DOMContentLoaded', function() {
 async function handleLogin(e) {
     e.preventDefault();
     
-    const username = document.getElementById('username').value;
-    const password = document.getElementById('password').value;
-    const userType = document.getElementById('userType').value;
+    const usernameInput = document.getElementById('username');
+    const passwordInput = document.getElementById('password');
+    const userTypeInput = document.getElementById('userType');
     const errorMessage = document.getElementById('errorMessage');
+    
+    // Sanitize inputs
+    const username = usernameInput ? SecurityUtils ? SecurityUtils.sanitizeInput(usernameInput.value) : usernameInput.value.trim() : '';
+    const password = passwordInput ? passwordInput.value : '';
+    const userType = userTypeInput ? userTypeInput.value : '';
     
     // Clear previous errors
     errorMessage.classList.remove('show');
@@ -25,6 +30,18 @@ async function handleLogin(e) {
         return;
     }
     
+    // Rate limiting check
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.checkRateLimit) {
+        const rateLimitKey = `login_${username}`;
+        const rateLimit = SecurityUtils.checkRateLimit(rateLimitKey, 5, 15); // 5 attempts per 15 minutes
+        
+        if (!rateLimit.allowed) {
+            errorMessage.textContent = `Too many login attempts. Please try again in ${rateLimit.timeRemaining} minutes.`;
+            errorMessage.classList.add('show');
+            return;
+        }
+    }
+    
     // Try Supabase first, fallback to localStorage for backward compatibility
     let user = null;
     
@@ -34,29 +51,72 @@ async function handleLogin(e) {
             user = await getUserFromSupabase(username, password, userType);
         } catch (err) {
             console.error('Supabase login error:', err);
+            errorMessage.textContent = 'Login failed. Please try again.';
+            errorMessage.classList.add('show');
+            return;
         }
     }
     
-    // Fallback to localStorage if Supabase fails or not available
-    if (!user) {
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        user = users.find(u => 
-            u.username === username && 
-            u.password === password && 
-            u.role === userType
-        );
+    // Fallback to localStorage if Supabase fails or not available (for migration)
+    if (!user && typeof localStorage !== 'undefined') {
+        try {
+            const users = JSON.parse(localStorage.getItem('users') || '[]');
+            // For localStorage fallback, still attempt password verification if SecurityUtils available
+            const potentialUser = users.find(u => u.username === username && u.role === userType);
+            if (potentialUser && typeof SecurityUtils !== 'undefined' && SecurityUtils.verifyPassword) {
+                const passwordMatch = await SecurityUtils.verifyPassword(password, potentialUser.password);
+                if (passwordMatch) {
+                    user = potentialUser;
+                    delete user.password; // Don't store password in session
+                }
+            } else if (potentialUser && potentialUser.password === password) {
+                // Legacy plaintext support (during migration)
+                user = potentialUser;
+                delete user.password;
+            }
+        } catch (err) {
+            console.error('LocalStorage login error:', err);
+        }
     }
     
     if (user) {
-        // Set current user
+        // Clear rate limit on successful login
+        if (typeof SecurityUtils !== 'undefined' && SecurityUtils.clearRateLimit) {
+            SecurityUtils.clearRateLimit(`login_${username}`);
+        }
+        
+        // Set secure session
+        if (typeof SecurityUtils !== 'undefined' && SecurityUtils.setSecureSession) {
+            SecurityUtils.setSecureSession(user, 480); // 8 hour session
+        }
+        
+        // Set current user (legacy support)
         setCurrentUser(user);
         
         // Check for portal selection
         const portalType = document.getElementById('portalType')?.value || 'lms';
         
-        // Check for redirect parameter in URL (takes priority)
+        // Check for redirect parameter in URL (takes priority) - sanitize redirect
         const urlParams = new URLSearchParams(window.location.search);
-        const redirectTo = urlParams.get('redirect');
+        let redirectTo = urlParams.get('redirect');
+        
+        // Sanitize redirect URL to prevent open redirect vulnerabilities
+        if (redirectTo) {
+            // Only allow relative paths or same-origin redirects
+            try {
+                const redirectUrl = new URL(redirectTo, window.location.origin);
+                if (redirectUrl.origin !== window.location.origin) {
+                    redirectTo = null; // Block cross-origin redirects
+                } else {
+                    redirectTo = redirectUrl.pathname + redirectUrl.search;
+                }
+            } catch (e) {
+                // If URL parsing fails, treat as relative path
+                if (!redirectTo.startsWith('/') && !redirectTo.startsWith('./')) {
+                    redirectTo = null;
+                }
+            }
+        }
         
         console.log('Login - Portal type:', portalType);
         console.log('Login - Redirect parameter:', redirectTo);

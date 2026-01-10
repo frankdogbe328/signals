@@ -98,12 +98,21 @@ async function handleRegistration(e) {
         return;
     }
     
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        errorMessage.textContent = 'Please enter a valid email address';
-        errorMessage.classList.add('show');
-        return;
+    // Validate email format using security utils
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validateEmail) {
+        if (!SecurityUtils.validateEmail(email)) {
+            errorMessage.textContent = 'Please enter a valid email address';
+            errorMessage.classList.add('show');
+            return;
+        }
+    } else {
+        // Fallback validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            errorMessage.textContent = 'Please enter a valid email address';
+            errorMessage.classList.add('show');
+            return;
+        }
     }
     
     // Students need class, lecturers don't
@@ -113,11 +122,21 @@ async function handleRegistration(e) {
         return;
     }
     
-    // Validate password length
-    if (password.length < 6) {
-        errorMessage.textContent = 'Password must be at least 6 characters long';
-        errorMessage.classList.add('show');
-        return;
+    // Validate password strength using security utils
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validatePasswordStrength) {
+        const passwordValidation = SecurityUtils.validatePasswordStrength(password);
+        if (!passwordValidation.isValid) {
+            errorMessage.textContent = passwordValidation.reasons.join('. ') + '.';
+            errorMessage.classList.add('show');
+            return;
+        }
+    } else {
+        // Fallback validation
+        if (password.length < 8) {
+            errorMessage.textContent = 'Password must be at least 8 characters long';
+            errorMessage.classList.add('show');
+            return;
+        }
     }
     
     // Validate password match
@@ -127,11 +146,20 @@ async function handleRegistration(e) {
         return;
     }
     
-    // Validate username format (alphanumeric and underscore only)
-    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-        errorMessage.textContent = 'Username can only contain letters, numbers, and underscores';
-        errorMessage.classList.add('show');
-        return;
+    // Validate username format using security utils
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validateUsername) {
+        if (!SecurityUtils.validateUsername(username)) {
+            errorMessage.textContent = 'Username must be 3-20 characters and contain only letters, numbers, and underscores';
+            errorMessage.classList.add('show');
+            return;
+        }
+    } else {
+        // Fallback validation
+        if (!/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
+            errorMessage.textContent = 'Username must be 3-20 characters and contain only letters, numbers, and underscores';
+            errorMessage.classList.add('show');
+            return;
+        }
     }
     
     // Check if username already exists (try Supabase first, fallback to localStorage)
