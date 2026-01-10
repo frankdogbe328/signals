@@ -61,6 +61,17 @@ async function initializeExamPortal() {
                 
                 if (!error && data) {
                     // Update current user with latest data from Supabase
+                    // Ensure courses is always an array
+                    let courses = data.courses || [];
+                    if (!Array.isArray(courses)) {
+                        // Handle if courses is stored as JSON string
+                        try {
+                            courses = typeof courses === 'string' ? JSON.parse(courses) : [];
+                        } catch (e) {
+                            courses = [];
+                        }
+                    }
+                    
                     currentUser = {
                         id: data.id,
                         username: data.username,
@@ -68,21 +79,29 @@ async function initializeExamPortal() {
                         role: data.role,
                         name: data.name,
                         class: data.class,
-                        courses: data.courses || [],
+                        courses: courses,
                         email: data.email || null
                     };
                     // Update sessionStorage with fresh data
                     setCurrentUser(currentUser);
-                    // User data refreshed successfully
+                    
+                    // Debug logging
+                    console.log('User data refreshed, courses:', courses);
+                } else if (error) {
+                    console.error('Error refreshing user data:', error);
                 }
             }
         } catch (err) {
             // Error refreshing user data - will use sessionStorage data
+            console.error('Error refreshing user data:', err);
             if (typeof showError === 'function') {
                 showError('Could not refresh user data. Some features may be limited.', 'Data Refresh Error');
             }
         }
     }
+    
+    // Refresh currentUser reference after async operations
+    currentUser = getCurrentUser();
     
     // Display lecturer name
     const lecturerNameEl = document.getElementById('lecturerName');
@@ -109,6 +128,7 @@ function populateExamSubjectDropdown() {
     
     const subjectSelect = document.getElementById('examSubject');
     if (!subjectSelect) {
+        console.error('Subject dropdown element not found');
         if (typeof showError === 'function') {
             showError('Subject dropdown not found. Please refresh the page.', 'Page Error');
         }
@@ -118,6 +138,7 @@ function populateExamSubjectDropdown() {
     subjectSelect.innerHTML = '<option value="">Select Subject</option>';
     
     if (!currentUser) {
+        console.error('No current user found');
         const option = document.createElement('option');
         option.value = '';
         option.textContent = 'No user data - please log in again';
@@ -128,9 +149,29 @@ function populateExamSubjectDropdown() {
         return;
     }
     
-    const registeredSubjects = currentUser.courses || [];
+    // Get registered subjects - handle different data formats
+    let registeredSubjects = currentUser.courses || [];
+    
+    // If courses is a string, try to parse it
+    if (typeof registeredSubjects === 'string') {
+        try {
+            registeredSubjects = JSON.parse(registeredSubjects);
+        } catch (e) {
+            console.error('Error parsing courses string:', e);
+            registeredSubjects = [];
+        }
+    }
+    
+    // Ensure it's an array
+    if (!Array.isArray(registeredSubjects)) {
+        console.error('Courses is not an array:', registeredSubjects);
+        registeredSubjects = [];
+    }
+    
+    console.log('Registered subjects for dropdown:', registeredSubjects);
     
     if (registeredSubjects.length === 0) {
+        console.warn('No subjects registered for lecturer');
         const option = document.createElement('option');
         option.value = '';
         option.textContent = 'No subjects registered - Register in LMS Portal first';
@@ -148,11 +189,15 @@ function populateExamSubjectDropdown() {
     
     registeredSubjects.forEach(subject => {
         if (subject && typeof subject === 'string') {
-            allSubjects.add(subject);
+            allSubjects.add(subject.trim());
+        } else if (subject && typeof subject === 'object' && subject.name) {
+            // Handle if subject is an object with a name property
+            allSubjects.add(subject.name.trim());
         }
     });
     
     if (allSubjects.size === 0) {
+        console.error('No valid subjects found after processing');
         const option = document.createElement('option');
         option.value = '';
         option.textContent = 'No valid subjects found';
@@ -161,7 +206,10 @@ function populateExamSubjectDropdown() {
     }
     
     // Sort and add subjects to dropdown
-    Array.from(allSubjects).sort().forEach(subject => {
+    const sortedSubjects = Array.from(allSubjects).sort();
+    console.log('Adding subjects to dropdown:', sortedSubjects);
+    
+    sortedSubjects.forEach(subject => {
         const option = document.createElement('option');
         option.value = subject;
         option.textContent = subject;
@@ -169,6 +217,7 @@ function populateExamSubjectDropdown() {
     });
     
     // Subjects populated successfully
+    console.log(`Successfully populated ${sortedSubjects.length} subjects in dropdown`);
 }
 
 // Handle create exam form submission
