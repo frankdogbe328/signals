@@ -1366,10 +1366,10 @@ async function exportMyResultPDF(examId, examTitle = 'My Exam Result') {
         
         // Get questions
         const { data: questions, error: questionsError } = await client
-            .from('exam_questions')
+            .from('questions')
             .select('*')
             .eq('exam_id', examId)
-            .order('sequence', { ascending: true });
+            .order('sequence_order', { ascending: true });
         
         if (questionsError) throw questionsError;
         
