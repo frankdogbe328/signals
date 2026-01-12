@@ -316,12 +316,20 @@ async function handleCreateExam(e) {
         }
     }
     
+    // Get exam type
+    const examType = document.getElementById('examType').value;
+    if (!examType) {
+        showError('Please select an exam type.', 'Validation Error');
+        return;
+    }
+    
     const examData = {
         lecturer_id: currentUser.id,
         title: examTitle,
         description: examDescription || null,
         subject: document.getElementById('examSubject').value, // Already validated as dropdown selection
         class_id: document.getElementById('examClass').value, // Already validated as dropdown selection
+        exam_type: examType, // Add exam type
         duration_minutes: durationMinutes,
         total_marks: totalMarks,
         passing_score: passingScore,
@@ -408,6 +416,7 @@ function displayExams(exams) {
                     <h4 style="margin-bottom: 10px;">${escapeHtml(exam.title)}</h4>
                     <p style="color: #666; margin-bottom: 5px;"><strong>Subject:</strong> ${escapeHtml(exam.subject)}</p>
                     <p style="color: #666; margin-bottom: 5px;"><strong>Class:</strong> ${formatClassName(exam.class_id)}</p>
+                    <p style="color: #666; margin-bottom: 5px;"><strong>Exam Type:</strong> ${formatExamType(exam.exam_type || 'N/A')} ${exam.exam_type ? `(${getExamTypePercentage(exam.exam_type)}%)` : ''}</p>
                     <p style="color: #666; margin-bottom: 5px;"><strong>Duration:</strong> ${exam.duration_minutes} minutes</p>
                     <p style="color: #666; margin-bottom: 5px;"><strong>Total Marks:</strong> ${exam.total_marks}</p>
                     <p style="color: #666; margin-bottom: 5px;">
@@ -423,6 +432,7 @@ function displayExams(exams) {
                     </button>
                     ${!exam.results_released ? `<button onclick="releaseResults('${exam.id}')" class="btn btn-success">Release Results</button>` : ''}
                     <button onclick="viewExamStats('${exam.id}')" class="btn btn-secondary">View Stats</button>
+                    <button onclick="deleteExam('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="font-size: 12px; padding: 6px 12px;" title="Delete Exam">🗑️ Delete</button>
                     <div class="export-buttons">
                         <button onclick="quickExportPDF('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="font-size: 12px; padding: 6px 12px; min-width: 60px; display: inline-block;" title="Export Results to PDF">📄 PDF</button>
                         <button onclick="quickExportExcel('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-success" style="font-size: 12px; padding: 6px 12px; min-width: 60px; display: inline-block;" title="Export Results to Excel">📊 Excel</button>
@@ -501,6 +511,7 @@ function showExamDetailsModal(exam, questions) {
                 <div>
                     <p><strong>Subject:</strong> ${escapeHtml(exam.subject)}</p>
                     <p><strong>Class:</strong> ${formatClassName(exam.class_id)}</p>
+                    <p><strong>Exam Type:</strong> ${formatExamType(exam.exam_type || 'N/A')} ${exam.exam_type ? `(${getExamTypePercentage(exam.exam_type)}%)` : ''}</p>
                     <p><strong>Duration:</strong> ${exam.duration_minutes} minutes</p>
                     <p><strong>Total Marks:</strong> ${exam.total_marks}</p>
                 </div>
@@ -1064,6 +1075,63 @@ async function toggleExamStatus(examId, currentStatus) {
     }
 }
 
+// Delete exam (with confirmation)
+async function deleteExam(examId, examTitle) {
+    if (!confirm(`⚠️ WARNING: Are you sure you want to delete this exam?\n\n"${examTitle}"\n\nThis will permanently delete:\n- The exam\n- All questions\n- All student attempts\n- All results and grades\n\nThis action cannot be undone!`)) {
+        return;
+    }
+    
+    // Double confirmation
+    if (!confirm('This is your last chance to cancel. Are you absolutely sure you want to delete this exam and all its data?')) {
+        return;
+    }
+    
+    try {
+        const client = getSupabaseClient();
+        if (!client) {
+            throw new Error('Supabase client not available');
+        }
+        
+        // Get current user for authorization check
+        const currentUser = getCurrentUser();
+        if (!currentUser || currentUser.role !== 'lecturer') {
+            showError('You must be logged in as a lecturer to delete exams.', 'Authorization Required');
+            return;
+        }
+        
+        // Verify exam belongs to current lecturer
+        const { data: exam, error: examError } = await client
+            .from('exams')
+            .select('lecturer_id')
+            .eq('id', examId)
+            .single();
+        
+        if (examError || !exam) {
+            throw new Error('Exam not found');
+        }
+        
+        if (exam.lecturer_id !== currentUser.id) {
+            showError('You do not have permission to delete this exam.', 'Access Denied');
+            return;
+        }
+        
+        // Delete exam (cascade will handle related records)
+        const { error } = await client
+            .from('exams')
+            .delete()
+            .eq('id', examId);
+        
+        if (error) throw error;
+        
+        showSuccess('Exam deleted successfully!', 'Deleted');
+        loadExams();
+        
+    } catch (error) {
+        console.error('Error deleting exam:', error);
+        showError('Failed to delete exam: ' + (error.message || 'Please try again.'), 'Error Deleting Exam');
+    }
+}
+
 // Release exam results
 async function releaseResults(examId) {
     if (!confirm('Are you sure you want to release results for this exam? Students will be able to see their scores.')) {
@@ -1360,7 +1428,9 @@ function renderStudentResultsTable(attempts, exam) {
         const gradeColors = {
             A: '#28a745',
             B: '#17a2b8',
+            'C+': '#20c997',
             C: '#ffc107',
+            'C-': '#fd7e14',
             D: '#fd7e14',
             F: '#dc3545'
         };
@@ -1477,12 +1547,14 @@ function updateStudentResultsCount(shown, total) {
     }
 }
 
-// Calculate grade from percentage
+// Calculate grade from percentage (Ghana Armed Forces Signals Training School grading system)
 function calculateGrade(percentage) {
     if (percentage >= 90) return 'A';
     if (percentage >= 80) return 'B';
-    if (percentage >= 70) return 'C';
-    if (percentage >= 60) return 'D';
+    if (percentage >= 70) return 'C+';
+    if (percentage >= 60) return 'C';
+    if (percentage >= 50) return 'C-';
+    if (percentage >= 40) return 'D';
     return 'F';
 }
 
@@ -1528,6 +1600,37 @@ function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+}
+
+// Get exam type percentage weight
+function getExamTypePercentage(examType) {
+    const percentages = {
+        'opening_exam': 5,
+        'quiz': 5,
+        'bft': 5,
+        'mid_course_exercise': 15,
+        'mid_cs_exam': 20,
+        'gen_assessment': 5,
+        'final_cse_exercise': 20,
+        'final_exam': 25
+    };
+    return percentages[examType] || 0;
+}
+
+// Format exam type for display
+function formatExamType(examType) {
+    if (!examType) return 'N/A';
+    const types = {
+        'opening_exam': 'Opening Exam',
+        'quiz': 'Quiz',
+        'bft': 'BFT (Written 2x Compulsory)',
+        'mid_course_exercise': 'Mid Course Exercise',
+        'mid_cs_exam': 'Mid CS Exam',
+        'gen_assessment': 'Gen Assessment',
+        'final_cse_exercise': 'Final CSE Exercise',
+        'final_exam': 'Final Exam'
+    };
+    return types[examType] || examType;
 }
 
 function formatClassName(classId) {
@@ -2015,11 +2118,12 @@ function parseQuestionsFromText(text) {
     return questions;
 }
 
-// Make Excel functions globally accessible
+// Make functions globally accessible
 if (typeof window !== 'undefined') {
     window.showExcelUploadDialog = showExcelUploadDialog;
     window.closeExcelUploadModal = closeExcelUploadModal;
     window.processExcelDocument = processExcelDocument;
+    window.deleteExam = deleteExam;
 }
 
 // Build question data object from parsed components

@@ -285,12 +285,14 @@ function displayProgressDashboard() {
     dashboardContainer.innerHTML = html;
 }
 
-// Helper function to get grade from percentage
+// Helper function to get grade from percentage (Ghana Armed Forces Signals Training School grading system)
 function getGradeFromPercentage(percentage) {
     if (percentage >= 90) return 'A';
     if (percentage >= 80) return 'B';
-    if (percentage >= 70) return 'C';
-    if (percentage >= 60) return 'D';
+    if (percentage >= 70) return 'C+';
+    if (percentage >= 60) return 'C';
+    if (percentage >= 50) return 'C-';
+    if (percentage >= 40) return 'D';
     return 'F';
 }
 
@@ -299,7 +301,9 @@ function getGradeColor(grade) {
     const colors = {
         'A': '#28a745',
         'B': '#17a2b8',
+        'C+': '#20c997',
         'C': '#ffc107',
+        'C-': '#fd7e14',
         'D': '#fd7e14',
         'F': '#dc3545'
     };

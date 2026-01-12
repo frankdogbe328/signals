@@ -126,6 +126,7 @@ function displayAvailableExams(exams, attemptsMap) {
                 <p style="color: #666; margin-bottom: 10px;">${escapeHtml(exam.description || 'No description')}</p>
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px;">
                     <div><strong>Subject:</strong> ${escapeHtml(exam.subject)}</div>
+                    <div><strong>Exam Type:</strong> ${formatExamTypeForStudent(exam.exam_type || 'N/A')} ${exam.exam_type ? `(${getExamTypePercentageForStudent(exam.exam_type)}%)` : ''}</div>
                     <div><strong>Duration:</strong> ${exam.duration_minutes} minutes</div>
                     <div><strong>Total Marks:</strong> ${exam.total_marks}</div>
                 </div>
@@ -805,7 +806,11 @@ async function finalizeExam(status) {
             })
             .eq('id', currentAttempt.id);
         
-        // Create grade record
+        // Calculate scaled score based on exam type percentage
+        const examTypePercentage = getExamTypePercentageForStudent(currentExam.exam_type);
+        const scaledScore = (percentage * examTypePercentage) / 100;
+        
+        // Create grade record with scaling
         await client
             .from('exam_grades')
             .upsert([{
@@ -814,7 +819,9 @@ async function finalizeExam(status) {
                 attempt_id: currentAttempt.id,
                 score: totalScore,
                 percentage: percentage,
-                grade: calculateGrade(percentage)
+                grade: calculateGrade(percentage),
+                scaling_percentage: examTypePercentage,
+                scaled_score: scaledScore
             }], {
                 onConflict: 'student_id,exam_id'
             });
@@ -839,8 +846,10 @@ async function finalizeExam(status) {
 function calculateGrade(percentage) {
     if (percentage >= 90) return 'A';
     if (percentage >= 80) return 'B';
-    if (percentage >= 70) return 'C';
-    if (percentage >= 60) return 'D';
+    if (percentage >= 70) return 'C+';
+    if (percentage >= 60) return 'C';
+    if (percentage >= 50) return 'C-';
+    if (percentage >= 40) return 'D';
     return 'F';
 }
 
