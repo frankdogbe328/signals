@@ -917,7 +917,7 @@ function showDetailedResults(attempt, exam, questions, responseMap) {
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 15px;">
                 <h3 style="margin: 0;">Exam Results</h3>
                 <div style="display: flex; gap: 10px;">
-                    <button onclick="exportMyResultPDF('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px; min-width: 120px; display: inline-block;" title="Download Results as PDF">
+                    <button onclick="exportMyResultPDF('${exam.id}', '${escapeHtml(exam.title || '').replace(/'/g, "\\'")}')" class="btn btn-danger" style="padding: 8px 16px; font-size: 14px; min-width: 120px; display: inline-block;" title="Download Results as PDF">
                         📄 Download PDF
                     </button>
                 </div>
@@ -1037,29 +1037,46 @@ async function viewResults(examId) {
             return;
         }
         
-        const { data: exam } = await client
+        const { data: exam, error: examError } = await client
             .from('exams')
             .select('*')
             .eq('id', examId)
             .single();
         
+        if (examError) throw examError;
+        if (!exam) {
+            throw new Error('Exam not found');
+        }
+        
         // Get all questions for this exam
-        const { data: questions } = await client
+        const { data: questions, error: questionsError } = await client
             .from('questions')
             .select('*')
             .eq('exam_id', examId)
             .order('sequence_order', { ascending: true });
         
+        if (questionsError) {
+            console.warn('Error loading questions:', questionsError);
+            // Continue with empty questions array
+        }
+        
         // Get student responses
-        const { data: responses } = await client
+        const { data: responses, error: responsesError } = await client
             .from('student_responses')
             .select('*')
             .eq('attempt_id', attempt.id);
         
+        if (responsesError) {
+            console.warn('Error loading responses:', responsesError);
+            // Continue with empty responses
+        }
+        
         // Create response map
         const responseMap = {};
         (responses || []).forEach(r => {
-            responseMap[r.question_id] = r.student_answer;
+            if (r && r.question_id) {
+                responseMap[r.question_id] = r.student_answer || 'Not answered';
+            }
         });
         
         currentExam = exam;
@@ -1067,7 +1084,7 @@ async function viewResults(examId) {
         
     } catch (error) {
         console.error('Error loading exam results:', error);
-        showError('Failed to load results. Please refresh the page and try again.', 'Error Loading Results');
+        showError('Failed to load results: ' + (error.message || 'Please refresh the page and try again.'), 'Error Loading Results');
     }
 }
 

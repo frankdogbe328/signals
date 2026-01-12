@@ -451,10 +451,10 @@ function displayExams(exams) {
                     </button>
                     ${!exam.results_released ? `<button onclick="releaseResults('${exam.id}')" class="btn btn-success">Release Results</button>` : ''}
                     <button onclick="viewExamStats('${exam.id}')" class="btn btn-secondary">View Stats</button>
-                    <button onclick="deleteExam('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="font-size: 12px; padding: 6px 12px;" title="Delete Exam">🗑️ Delete</button>
+                    <button onclick="deleteExam('${exam.id}', '${escapeHtml(exam.title || '').replace(/'/g, "\\'")}')" class="btn btn-danger" style="font-size: 12px; padding: 6px 12px;" title="Delete Exam">🗑️ Delete</button>
                     <div class="export-buttons">
-                        <button onclick="quickExportPDF('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="font-size: 12px; padding: 6px 12px; min-width: 60px; display: inline-block;" title="Export Results to PDF">📄 PDF</button>
-                        <button onclick="quickExportExcel('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-success" style="font-size: 12px; padding: 6px 12px; min-width: 60px; display: inline-block;" title="Export Results to Excel">📊 Excel</button>
+                        <button onclick="quickExportPDF('${exam.id}', '${escapeHtml(exam.title || '').replace(/'/g, "\\'")}')" class="btn btn-danger" style="font-size: 12px; padding: 6px 12px; min-width: 60px; display: inline-block;" title="Export Results to PDF">📄 PDF</button>
+                        <button onclick="quickExportExcel('${exam.id}', '${escapeHtml(exam.title || '').replace(/'/g, "\\'")}')" class="btn btn-success" style="font-size: 12px; padding: 6px 12px; min-width: 60px; display: inline-block;" title="Export Results to Excel">📊 Excel</button>
                     </div>
                 </div>
             </div>
