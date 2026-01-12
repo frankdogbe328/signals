@@ -354,7 +354,7 @@ async function handleCreateExam(e) {
         
         if (error) {
             // If error is about exam_type column not existing, try without it
-            if (error.message && error.message.includes('exam_type') && examData.exam_type) {
+            if (error.message && (error.message.includes('exam_type') || error.message.includes('column') || error.code === '42703') && examData.exam_type) {
                 console.warn('exam_type column does not exist, retrying without it. Please run the migration script.');
                 delete examData.exam_type;
                 const { data: retryData, error: retryError } = await client
@@ -363,7 +363,7 @@ async function handleCreateExam(e) {
                     .select()
                     .single();
                 if (retryError) throw retryError;
-                showSuccess('Exam created successfully! Note: exam_type column not found. Please run the migration script to enable exam types.', 'Exam Created');
+                showSuccess('Exam created successfully! ⚠️ Exam type feature not available yet. Run the migration script (supabase-exam-migration-add-exam-type.sql) in Supabase SQL Editor to enable exam types.', 'Exam Created');
                 // Reset form
                 document.getElementById('examForm').reset();
                 loadExams();
