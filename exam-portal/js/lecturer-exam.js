@@ -2348,13 +2348,34 @@ async function processExcelDocument() {
     try {
         // Check if XLSX library is available (already loaded for export)
         if (typeof XLSX === 'undefined') {
-            // Load SheetJS from CDN
+            // Load SheetJS from CDN with fallbacks
             if (statusDiv) statusDiv.textContent = 'Loading Excel library...';
-            await loadScriptIfNeeded('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
-        }
-        
-        if (typeof XLSX === 'undefined') {
-            throw new Error('Excel library failed to load. Please check your internet connection and try again.');
+            
+            const cdnUrls = [
+                'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+                'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+                'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'
+            ];
+            
+            let loaded = false;
+            for (const url of cdnUrls) {
+                try {
+                    await loadScriptIfNeeded(url);
+                    // Wait a bit for library to initialize
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    if (typeof XLSX !== 'undefined') {
+                        loaded = true;
+                        break;
+                    }
+                } catch (err) {
+                    console.warn(`Failed to load from ${url}, trying next CDN...`, err);
+                    continue;
+                }
+            }
+            
+            if (!loaded || typeof XLSX === 'undefined') {
+                throw new Error('Excel library failed to load from all CDN sources. Please check your internet connection and try again.');
+            }
         }
         
         if (statusDiv) statusDiv.textContent = 'Reading file...';

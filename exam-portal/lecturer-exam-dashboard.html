@@ -456,6 +456,38 @@
     
     <!-- Mammoth.js Library for Word Document Parsing -->
     <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+    <!-- SheetJS (XLSX) Library for Excel Processing - Preload with fallback -->
+    <script>
+        // Preload XLSX library with fallback CDNs
+        (function() {
+            if (typeof XLSX !== 'undefined') return; // Already loaded
+            
+            const cdnUrls = [
+                'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js',
+                'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js',
+                'https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js'
+            ];
+            
+            let currentIndex = 0;
+            function tryLoadNext() {
+                if (currentIndex >= cdnUrls.length) return;
+                
+                const script = document.createElement('script');
+                script.src = cdnUrls[currentIndex];
+                script.async = true;
+                script.onload = function() {
+                    console.log('XLSX library loaded from:', cdnUrls[currentIndex]);
+                };
+                script.onerror = function() {
+                    console.warn('Failed to load XLSX from:', cdnUrls[currentIndex]);
+                    currentIndex++;
+                    tryLoadNext();
+                };
+                document.head.appendChild(script);
+            }
+            tryLoadNext();
+        })();
+    </script>
     <!-- Security Utilities (must load first) -->
     <script src="../js/security.js"></script>
     <!-- Supabase JS Library -->
