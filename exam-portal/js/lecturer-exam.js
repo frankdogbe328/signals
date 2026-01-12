@@ -316,12 +316,9 @@ async function handleCreateExam(e) {
         }
     }
     
-    // Get exam type
-    const examType = document.getElementById('examType').value;
-    if (!examType) {
-        showError('Please select an exam type.', 'Validation Error');
-        return;
-    }
+    // Get exam type (optional - only if field exists and migration has been run)
+    const examTypeInput = document.getElementById('examType');
+    const examType = examTypeInput ? examTypeInput.value : null;
     
     const examData = {
         lecturer_id: currentUser.id,
@@ -329,7 +326,6 @@ async function handleCreateExam(e) {
         description: examDescription || null,
         subject: document.getElementById('examSubject').value, // Already validated as dropdown selection
         class_id: document.getElementById('examClass').value, // Already validated as dropdown selection
-        exam_type: examType, // Add exam type
         duration_minutes: durationMinutes,
         total_marks: totalMarks,
         passing_score: passingScore,
@@ -338,6 +334,11 @@ async function handleCreateExam(e) {
         is_active: true,
         results_released: false
     };
+    
+    // Add exam_type only if provided (and column exists in database)
+    if (examType && examType.trim() !== '') {
+        examData.exam_type = examType;
+    }
     
     try {
         const client = getSupabaseClient();
@@ -351,7 +352,25 @@ async function handleCreateExam(e) {
             .select()
             .single();
         
-        if (error) throw error;
+        if (error) {
+            // If error is about exam_type column not existing, try without it
+            if (error.message && error.message.includes('exam_type') && examData.exam_type) {
+                console.warn('exam_type column does not exist, retrying without it. Please run the migration script.');
+                delete examData.exam_type;
+                const { data: retryData, error: retryError } = await client
+                    .from('exams')
+                    .insert([examData])
+                    .select()
+                    .single();
+                if (retryError) throw retryError;
+                showSuccess('Exam created successfully! Note: exam_type column not found. Please run the migration script to enable exam types.', 'Exam Created');
+                // Reset form
+                document.getElementById('examForm').reset();
+                loadExams();
+                return;
+            }
+            throw error;
+        }
         
         showSuccess('Exam created successfully! Now add questions.', 'Exam Created');
         
