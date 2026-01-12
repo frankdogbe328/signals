@@ -1502,6 +1502,37 @@ function loadScript(url) {
     });
 }
 
+// Get exam type percentage weight (for students)
+function getExamTypePercentageForStudent(examType) {
+    const percentages = {
+        'opening_exam': 5,
+        'quiz': 5,
+        'bft': 5,
+        'mid_course_exercise': 15,
+        'mid_cs_exam': 20,
+        'gen_assessment': 5,
+        'final_cse_exercise': 20,
+        'final_exam': 25
+    };
+    return percentages[examType] || 0;
+}
+
+// Format exam type for display (for students)
+function formatExamTypeForStudent(examType) {
+    if (!examType) return 'N/A';
+    const types = {
+        'opening_exam': 'Opening Exam',
+        'quiz': 'Quiz',
+        'bft': 'BFT (Written 2x Compulsory)',
+        'mid_course_exercise': 'Mid Course Exercise',
+        'mid_cs_exam': 'Mid CS Exam',
+        'gen_assessment': 'Gen Assessment',
+        'final_cse_exercise': 'Final CSE Exercise',
+        'final_exam': 'Final Exam'
+    };
+    return types[examType] || examType;
+}
+
 // Make function globally accessible
 if (typeof window !== 'undefined') {
     window.exportMyResultPDF = exportMyResultPDF;
