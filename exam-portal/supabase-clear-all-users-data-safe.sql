@@ -2,13 +2,13 @@
 -- This includes:
 -- - All users (students and lecturers)
 -- - All exam data (exams, questions, attempts, responses, grades)
--- - All learning materials
--- - All progress records
 -- 
 -- USE WITH EXTREME CAUTION! This action cannot be undone.
 -- Make sure you have a backup if you need to recover any data.
 
--- Step 1: Delete all exam-related data first (due to foreign key constraints)
+-- Delete in order (respecting foreign key constraints)
+
+-- Step 1: Delete all exam-related data first
 
 -- Delete student responses (depends on attempts)
 DELETE FROM student_responses;
@@ -25,9 +25,7 @@ DELETE FROM questions;
 -- Delete exams (depends on users/lecturers)
 DELETE FROM exams;
 
--- Step 2: Delete learning management system data (only if tables exist)
-
--- Delete learning materials (only if table exists)
+-- Step 2: Delete learning materials (only if table exists)
 DO $$ 
 BEGIN
     IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'materials') THEN
@@ -37,9 +35,6 @@ BEGIN
         RAISE NOTICE 'materials table does not exist, skipping';
     END IF;
 END $$;
-
--- Delete any other user-related data
--- Add more DELETE statements here for any other tables that reference users
 
 -- Step 3: Finally, delete all users
 -- This will delete both students and lecturers

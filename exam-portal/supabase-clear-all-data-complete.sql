@@ -24,11 +24,18 @@ DELETE FROM exams;
 -- LMS Portal Data (only if tables exist)
 DO $$ 
 BEGIN
-    IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'materials') THEN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'materials') THEN
         EXECUTE 'DELETE FROM materials';
+        RAISE NOTICE 'Deleted from materials table';
+    ELSE
+        RAISE NOTICE 'materials table does not exist, skipping';
     END IF;
-    IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'student_progress') THEN
+    
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'student_progress') THEN
         EXECUTE 'DELETE FROM student_progress';
+        RAISE NOTICE 'Deleted from student_progress table';
+    ELSE
+        RAISE NOTICE 'student_progress table does not exist, skipping';
     END IF;
 END $$;
 
