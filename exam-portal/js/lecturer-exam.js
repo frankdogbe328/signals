@@ -542,8 +542,8 @@ function showExamDetailsModal(exam, questions) {
                 </div>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     <button onclick="viewExamStats('${exam.id}')" class="btn btn-secondary" style="padding: 8px 16px;">📊 View Statistics</button>
-                    <button onclick="quickExportPDF('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-danger" style="padding: 8px 16px; min-width: 140px; display: inline-block;">📄 Export to PDF</button>
-                    <button onclick="quickExportExcel('${exam.id}', ${JSON.stringify(exam.title)})" class="btn btn-success" style="padding: 8px 16px; min-width: 140px; display: inline-block;">📊 Export to Excel</button>
+                    <button onclick="quickExportPDF('${exam.id}', '${escapeHtml(exam.title || '').replace(/'/g, "\\'")}')" class="btn btn-danger" style="padding: 8px 16px; min-width: 140px; display: inline-block;">📄 Export to PDF</button>
+                    <button onclick="quickExportExcel('${exam.id}', '${escapeHtml(exam.title || '').replace(/'/g, "\\'")}')" class="btn btn-success" style="padding: 8px 16px; min-width: 140px; display: inline-block;">📊 Export to Excel</button>
                 </div>
             </div>
         </div>
