@@ -21,9 +21,16 @@ DELETE FROM student_exam_attempts;
 DELETE FROM questions;
 DELETE FROM exams;
 
--- LMS Portal Data (if tables exist)
-DELETE FROM student_progress;
-DELETE FROM materials;
+-- LMS Portal Data (only if tables exist)
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'materials') THEN
+        EXECUTE 'DELETE FROM materials';
+    END IF;
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'student_progress') THEN
+        EXECUTE 'DELETE FROM student_progress';
+    END IF;
+END $$;
 
 -- Users (this will cascade to some related data if foreign keys are set up)
 DELETE FROM users;
@@ -67,6 +74,12 @@ SELECT 'Questions remaining:' as info, COUNT(*) as count FROM questions;
 SELECT 'Attempts remaining:' as info, COUNT(*) as count FROM student_exam_attempts;
 SELECT 'Responses remaining:' as info, COUNT(*) as count FROM student_responses;
 SELECT 'Grades remaining:' as info, COUNT(*) as count FROM exam_grades;
-SELECT 'Materials remaining:' as info, COUNT(*) as count FROM materials;
+-- Check materials only if table exists
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'materials') THEN
+        EXECUTE 'SELECT ''Materials remaining:'' as info, COUNT(*) as count FROM materials';
+    END IF;
+END $$;
 
 -- Expected result: All counts should be 0 after successful deletion

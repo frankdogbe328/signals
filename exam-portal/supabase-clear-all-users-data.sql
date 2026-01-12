@@ -25,13 +25,15 @@ DELETE FROM questions;
 -- Delete exams (depends on users/lecturers)
 DELETE FROM exams;
 
--- Step 2: Delete learning management system data
+-- Step 2: Delete learning management system data (only if tables exist)
 
--- Delete student progress records (if exists, depends on materials and users)
--- DELETE FROM student_progress; -- Uncomment if this table exists
-
--- Delete learning materials (depends on users/lecturers)
-DELETE FROM materials; -- Uncomment if this table exists
+-- Delete learning materials (only if table exists)
+DO $$ 
+BEGIN
+    IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'materials') THEN
+        EXECUTE 'DELETE FROM materials';
+    END IF;
+END $$;
 
 -- Delete any other user-related data
 -- Add more DELETE statements here for any other tables that reference users
