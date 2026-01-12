@@ -1,5 +1,26 @@
 // Student Exam Portal JavaScript
 
+// Helper function to parse options (handles both JSON arrays and comma-separated strings)
+function parseQuestionOptions(optionsString) {
+    if (!optionsString) return [];
+    
+    try {
+        // Try parsing as JSON first
+        const parsed = JSON.parse(optionsString);
+        if (Array.isArray(parsed)) {
+            return parsed;
+        }
+        // If it's not an array, treat as single value
+        return [parsed];
+    } catch (e) {
+        // If JSON parsing fails, treat as comma-separated string
+        if (typeof optionsString === 'string') {
+            return optionsString.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0);
+        }
+        return [];
+    }
+}
+
 let currentExam = null;
 let currentAttempt = null;
 let questions = [];
@@ -487,7 +508,7 @@ function renderQuestion(question, index) {
     `;
     
     if (question.question_type === 'multiple_choice') {
-        const options = JSON.parse(question.options || '[]');
+        const options = parseQuestionOptions(question.options || '[]');
         options.forEach((option, optIndex) => {
             html += `
                 <label class="answer-option">
@@ -936,7 +957,7 @@ function showDetailedResults(attempt, exam, questions, responseMap) {
                     </div>
                     ${question.question_type === 'multiple_choice' && question.options ? `
                         <div style="margin-top: 10px; font-size: 12px; color: #666;">
-                            Options: ${JSON.parse(question.options).map(opt => escapeHtml(opt)).join(', ')}
+                            Options: ${parseQuestionOptions(question.options).map(opt => escapeHtml(opt)).join(', ')}
                         </div>
                     ` : ''}
                     <div style="margin-top: 10px; font-size: 12px; color: #666;">

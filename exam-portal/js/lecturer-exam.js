@@ -564,6 +564,27 @@ function showExamDetailsModal(exam, questions) {
     modal.style.display = 'block';
 }
 
+// Helper function to parse options (handles both JSON arrays and comma-separated strings)
+function parseQuestionOptions(optionsString) {
+    if (!optionsString) return [];
+    
+    try {
+        // Try parsing as JSON first
+        const parsed = JSON.parse(optionsString);
+        if (Array.isArray(parsed)) {
+            return parsed;
+        }
+        // If it's not an array, treat as single value
+        return [parsed];
+    } catch (e) {
+        // If JSON parsing fails, treat as comma-separated string
+        if (typeof optionsString === 'string') {
+            return optionsString.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0);
+        }
+        return [];
+    }
+}
+
 // Display a question in the list
 function displayQuestion(question, index) {
     const questionTypeLabels = {
@@ -575,7 +596,7 @@ function displayQuestion(question, index) {
     
     let optionsHtml = '';
     if (question.question_type === 'multiple_choice' && question.options) {
-        const options = JSON.parse(question.options);
+        const options = parseQuestionOptions(question.options);
         optionsHtml = '<ul style="margin-left: 20px;">' + options.map(opt => `<li>${escapeHtml(opt)}</li>`).join('') + '</ul>';
     }
     
@@ -1690,7 +1711,7 @@ function editQuestion(questionId) {
     
     // Populate fields based on type
     if (question.question_type === 'multiple_choice' && question.options) {
-        const options = JSON.parse(question.options);
+        const options = parseQuestionOptions(question.options);
         const container = document.getElementById('optionsContainer');
         if (container) {
             container.innerHTML = '';

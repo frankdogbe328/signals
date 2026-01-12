@@ -1,6 +1,27 @@
 // Enhanced Word Document Parser for Bulk Question Import
 // Improved parsing with better pattern recognition and error handling
 
+// Helper function to parse options (handles both JSON arrays and comma-separated strings)
+function parseQuestionOptions(optionsString) {
+    if (!optionsString) return [];
+    
+    try {
+        // Try parsing as JSON first
+        const parsed = JSON.parse(optionsString);
+        if (Array.isArray(parsed)) {
+            return parsed;
+        }
+        // If it's not an array, treat as single value
+        return [parsed];
+    } catch (e) {
+        // If JSON parsing fails, treat as comma-separated string
+        if (typeof optionsString === 'string') {
+            return optionsString.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0);
+        }
+        return [];
+    }
+}
+
 /**
  * Enhanced question parser with multiple format support
  * Supports:
@@ -205,7 +226,7 @@ function validateQuestion(question) {
         if (!question.options || question.options === '[]') {
             return false;
         }
-        const options = JSON.parse(question.options);
+        const options = parseQuestionOptions(question.options);
         if (options.length < 2) {
             return false;
         }
