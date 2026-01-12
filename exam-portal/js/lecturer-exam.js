@@ -2015,6 +2015,13 @@ function parseQuestionsFromText(text) {
     return questions;
 }
 
+// Make Excel functions globally accessible
+if (typeof window !== 'undefined') {
+    window.showExcelUploadDialog = showExcelUploadDialog;
+    window.closeExcelUploadModal = closeExcelUploadModal;
+    window.processExcelDocument = processExcelDocument;
+}
+
 // Build question data object from parsed components
 function buildQuestionData(questionText, options, answer, sequenceOrder) {
     if (!questionText || !answer) {
@@ -2121,13 +2128,17 @@ async function saveParsedQuestions(examId, questions) {
 
 // Show Excel document upload dialog
 function showExcelUploadDialog(examId) {
+    console.log('showExcelUploadDialog called with examId:', examId);
     const modal = document.getElementById('excelUploadModal');
     const fileInput = document.getElementById('excelFileInput');
     const progressDiv = document.getElementById('excelUploadProgress');
     const statusDiv = document.getElementById('excelUploadStatus');
     const progressBar = document.getElementById('excelUploadProgressBar');
     
+    console.log('Modal element:', modal);
+    
     if (!modal) {
+        console.error('Excel upload modal not found in DOM');
         showError('Upload modal not found. Please refresh the page.', 'Error');
         return;
     }
