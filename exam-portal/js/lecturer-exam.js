@@ -509,8 +509,14 @@ async function viewExamDetails(examId) {
         showExamDetailsModal(exam, currentQuestions);
         
     } catch (error) {
-        console.error('Error loading exam details:', error);
-        showError('Failed to load exam details. Please try again.', 'Error Loading Exam Details');
+        // Only show error if it's not a parsing error (those are handled in displayQuestion)
+        if (!error.message || !error.message.includes('JSON') && !error.message.includes('parse')) {
+            console.error('Error loading exam details:', error);
+            showError('Failed to load exam details. Please try again.', 'Error Loading Exam Details');
+        } else {
+            // For parsing errors, just log and continue - displayQuestion will handle it
+            console.warn('Parsing error in exam details (will attempt to display anyway):', error);
+        }
     }
 }
 
@@ -556,7 +562,21 @@ function showExamDetailsModal(exam, questions) {
                 </div>
             </div>
             <div id="questionsList">
-                ${questions.length === 0 ? '<p class="empty-state">No questions added yet</p>' : questions.map((q, index) => displayQuestion(q, index + 1)).join('')}
+                ${questions.length === 0 ? '<p class="empty-state">No questions added yet</p>' : questions.map((q, index) => {
+                    try {
+                        return displayQuestion(q, index + 1);
+                    } catch (err) {
+                        console.error(`Error displaying question ${index + 1}:`, err);
+                        return `<div class="question-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ffcccc; background: #fff5f5;">
+                            <p><strong>Q${index + 1}:</strong> ${escapeHtml(q.question_text || 'Question text unavailable')}</p>
+                            <p style="color: #ff0000; font-size: 12px;">⚠️ Error displaying question details. Please edit this question to fix formatting issues.</p>
+                            <div style="margin-top: 10px;">
+                                <button onclick="editQuestion('${q.id}')" class="btn btn-primary" style="font-size: 12px; padding: 6px 12px;">Edit</button>
+                                <button onclick="deleteQuestion('${q.id}')" class="btn btn-danger" style="font-size: 12px; padding: 6px 12px;">Delete</button>
+                            </div>
+                        </div>`;
+                    }
+                }).join('')}
             </div>
         </div>
     `;
@@ -587,6 +607,10 @@ function parseQuestionOptions(optionsString) {
 
 // Display a question in the list
 function displayQuestion(question, index) {
+    if (!question) {
+        return '<div class="question-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #ffcccc;"><p style="color: #ff0000;">Invalid question data</p></div>';
+    }
+    
     const questionTypeLabels = {
         'multiple_choice': 'Multiple Choice',
         'true_false': 'True/False',
@@ -596,8 +620,16 @@ function displayQuestion(question, index) {
     
     let optionsHtml = '';
     if (question.question_type === 'multiple_choice' && question.options) {
-        const options = parseQuestionOptions(question.options);
-        optionsHtml = '<ul style="margin-left: 20px;">' + options.map(opt => `<li>${escapeHtml(opt)}</li>`).join('') + '</ul>';
+        try {
+            const options = parseQuestionOptions(question.options);
+            if (options && options.length > 0) {
+                optionsHtml = '<ul style="margin-left: 20px;">' + options.map(opt => `<li>${escapeHtml(String(opt))}</li>`).join('') + '</ul>';
+            }
+        } catch (err) {
+            console.warn('Error parsing options for question:', question.id, err);
+            // Show raw options if parsing fails
+            optionsHtml = `<p style="color: #666; font-size: 12px; margin-left: 20px;"><em>Options: ${escapeHtml(String(question.options))}</em></p>`;
+        }
     }
     
     return `
@@ -1117,7 +1149,15 @@ async function toggleExamStatus(examId, currentStatus) {
 
 // Delete exam (with confirmation)
 async function deleteExam(examId, examTitle) {
-    if (!confirm(`⚠️ WARNING: Are you sure you want to delete this exam?\n\n"${examTitle}"\n\nThis will permanently delete:\n- The exam\n- All questions\n- All student attempts\n- All results and grades\n\nThis action cannot be undone!`)) {
+    if (!examId) {
+        showError('Invalid exam ID. Cannot delete exam.', 'Error');
+        return;
+    }
+    
+    // Sanitize exam title for display
+    const safeTitle = typeof examTitle === 'string' ? examTitle : 'this exam';
+    
+    if (!confirm(`⚠️ WARNING: Are you sure you want to delete this exam?\n\n"${safeTitle}"\n\nThis will permanently delete:\n- The exam\n- All questions\n- All student attempts\n- All results and grades\n\nThis action cannot be undone!`)) {
         return;
     }
     
@@ -2164,14 +2204,9 @@ if (typeof window !== 'undefined') {
     window.closeExcelUploadModal = closeExcelUploadModal;
     window.processExcelDocument = processExcelDocument;
     window.deleteExam = deleteExam;
-}
-
-// Make functions globally accessible
-if (typeof window !== 'undefined') {
-    window.showExcelUploadDialog = showExcelUploadDialog;
-    window.closeExcelUploadModal = closeExcelUploadModal;
-    window.processExcelDocument = processExcelDocument;
-    window.deleteExam = deleteExam;
+    window.deleteQuestion = deleteQuestion;
+    window.viewExamDetails = viewExamDetails;
+    window.editQuestion = editQuestion;
 }
 
 // Build question data object from parsed components
