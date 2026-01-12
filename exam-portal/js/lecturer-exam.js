@@ -2126,6 +2126,14 @@ if (typeof window !== 'undefined') {
     window.deleteExam = deleteExam;
 }
 
+// Make functions globally accessible
+if (typeof window !== 'undefined') {
+    window.showExcelUploadDialog = showExcelUploadDialog;
+    window.closeExcelUploadModal = closeExcelUploadModal;
+    window.processExcelDocument = processExcelDocument;
+    window.deleteExam = deleteExam;
+}
+
 // Build question data object from parsed components
 function buildQuestionData(questionText, options, answer, sequenceOrder) {
     if (!questionText || !answer) {
