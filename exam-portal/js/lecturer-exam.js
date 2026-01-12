@@ -86,7 +86,7 @@ async function initializeExamPortal() {
                     setCurrentUser(currentUser);
                     
                     // Debug logging
-                    console.log('User data refreshed, courses:', courses);
+                    // User data refreshed
                 } else if (error) {
                     console.error('Error refreshing user data:', error);
                 }

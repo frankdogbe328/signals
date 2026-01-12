@@ -502,7 +502,7 @@ function showAutoSaveIndicator(status) {
 // Render question HTML
 function renderQuestion(question, index) {
     if (!question) {
-        console.error('Invalid question object:', question);
+        // Invalid question object detected
         return '<div class="error">Invalid question data</div>';
     }
     
@@ -569,7 +569,7 @@ function renderQuestion(question, index) {
         
         // If answer is True/False and no options, treat as true/false
         if ((answerLower === 'true' || answerLower === 'false') && (!question.options || question.options === '[]' || question.options === '')) {
-            console.log('Detected true/false question by answer format:', question.id);
+            // Auto-detected true/false question type
             html += `
                 <label class="answer-option">
                     <input type="radio" name="question_${question.id}" value="True" onchange="saveAnswer('${question.id}', 'True')">
@@ -582,7 +582,7 @@ function renderQuestion(question, index) {
             `;
         } else {
             // Unknown type - show textarea as fallback
-            console.warn('Unknown question type:', questionType, 'for question:', question.id);
+            // Unknown question type detected, using fallback rendering
             html += `
                 <textarea 
                     name="question_${question.id}" 
@@ -1101,7 +1101,7 @@ async function viewResults(examId) {
             .order('sequence_order', { ascending: true });
         
         if (questionsError) {
-            console.warn('Error loading questions:', questionsError);
+            // Error loading questions, continuing with empty array
             // Continue with empty questions array
         }
         
@@ -1112,7 +1112,7 @@ async function viewResults(examId) {
             .eq('attempt_id', attempt.id);
         
         if (responsesError) {
-            console.warn('Error loading responses:', responsesError);
+            // Error loading responses, continuing with empty responses
             // Continue with empty responses
         }
         
@@ -1358,7 +1358,7 @@ function escapeHtml(text) {
 
 // Export student's own result to PDF
 async function exportMyResultPDF(examId, examTitle = 'My Exam Result') {
-    console.log('exportMyResultPDF called with:', examId, examTitle);
+    // Exporting result to PDF
     
     const currentUser = getCurrentUser();
     if (!currentUser || currentUser.role !== 'student') {
@@ -1388,7 +1388,7 @@ async function exportMyResultPDF(examId, examTitle = 'My Exam Result') {
         } else {
             // Load jsPDF from CDN (try both CDNs for better reliability)
             try {
-                console.log('Loading jsPDF from CDN...');
+                // Loading PDF library
                 await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
                 // Wait a bit for the library to initialize
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -1403,7 +1403,7 @@ async function exportMyResultPDF(examId, examTitle = 'My Exam Result') {
                 }
             } catch (cdnError) {
                 // Fallback to alternative CDN
-                console.warn('First CDN failed, trying alternative:', cdnError);
+                // CDN fallback triggered
                 await loadScript('https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js');
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
@@ -1421,7 +1421,7 @@ async function exportMyResultPDF(examId, examTitle = 'My Exam Result') {
             throw new Error('jsPDF library not available');
         }
         
-        console.log('jsPDF loaded successfully:', typeof jsPDF);
+        // PDF library loaded
         
         // Get exam and student's attempt
         const client = getSupabaseClient();
@@ -1545,7 +1545,7 @@ async function exportMyResultPDF(examId, examTitle = 'My Exam Result') {
         } else if (typeof alert === 'function') {
             alert('Results exported successfully!');
         } else {
-            console.log('Results exported successfully!');
+            // Export completed
         }
     } catch (error) {
         console.error('Error exporting result:', error);
@@ -1566,7 +1566,7 @@ function loadScript(url) {
         // Check if script already exists
         const existingScript = document.querySelector(`script[src="${url}"]`);
         if (existingScript) {
-            console.log('Script already loaded:', url);
+            // Script already available
             resolve();
             return;
         }
@@ -1574,7 +1574,7 @@ function loadScript(url) {
         const script = document.createElement('script');
         script.src = url;
         script.onload = () => {
-            console.log('Script loaded successfully:', url);
+            // Script loaded
             resolve();
         };
         script.onerror = (error) => {
