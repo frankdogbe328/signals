@@ -512,6 +512,82 @@
             <p id="modalMessage"></p>
             <button id="modalButton" class="btn btn-primary">OK</button>
         </div>
+        
+        <!-- Excel Upload Modal -->
+        <div id="excelUploadModal" class="modal" style="display: none;">
+            <div class="modal-content" style="max-width: 600px;">
+                <span class="close-modal" onclick="closeExcelUploadModal()">&times;</span>
+                <h2>Upload Excel Questions</h2>
+                <div style="margin-top: 20px;">
+                    <div style="background: #f0f7ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #28a745;">
+                        <h4 style="margin-top: 0; color: #28a745;">📋 Excel Format Guide</h4>
+                        <p style="margin-bottom: 10px; font-size: 14px;"><strong>Format your Excel file with these columns:</strong></p>
+                        <div style="background: white; padding: 15px; border-radius: 4px; font-size: 13px; overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                <thead>
+                                    <tr style="background: #f8f9fa;">
+                                        <th style="border: 1px solid #ddd; padding: 8px;">Question</th>
+                                        <th style="border: 1px solid #ddd; padding: 8px;">Type</th>
+                                        <th style="border: 1px solid #ddd; padding: 8px;">Option A</th>
+                                        <th style="border: 1px solid #ddd; padding: 8px;">Option B</th>
+                                        <th style="border: 1px solid #ddd; padding: 8px;">Option C</th>
+                                        <th style="border: 1px solid #ddd; padding: 8px;">Option D</th>
+                                        <th style="border: 1px solid #ddd; padding: 8px;">Correct Answer</th>
+                                        <th style="border: 1px solid #ddd; padding: 8px;">Marks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">What is the capital of Ghana?</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">multiple_choice</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">Kumasi</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">Accra</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">Tamale</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">Takoradi</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">B</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">1</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">Ghana is in West Africa.</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">true_false</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">-</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">-</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">-</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">-</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">True</td>
+                                        <td style="border: 1px solid #ddd; padding: 8px;">1</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <p style="margin-top: 10px; font-size: 13px; color: #666;">
+                            <strong>Types:</strong> multiple_choice, true_false, short_answer, essay<br>
+                            <strong>Note:</strong> For multiple_choice, fill Option A-D. For other types, leave options blank. Correct Answer should be the letter (A, B, C, D) for multiple choice, or "True"/"False" for true/false questions.
+                        </p>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="excelFileInput">Select Excel File (.xlsx or .xls)</label>
+                        <input type="file" id="excelFileInput" accept=".xlsx,.xls" style="padding: 10px; border: 2px dashed #ddd; border-radius: 4px; width: 100%; cursor: pointer;">
+                        <small style="color: #666; display: block; margin-top: 5px;">Only .xlsx and .xls files are supported. First row can be headers (will be skipped automatically).</small>
+                    </div>
+                    
+                    <div id="excelUploadProgress" style="display: none; margin: 15px 0;">
+                        <div style="background: #f0f0f0; border-radius: 4px; padding: 10px;">
+                            <div id="excelUploadStatus" style="color: #666; font-size: 14px;">Processing...</div>
+                            <div style="background: #e0e0e0; border-radius: 4px; height: 20px; margin-top: 10px; overflow: hidden;">
+                                <div id="excelUploadProgressBar" style="background: #28a745; height: 100%; width: 0%; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button onclick="processExcelDocument()" class="btn btn-success" id="processExcelBtn">Process Excel File</button>
+                        <button onclick="closeExcelUploadModal()" class="btn btn-secondary">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- Footer -->

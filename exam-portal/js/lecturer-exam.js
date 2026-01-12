@@ -519,6 +519,9 @@ function showExamDetailsModal(exam, questions) {
                     <button onclick="showWordUploadDialog('${exam.id}')" class="btn btn-secondary" style="display: flex; align-items: center; gap: 5px;">
                         📄 Upload Word Document
                     </button>
+                    <button onclick="showExcelUploadDialog('${exam.id}')" class="btn btn-secondary" style="display: flex; align-items: center; gap: 5px;">
+                        📊 Upload Excel Questions
+                    </button>
                     <button onclick="addQuestion('${exam.id}')" class="btn btn-primary">+ Add Question</button>
                 </div>
             </div>
@@ -2116,3 +2119,297 @@ async function saveParsedQuestions(examId, questions) {
     }
 }
 
+// Show Excel document upload dialog
+function showExcelUploadDialog(examId) {
+    const modal = document.getElementById('excelUploadModal');
+    const fileInput = document.getElementById('excelFileInput');
+    const progressDiv = document.getElementById('excelUploadProgress');
+    const statusDiv = document.getElementById('excelUploadStatus');
+    const progressBar = document.getElementById('excelUploadProgressBar');
+    
+    if (!modal) {
+        showError('Upload modal not found. Please refresh the page.', 'Error');
+        return;
+    }
+    
+    // Store exam ID for processing
+    modal.setAttribute('data-exam-id', examId);
+    
+    // Reset form
+    if (fileInput) fileInput.value = '';
+    if (progressDiv) progressDiv.style.display = 'none';
+    if (statusDiv) statusDiv.textContent = 'Processing...';
+    if (progressBar) progressBar.style.width = '0%';
+    
+    modal.style.display = 'block';
+}
+
+// Close Excel upload modal
+function closeExcelUploadModal() {
+    const modal = document.getElementById('excelUploadModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Helper function to load script (use from export-results.js if available, otherwise define inline)
+async function loadScriptIfNeeded(url) {
+    if (typeof loadScript !== 'undefined') {
+        return loadScript(url);
+    }
+    return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = url;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+    });
+}
+
+// Process Excel document and extract questions
+async function processExcelDocument() {
+    const modal = document.getElementById('excelUploadModal');
+    const fileInput = document.getElementById('excelFileInput');
+    const progressDiv = document.getElementById('excelUploadProgress');
+    const statusDiv = document.getElementById('excelUploadStatus');
+    const progressBar = document.getElementById('excelUploadProgressBar');
+    const processBtn = document.getElementById('processExcelBtn');
+    const examId = modal ? modal.getAttribute('data-exam-id') : null;
+    
+    if (!examId) {
+        showError('Exam ID not found. Please try again.', 'Error');
+        return;
+    }
+    
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+        showError('Please select an Excel file first.', 'No File Selected');
+        return;
+    }
+    
+    const file = fileInput.files[0];
+    
+    // Validate file type
+    const validTypes = ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'];
+    const validExtensions = ['.xlsx', '.xls'];
+    const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+    
+    if (!validTypes.includes(file.type) && !validExtensions.includes(fileExtension)) {
+        showError('Please select a valid Excel file (.xlsx or .xls).', 'Invalid File Type');
+        return;
+    }
+    
+    if (processBtn) processBtn.disabled = true;
+    if (progressDiv) progressDiv.style.display = 'block';
+    if (statusDiv) statusDiv.textContent = 'Reading Excel file...';
+    if (progressBar) progressBar.style.width = '20%';
+    
+    try {
+        // Check if XLSX library is available (already loaded for export)
+        if (typeof XLSX === 'undefined') {
+            // Load SheetJS from CDN
+            if (statusDiv) statusDiv.textContent = 'Loading Excel library...';
+            await loadScriptIfNeeded('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+        }
+        
+        if (typeof XLSX === 'undefined') {
+            throw new Error('Excel library failed to load. Please check your internet connection and try again.');
+        }
+        
+        if (statusDiv) statusDiv.textContent = 'Reading file...';
+        if (progressBar) progressBar.style.width = '40%';
+        
+        // Read file as array buffer
+        const arrayBuffer = await file.arrayBuffer();
+        
+        // Parse Excel workbook
+        const workbook = XLSX.read(arrayBuffer, { type: 'array' });
+        
+        // Get first sheet
+        const firstSheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[firstSheetName];
+        
+        if (!worksheet) {
+            throw new Error('Could not read Excel file. Please ensure it has at least one sheet.');
+        }
+        
+        // Convert to JSON
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+        
+        if (!jsonData || jsonData.length === 0) {
+            throw new Error('Excel file appears to be empty.');
+        }
+        
+        if (statusDiv) statusDiv.textContent = 'Parsing questions...';
+        if (progressBar) progressBar.style.width = '60%';
+        
+        // Parse questions from Excel data
+        const parsedQuestions = parseQuestionsFromExcel(jsonData);
+        
+        if (parsedQuestions.length === 0) {
+            throw new Error('No questions found in the Excel file. Please check the format and ensure columns are correct.');
+        }
+        
+        if (statusDiv) statusDiv.textContent = `Found ${parsedQuestions.length} question(s). Saving...`;
+        if (progressBar) progressBar.style.width = '80%';
+        
+        // Save questions to database
+        await saveParsedQuestions(examId, parsedQuestions);
+        
+        if (statusDiv) statusDiv.textContent = `Successfully imported ${parsedQuestions.length} question(s)!`;
+        if (progressBar) progressBar.style.width = '100%';
+        
+        showSuccess(`Successfully imported ${parsedQuestions.length} question(s) from the Excel file!`, 'Import Successful');
+        
+        // Close modal and refresh exam details after a short delay
+        setTimeout(() => {
+            closeExcelUploadModal();
+            viewExamDetails(examId);
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Error processing Excel document:', error);
+        showError('Failed to process Excel file: ' + (error.message || 'Please ensure the file format is correct and try again.'), 'Processing Error');
+        if (statusDiv) statusDiv.textContent = 'Error: Failed to process file. Please try again.';
+        if (progressBar) progressBar.style.width = '0%';
+    } finally {
+        if (processBtn) processBtn.disabled = false;
+    }
+}
+
+// Parse questions from Excel data
+function parseQuestionsFromExcel(data) {
+    const questions = [];
+    
+    // Skip header row if first row looks like headers
+    let startRow = 0;
+    const firstRow = data[0] || [];
+    const headerKeywords = ['question', 'type', 'option', 'correct', 'answer', 'marks'];
+    const firstRowLower = firstRow.map(cell => String(cell).toLowerCase()).join(' ');
+    
+    // Check if first row contains header keywords
+    if (headerKeywords.some(keyword => firstRowLower.includes(keyword))) {
+        startRow = 1; // Skip header row
+    }
+    
+    // Column mapping (flexible - try to auto-detect)
+    let questionCol = 0;
+    let typeCol = 1;
+    let optionACol = 2;
+    let optionBCol = 3;
+    let optionCCol = 4;
+    let optionDCol = 5;
+    let correctAnswerCol = 6;
+    let marksCol = 7;
+    
+    // Try to detect column positions from header if available
+    if (startRow === 1 && firstRow.length > 0) {
+        for (let i = 0; i < firstRow.length; i++) {
+            const header = String(firstRow[i]).toLowerCase();
+            if (header.includes('question')) questionCol = i;
+            else if (header.includes('type')) typeCol = i;
+            else if (header.includes('option') && (header.includes('a') || i === 2)) optionACol = i;
+            else if (header.includes('option') && (header.includes('b') || i === 3)) optionBCol = i;
+            else if (header.includes('option') && (header.includes('c') || i === 4)) optionCCol = i;
+            else if (header.includes('option') && (header.includes('d') || i === 5)) optionDCol = i;
+            else if (header.includes('correct') || header.includes('answer')) correctAnswerCol = i;
+            else if (header.includes('mark')) marksCol = i;
+        }
+    }
+    
+    // Process each row
+    for (let i = startRow; i < data.length; i++) {
+        const row = data[i] || [];
+        
+        // Get question text
+        const questionText = String(row[questionCol] || '').trim();
+        if (!questionText || questionText.length < 3) {
+            continue; // Skip empty rows
+        }
+        
+        // Get question type
+        let questionType = String(row[typeCol] || '').trim().toLowerCase();
+        if (!questionType) {
+            // Auto-detect type based on options
+            const hasOptions = (row[optionACol] && String(row[optionACol]).trim()) || (row[optionBCol] && String(row[optionBCol]).trim());
+            questionType = hasOptions ? 'multiple_choice' : 'short_answer';
+        }
+        
+        // Normalize question type
+        if (questionType.includes('multiple') || questionType.includes('choice') || questionType === 'mcq') {
+            questionType = 'multiple_choice';
+        } else if (questionType.includes('true') || questionType.includes('false')) {
+            questionType = 'true_false';
+        } else if (questionType.includes('short')) {
+            questionType = 'short_answer';
+        } else if (questionType.includes('essay')) {
+            questionType = 'essay';
+        }
+        
+        // Get options (for multiple choice)
+        let options = null;
+        let correctAnswer = String(row[correctAnswerCol] || '').trim();
+        
+        if (questionType === 'multiple_choice') {
+            const optionA = String(row[optionACol] || '').trim();
+            const optionB = String(row[optionBCol] || '').trim();
+            const optionC = String(row[optionCCol] || '').trim();
+            const optionD = String(row[optionDCol] || '').trim();
+            
+            options = [];
+            if (optionA && optionA !== '-' && optionA.toLowerCase() !== 'n/a') options.push(optionA);
+            if (optionB && optionB !== '-' && optionB.toLowerCase() !== 'n/a') options.push(optionB);
+            if (optionC && optionC !== '-' && optionC.toLowerCase() !== 'n/a') options.push(optionC);
+            if (optionD && optionD !== '-' && optionD.toLowerCase() !== 'n/a') options.push(optionD);
+            
+            // If no options found, skip or try alternative format
+            if (options.length < 2) {
+                console.warn(`Row ${i + 1}: Insufficient options for multiple choice question, skipping`);
+                continue;
+            }
+            
+            // Convert answer letter to actual option text if needed
+            if (correctAnswer && /^[A-D]$/i.test(correctAnswer)) {
+                const answerIndex = correctAnswer.toUpperCase().charCodeAt(0) - 65;
+                if (answerIndex >= 0 && answerIndex < options.length) {
+                    correctAnswer = options[answerIndex];
+                }
+            }
+        } else if (questionType === 'true_false') {
+            // Normalize true/false answer
+            correctAnswer = String(correctAnswer || '').trim();
+            if (correctAnswer && !['true', 'false'].includes(correctAnswer.toLowerCase())) {
+                // Try to normalize
+                if (correctAnswer.toLowerCase().includes('true') || correctAnswer.toLowerCase() === 't') {
+                    correctAnswer = 'True';
+                } else {
+                    correctAnswer = 'False';
+                }
+            } else if (correctAnswer) {
+                correctAnswer = correctAnswer.charAt(0).toUpperCase() + correctAnswer.slice(1).toLowerCase();
+            }
+        }
+        
+        // Get marks (default to 1 if not specified)
+        let marks = parseInt(row[marksCol]) || 1;
+        if (isNaN(marks) || marks < 1) marks = 1;
+        
+        // Validate required fields
+        if (!correctAnswer || correctAnswer.length === 0) {
+            console.warn(`Row ${i + 1}: Missing correct answer, skipping`);
+            continue;
+        }
+        
+        // Build question data
+        const questionData = {
+            question_text: questionText,
+            question_type: questionType,
+            options: options,
+            correct_answer: correctAnswer,
+            marks: marks
+        };
+        
+        questions.push(questionData);
+    }
+    
+    return questions;
+}
