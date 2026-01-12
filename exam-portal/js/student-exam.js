@@ -501,23 +501,35 @@ function showAutoSaveIndicator(status) {
 
 // Render question HTML
 function renderQuestion(question, index) {
+    if (!question) {
+        console.error('Invalid question object:', question);
+        return '<div class="error">Invalid question data</div>';
+    }
+    
+    // Normalize question type (handle variations)
+    const questionType = (question.question_type || '').toLowerCase().trim();
+    
     let html = `
         <div class="question-number">Question ${index + 1} of ${randomizedQuestions.length}</div>
-        <div class="question-text">${escapeHtml(question.question_text)}</div>
+        <div class="question-text">${escapeHtml(question.question_text || 'Question text unavailable')}</div>
         <div class="answer-options">
     `;
     
-    if (question.question_type === 'multiple_choice') {
+    if (questionType === 'multiple_choice') {
         const options = parseQuestionOptions(question.options || '[]');
-        options.forEach((option, optIndex) => {
-            html += `
-                <label class="answer-option">
-                    <input type="radio" name="question_${question.id}" value="${escapeHtml(option)}" onchange="saveAnswer('${question.id}', '${escapeHtml(option)}')">
-                    ${escapeHtml(option)}
-                </label>
-            `;
-        });
-    } else if (question.question_type === 'true_false') {
+        if (options.length === 0) {
+            html += '<p style="color: #dc3545;">⚠️ No options available for this question. Please contact your lecturer.</p>';
+        } else {
+            options.forEach((option, optIndex) => {
+                html += `
+                    <label class="answer-option">
+                        <input type="radio" name="question_${question.id}" value="${escapeHtml(String(option))}" onchange="saveAnswer('${question.id}', '${escapeHtml(String(option))}')">
+                        ${escapeHtml(String(option))}
+                    </label>
+                `;
+            });
+        }
+    } else if (questionType === 'true_false' || questionType === 'true/false') {
         html += `
             <label class="answer-option">
                 <input type="radio" name="question_${question.id}" value="True" onchange="saveAnswer('${question.id}', 'True')">
@@ -528,7 +540,7 @@ function renderQuestion(question, index) {
                 False
             </label>
         `;
-    } else if (question.question_type === 'short_answer') {
+    } else if (questionType === 'short_answer') {
         html += `
             <textarea 
                 name="question_${question.id}" 
@@ -539,7 +551,7 @@ function renderQuestion(question, index) {
                 onblur="saveAnswer('${question.id}', this.value)"
             ></textarea>
         `;
-    } else if (question.question_type === 'essay') {
+    } else if (questionType === 'essay') {
         html += `
             <textarea 
                 name="question_${question.id}" 
@@ -550,6 +562,39 @@ function renderQuestion(question, index) {
                 onblur="saveAnswer('${question.id}', this.value)"
             ></textarea>
         `;
+    } else {
+        // Fallback for unknown question types - try to detect true/false by checking answer
+        const correctAnswer = (question.correct_answer || '').toString().trim();
+        const answerLower = correctAnswer.toLowerCase();
+        
+        // If answer is True/False and no options, treat as true/false
+        if ((answerLower === 'true' || answerLower === 'false') && (!question.options || question.options === '[]' || question.options === '')) {
+            console.log('Detected true/false question by answer format:', question.id);
+            html += `
+                <label class="answer-option">
+                    <input type="radio" name="question_${question.id}" value="True" onchange="saveAnswer('${question.id}', 'True')">
+                    True
+                </label>
+                <label class="answer-option">
+                    <input type="radio" name="question_${question.id}" value="False" onchange="saveAnswer('${question.id}', 'False')">
+                    False
+                </label>
+            `;
+        } else {
+            // Unknown type - show textarea as fallback
+            console.warn('Unknown question type:', questionType, 'for question:', question.id);
+            html += `
+                <textarea 
+                    name="question_${question.id}" 
+                    class="form-control" 
+                    rows="4" 
+                    placeholder="Enter your answer"
+                    onchange="saveAnswer('${question.id}', this.value)"
+                    onblur="saveAnswer('${question.id}', this.value)"
+                ></textarea>
+                <p style="color: #666; font-size: 12px; margin-top: 5px;">Question type: ${escapeHtml(questionType || 'Unknown')}</p>
+            `;
+        }
     }
     
     html += '</div>';
