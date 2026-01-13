@@ -164,7 +164,8 @@ function getCoursesForClass(classId) {
             'Power management',
             'Information Technology',
             'Signal tactics',
-            'Method of instructions'
+            'Method of instructions',
+            'Telecom'
         ],
         // REGIMENTAL B III – B II - Signal – Regimental Basic subjects (intermediate level)
         'regimental-b-iii-b-ii': [
@@ -190,7 +191,8 @@ function getCoursesForClass(classId) {
             'Communication centre management',
             'Power management',
             'Information Technology',
-            'Signal tactics'
+            'Signal tactics',
+            'Telecom'
         ],
         // RSO / RSI - Regimental Signal Officers / Instructors Course
         'rso-rsi': [
