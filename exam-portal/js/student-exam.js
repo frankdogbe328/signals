@@ -759,7 +759,10 @@ function updateTimerDisplay() {
 
 // Update time remaining in database
 async function updateTimeRemaining() {
-    if (!currentAttempt) return;
+    // Enhanced null check
+    if (!currentAttempt || !currentAttempt.id) {
+        return;
+    }
     
     try {
         const client = getSupabaseClient();
@@ -773,6 +776,7 @@ async function updateTimeRemaining() {
     } catch (error) {
         // Silently fail - time update is not critical, timer continues locally
         // Don't interrupt student's exam flow
+        console.warn('Failed to update time remaining (non-critical):', error);
     }
 }
 
@@ -946,8 +950,8 @@ async function finalizeExam(status) {
             throw new Error('Missing required data for grade record');
         }
         
-        // Show results if released
-        if (currentExam.results_released) {
+        // Show results if released - with null check
+        if (currentExam && currentExam.results_released) {
             showResults(totalScore, totalMarks, percentage);
         } else {
             showInfo('Exam submitted successfully! Results will be available once released by your lecturer.', 'Exam Submitted');
@@ -1096,14 +1100,41 @@ function checkAnswerCorrect(question, studentAnswer, correctAnswer) {
 
 // Show results (backward compatibility)
 function showResults(score, totalMarks, percentage) {
-    document.getElementById('availableExamsView').style.display = 'none';
-    document.getElementById('examTakingView').style.display = 'none';
-    document.getElementById('resultsView').style.display = 'block';
+    // Add null checks to prevent errors
+    if (!currentExam) {
+        console.error('Cannot show results: currentExam is null');
+        showError('Unable to display results. Please refresh and view results from the exams list.', 'Display Error');
+        goBackToExams();
+        return;
+    }
     
-    document.getElementById('resultsExamTitle').textContent = currentExam.title;
-    document.getElementById('resultsScore').textContent = score;
-    document.getElementById('resultsTotal').textContent = totalMarks;
-    document.getElementById('resultsPercentage').textContent = percentage.toFixed(1) + '%';
+    try {
+        document.getElementById('availableExamsView').style.display = 'none';
+        document.getElementById('examTakingView').style.display = 'none';
+        document.getElementById('resultsView').style.display = 'block';
+        
+        const titleElement = document.getElementById('resultsExamTitle');
+        const scoreElement = document.getElementById('resultsScore');
+        const totalElement = document.getElementById('resultsTotal');
+        const percentageElement = document.getElementById('resultsPercentage');
+        
+        if (titleElement && currentExam.title) {
+            titleElement.textContent = currentExam.title;
+        }
+        if (scoreElement) {
+            scoreElement.textContent = score;
+        }
+        if (totalElement) {
+            totalElement.textContent = totalMarks;
+        }
+        if (percentageElement) {
+            percentageElement.textContent = percentage.toFixed(1) + '%';
+        }
+    } catch (error) {
+        console.error('Error displaying results:', error);
+        showError('Error displaying results. Please refresh and try again.', 'Display Error');
+        goBackToExams();
+    }
 }
 
 // View results for completed exam
