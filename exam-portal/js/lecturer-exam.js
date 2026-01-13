@@ -2330,12 +2330,27 @@ async function saveParsedQuestions(examId, questions) {
             };
         });
         
+        // Validate questions before inserting
+        const questionsWithAnswers = questionsToInsert.filter(q => q.correct_answer && q.correct_answer.trim().length > 0);
+        const questionsWithoutAnswers = questionsToInsert.length - questionsWithAnswers.length;
+        
+        if (questionsWithoutAnswers > 0) {
+            console.warn(`${questionsWithoutAnswers} question(s) missing correct answers will be saved without answers`);
+        }
+        
         // Insert questions
         const { error } = await client
             .from('questions')
             .insert(questionsToInsert);
         
-        if (error) throw error;
+        if (error) {
+            console.error('Error inserting questions:', error);
+            console.error('Questions data:', questionsToInsert);
+            throw error;
+        }
+        
+        // Log success with details
+        console.log(`Successfully saved ${questionsToInsert.length} question(s): ${questionsWithAnswers.length} with correct answers, ${questionsWithoutAnswers} without`);
         
     } catch (error) {
         console.error('Error saving questions to database:', error);
