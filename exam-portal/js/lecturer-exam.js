@@ -2297,15 +2297,38 @@ async function saveParsedQuestions(examId, questions) {
         const startSequence = (existingQuestions?.length || 0) + 1;
         
         // Prepare questions for insertion
-        const questionsToInsert = questions.map((q, index) => ({
-            exam_id: examId,
-            question_text: q.question_text,
-            question_type: q.question_type,
-            options: q.options,
-            correct_answer: q.correct_answer,
-            marks: q.marks,
-            sequence_order: startSequence + index
-        }));
+        const questionsToInsert = questions.map((q, index) => {
+            // Convert options array to JSON string if needed
+            let optionsJson = null;
+            if (q.options) {
+                if (Array.isArray(q.options)) {
+                    optionsJson = JSON.stringify(q.options);
+                } else if (typeof q.options === 'string') {
+                    // Already a string, but validate it's valid JSON
+                    try {
+                        JSON.parse(q.options);
+                        optionsJson = q.options;
+                    } catch (e) {
+                        // If not valid JSON, treat as comma-separated string and convert
+                        const optionsArray = q.options.split(',').map(opt => opt.trim()).filter(opt => opt.length > 0);
+                        optionsJson = JSON.stringify(optionsArray);
+                    }
+                }
+            }
+            
+            // Ensure correct_answer is a string
+            const correctAnswer = q.correct_answer ? String(q.correct_answer).trim() : '';
+            
+            return {
+                exam_id: examId,
+                question_text: q.question_text,
+                question_type: q.question_type,
+                options: optionsJson,
+                correct_answer: correctAnswer,
+                marks: q.marks || 1,
+                sequence_order: startSequence + index
+            };
+        });
         
         // Insert questions
         const { error } = await client
