@@ -2653,10 +2653,34 @@ function parseQuestionsFromExcel(data) {
             }
             
             // Convert answer letter to actual option text if needed
-            if (correctAnswer && /^[A-D]$/i.test(correctAnswer)) {
-                const answerIndex = correctAnswer.toUpperCase().charCodeAt(0) - 65;
-                if (answerIndex >= 0 && answerIndex < options.length) {
-                    correctAnswer = options[answerIndex];
+            if (correctAnswer) {
+                correctAnswer = String(correctAnswer).trim();
+                
+                // If answer is a letter (A, B, C, D, E, F)
+                if (/^[A-F]$/i.test(correctAnswer)) {
+                    const answerIndex = correctAnswer.toUpperCase().charCodeAt(0) - 65; // A=0, B=1, C=2, etc.
+                    if (answerIndex >= 0 && answerIndex < options.length) {
+                        correctAnswer = options[answerIndex];
+                    } else {
+                        // Letter out of range, use first option as fallback
+                        console.warn(`Row ${i + 1}: Answer letter "${correctAnswer}" doesn't match available options, using first option`);
+                        correctAnswer = options[0];
+                    }
+                } else {
+                    // Answer is text - try to match it to one of the options (case-insensitive)
+                    const matchedOption = options.find(opt => 
+                        opt.toLowerCase().trim() === correctAnswer.toLowerCase().trim() ||
+                        opt.toLowerCase().trim().includes(correctAnswer.toLowerCase().trim()) ||
+                        correctAnswer.toLowerCase().trim().includes(opt.toLowerCase().trim())
+                    );
+                    
+                    if (matchedOption) {
+                        correctAnswer = matchedOption; // Use the exact option text from the array
+                    } else {
+                        // Answer doesn't match any option - log warning but keep the answer
+                        console.warn(`Row ${i + 1}: Answer "${correctAnswer}" doesn't exactly match any option. Options: ${options.join(', ')}`);
+                        // Still save it, might be a partial match or the user wants to keep it
+                    }
                 }
             }
         } else if (questionType === 'true_false') {
