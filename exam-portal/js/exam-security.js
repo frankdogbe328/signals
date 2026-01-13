@@ -7,15 +7,23 @@ let blurStartTime = null;
 let maxBlurTime = 5000; // 5 seconds max time out of focus
 let securityWarnings = [];
 
-// Enable exam security measures
-function enableExamSecurity() {
+// Enable exam security measures - requires fullscreen first
+async function enableExamSecurity() {
     if (securityEnabled) return;
+    
+    console.log('Enabling exam security...');
+    
+    // REQUIRE FULLSCREEN FIRST
+    try {
+        await requireFullscreen();
+    } catch (error) {
+        console.error('Fullscreen requirement failed:', error);
+        showError('Fullscreen mode is required to start the exam. Please enable fullscreen and try again.', 'Fullscreen Required');
+        return false; // Return false to indicate security not enabled
+    }
+    
     securityEnabled = true;
-    
     console.log('Exam security enabled');
-    
-    // Request fullscreen
-    requestFullscreen();
     
     // Disable copy, paste, cut
     disableCopyPaste();
@@ -34,6 +42,8 @@ function enableExamSecurity() {
     
     // Show security notice
     showSecurityNotice();
+    
+    return true; // Security successfully enabled
 }
 
 // Disable exam security measures
@@ -60,19 +70,188 @@ function disableExamSecurity() {
     console.log('Exam security disabled');
 }
 
-// Request fullscreen mode
+// Check if fullscreen is currently active
+function isFullscreenActive() {
+    return !!(document.fullscreenElement || 
+              document.webkitFullscreenElement || 
+              document.msFullscreenElement ||
+              document.mozFullScreenElement);
+}
+
+// Request fullscreen mode - returns promise
 function requestFullscreen() {
-    const elem = document.documentElement;
+    return new Promise((resolve, reject) => {
+        const elem = document.documentElement;
+        
+        if (elem.requestFullscreen) {
+            elem.requestFullscreen()
+                .then(() => resolve())
+                .catch(err => {
+                    console.warn('Fullscreen request denied:', err);
+                    reject(err);
+                });
+        } else if (elem.webkitRequestFullscreen) { // Safari
+            elem.webkitRequestFullscreen();
+            // Safari doesn't return promise, check after short delay
+            setTimeout(() => {
+                if (isFullscreenActive()) {
+                    resolve();
+                } else {
+                    reject(new Error('Fullscreen not supported or denied'));
+                }
+            }, 100);
+        } else if (elem.msRequestFullscreen) { // IE/Edge
+            elem.msRequestFullscreen();
+            setTimeout(() => {
+                if (isFullscreenActive()) {
+                    resolve();
+                } else {
+                    reject(new Error('Fullscreen not supported or denied'));
+                }
+            }, 100);
+        } else {
+            reject(new Error('Fullscreen API not supported in this browser'));
+        }
+    });
+}
+
+// Require fullscreen before exam can proceed
+function requireFullscreen() {
+    return new Promise((resolve, reject) => {
+        // Check if already in fullscreen
+        if (isFullscreenActive()) {
+            resolve();
+            return;
+        }
+        
+        // Show blocking fullscreen requirement message
+        showFullscreenRequirement(resolve, reject);
+        
+        // Request fullscreen
+        requestFullscreen()
+            .then(() => {
+                hideFullscreenRequirement();
+                resolve();
+            })
+            .catch(() => {
+                // Fullscreen request failed, but user can enable manually
+                // The modal will stay until they enable fullscreen
+            });
+    });
+}
+
+// Show blocking fullscreen requirement modal
+function showFullscreenRequirement(onSuccess, onCancel) {
+    // Remove existing modal if any
+    const existing = document.getElementById('fullscreenRequirementModal');
+    if (existing) {
+        existing.remove();
+    }
     
-    if (elem.requestFullscreen) {
-        elem.requestFullscreen().catch(err => {
-            console.warn('Fullscreen request denied:', err);
-            showWarning('Fullscreen mode is recommended for exam security. Please enable it manually.');
-        });
-    } else if (elem.webkitRequestFullscreen) { // Safari
-        elem.webkitRequestFullscreen();
-    } else if (elem.msRequestFullscreen) { // IE/Edge
-        elem.msRequestFullscreen();
+    const modal = document.createElement('div');
+    modal.id = 'fullscreenRequirementModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.95);
+        z-index: 99999;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        color: white;
+        font-family: Arial, sans-serif;
+    `;
+    
+    modal.innerHTML = `
+        <div style="text-align: center; max-width: 600px; padding: 40px; background: #1a1a1a; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+            <div style="font-size: 64px; margin-bottom: 20px;">🔒</div>
+            <h2 style="color: #ff9800; margin-bottom: 20px; font-size: 28px;">Fullscreen Mode Required</h2>
+            <p style="font-size: 18px; line-height: 1.6; margin-bottom: 30px; color: #e0e0e0;">
+                For exam security and integrity, you must enable fullscreen mode before you can start the exam.
+            </p>
+            <div style="background: #2a2a2a; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: left;">
+                <p style="margin: 10px 0; font-size: 16px;"><strong>How to enable fullscreen:</strong></p>
+                <ol style="margin: 10px 0; padding-left: 20px; line-height: 2;">
+                    <li>Click the button below to enable fullscreen</li>
+                    <li>Or press <kbd style="background: #3a3a3a; padding: 5px 10px; border-radius: 4px;">F11</kbd> on your keyboard</li>
+                    <li>Or use your browser's fullscreen option</li>
+                </ol>
+            </div>
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <button id="enableFullscreenBtn" style="
+                    background: #4CAF50;
+                    color: white;
+                    border: none;
+                    padding: 15px 40px;
+                    font-size: 18px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    transition: background 0.3s;
+                ">Enable Fullscreen</button>
+                <button id="cancelExamBtn" style="
+                    background: #f44336;
+                    color: white;
+                    border: none;
+                    padding: 15px 40px;
+                    font-size: 18px;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    transition: background 0.3s;
+                ">Cancel</button>
+            </div>
+            <p id="fullscreenStatus" style="margin-top: 20px; color: #ff9800; font-size: 14px;"></p>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Button handlers
+    document.getElementById('enableFullscreenBtn').addEventListener('click', () => {
+        requestFullscreen()
+            .then(() => {
+                hideFullscreenRequirement();
+                if (onSuccess) onSuccess();
+            })
+            .catch(() => {
+                document.getElementById('fullscreenStatus').textContent = 
+                    'Fullscreen request was denied. Please enable fullscreen manually (F11) or use browser menu.';
+            });
+    });
+    
+    document.getElementById('cancelExamBtn').addEventListener('click', () => {
+        hideFullscreenRequirement();
+        if (onCancel) onCancel();
+        // Go back to exams list
+        if (typeof goBackToExams === 'function') {
+            goBackToExams();
+        }
+    });
+    
+    // Monitor fullscreen changes
+    const checkFullscreen = setInterval(() => {
+        if (isFullscreenActive()) {
+            clearInterval(checkFullscreen);
+            hideFullscreenRequirement();
+            if (onSuccess) onSuccess();
+        }
+    }, 500);
+    
+    // Clean up interval if modal is removed
+    modal.addEventListener('remove', () => {
+        clearInterval(checkFullscreen);
+    });
+}
+
+function hideFullscreenRequirement() {
+    const modal = document.getElementById('fullscreenRequirementModal');
+    if (modal) {
+        modal.remove();
     }
 }
 
@@ -84,23 +263,55 @@ function monitorFullscreen() {
 }
 
 function handleFullscreenChange() {
-    const isFullscreen = document.fullscreenElement || 
-                        document.webkitFullscreenElement || 
-                        document.msFullscreenElement;
+    const isFullscreen = isFullscreenActive();
     
     if (!isFullscreen && securityEnabled) {
-        // User exited fullscreen
+        // User exited fullscreen - BLOCK EXAM VIEW
         tabSwitchCount++;
         showWarning(`You exited fullscreen mode. ${maxTabSwitches - tabSwitchCount} warnings remaining before exam auto-submission.`);
         
-        // Request fullscreen again
-        setTimeout(() => requestFullscreen(), 500);
+        // Hide exam content
+        hideExamContent();
+        
+        // Show fullscreen requirement again
+        requireFullscreen()
+            .then(() => {
+                // Fullscreen restored, show exam content
+                showExamContent();
+            })
+            .catch(() => {
+                // Fullscreen not enabled, keep exam hidden
+            });
         
         // If too many exits, warn about auto-submission
         if (tabSwitchCount >= maxTabSwitches) {
             showCriticalWarning('You have exited fullscreen mode multiple times. The exam will be automatically submitted if you continue.');
             // Could auto-submit here if needed
         }
+    } else if (isFullscreen && securityEnabled) {
+        // Fullscreen restored, show exam content
+        showExamContent();
+    }
+}
+
+// Hide exam content when fullscreen is exited
+function hideExamContent() {
+    const examView = document.getElementById('examTakingView');
+    if (examView) {
+        examView.style.display = 'none';
+    }
+    
+    // Show blocking overlay
+    showFullscreenRequirement(() => {
+        showExamContent();
+    });
+}
+
+// Show exam content when fullscreen is active
+function showExamContent() {
+    const examView = document.getElementById('examTakingView');
+    if (examView && isFullscreenActive()) {
+        examView.style.display = 'block';
     }
 }
 
@@ -414,4 +625,6 @@ if (typeof window !== 'undefined') {
     window.enableExamSecurity = enableExamSecurity;
     window.disableExamSecurity = disableExamSecurity;
     window.getSecurityLog = getSecurityLog;
+    window.requireFullscreen = requireFullscreen;
+    window.isFullscreenActive = isFullscreenActive;
 }

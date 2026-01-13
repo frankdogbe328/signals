@@ -280,13 +280,27 @@ async function startExam(examId) {
         // Start timer
         startTimer();
         
-        // Load first question
-        loadQuestion(0);
-        
-        // Enable exam security when exam starts
-        if (typeof enableExamSecurity === 'function') {
-            enableExamSecurity();
+        // REQUIRE FULLSCREEN BEFORE LOADING EXAM
+        if (typeof requireFullscreen === 'function') {
+            try {
+                await requireFullscreen();
+            } catch (error) {
+                showError('Fullscreen mode is required to start the exam. Please enable fullscreen and try again.', 'Fullscreen Required');
+                return;
+            }
         }
+        
+        // Enable exam security when exam starts (requires fullscreen)
+        if (typeof enableExamSecurity === 'function') {
+            const securityEnabled = await enableExamSecurity();
+            if (!securityEnabled) {
+                // Security not enabled (fullscreen denied), don't load exam
+                return;
+            }
+        }
+        
+        // Load first question (only after fullscreen is enabled)
+        loadQuestion(0);
         
     } catch (error) {
         console.error('Error starting exam:', error);
@@ -296,10 +310,35 @@ async function startExam(examId) {
 
 // Load exam for existing attempt
 async function loadExamForAttempt(examId, attemptId) {
-    // Enable exam security when exam loads
-    if (typeof enableExamSecurity === 'function') {
-        enableExamSecurity();
+    try {
+        // REQUIRE FULLSCREEN BEFORE LOADING EXAM
+        if (typeof requireFullscreen === 'function') {
+            try {
+                await requireFullscreen();
+            } catch (error) {
+                showError('Fullscreen mode is required to continue the exam. Please enable fullscreen and try again.', 'Fullscreen Required');
+                goBackToExams();
+                return;
+            }
+        }
+        
+        // Enable exam security when exam loads (requires fullscreen)
+        if (typeof enableExamSecurity === 'function') {
+            const securityEnabled = await enableExamSecurity();
+            if (!securityEnabled) {
+                // Security not enabled (fullscreen denied), go back
+                goBackToExams();
+                return;
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error in security setup:', error);
+        showError('Failed to set up exam security. Please try again.', 'Security Error');
+        goBackToExams();
+        return;
     }
+    
     try {
         const client = getSupabaseClient();
         if (!client) {
