@@ -619,17 +619,29 @@ function displayQuestion(question, index) {
     };
     
     let optionsHtml = '';
-    if (question.question_type === 'multiple_choice' && question.options) {
+    // Handle multiple choice and true/false (which should show as multiple choice options)
+    if ((question.question_type === 'multiple_choice' || question.question_type === 'true_false') && question.options) {
         try {
             const options = parseQuestionOptions(question.options);
             if (options && options.length > 0) {
-                optionsHtml = '<ul style="margin-left: 20px;">' + options.map(opt => `<li>${escapeHtml(String(opt))}</li>`).join('') + '</ul>';
+                optionsHtml = '<ul style="margin-left: 20px;">' + options.map((opt, idx) => {
+                    const letter = String.fromCharCode(65 + idx);
+                    return `<li><strong>${letter}.</strong> ${escapeHtml(String(opt))}</li>`;
+                }).join('') + '</ul>';
             }
         } catch (err) {
-            console.warn('Error parsing options for question:', question.id, err);
-            // Show raw options if parsing fails
-            optionsHtml = `<p style="color: #666; font-size: 12px; margin-left: 20px;"><em>Options: ${escapeHtml(String(question.options))}</em></p>`;
+            // For true/false questions without options, show True/False as options
+            if (question.question_type === 'true_false') {
+                optionsHtml = '<ul style="margin-left: 20px;"><li><strong>A.</strong> True</li><li><strong>B.</strong> False</li></ul>';
+            } else {
+                console.warn('Error parsing options for question:', question.id, err);
+                // Show raw options if parsing fails
+                optionsHtml = `<p style="color: #666; font-size: 12px; margin-left: 20px;"><em>Options: ${escapeHtml(String(question.options))}</em></p>`;
+            }
         }
+    } else if (question.question_type === 'true_false') {
+        // True/false question without options - show as multiple choice format
+        optionsHtml = '<ul style="margin-left: 20px;"><li><strong>A.</strong> True</li><li><strong>B.</strong> False</li></ul>';
     }
     
     return `
@@ -637,7 +649,7 @@ function displayQuestion(question, index) {
             <div style="display: flex; justify-content: space-between;">
                 <div style="flex: 1;">
                     <p><strong>Q${index}:</strong> ${escapeHtml(question.question_text)}</p>
-                    <p style="color: #666; font-size: 14px;"><strong>Type:</strong> ${questionTypeLabels[question.question_type]} | <strong>Marks:</strong> ${question.marks}</p>
+                    <p style="color: #666; font-size: 14px;"><strong>Type:</strong> ${question.question_type === 'true_false' ? 'Multiple Choice (True/False)' : questionTypeLabels[question.question_type]} | <strong>Marks:</strong> ${question.marks}</p>
                     ${optionsHtml}
                     <p style="color: #666; font-size: 14px;"><strong>Correct Answer:</strong> ${escapeHtml(question.correct_answer)}</p>
                 </div>
@@ -693,7 +705,28 @@ function updateQuestionFormFields() {
             updateCorrectAnswerSelector();
         }
     } else if (questionType === 'true_false') {
-        document.getElementById('trueFalseSection').style.display = 'block';
+        // Convert true/false to multiple choice with True/False as options
+        document.getElementById('questionType').value = 'multiple_choice';
+        const container = document.getElementById('optionsContainer');
+        if (container) {
+            container.innerHTML = '';
+            const options = ['True', 'False'];
+            options.forEach((opt, idx) => {
+                const optionLetter = String.fromCharCode(65 + idx);
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option-row';
+                optionDiv.setAttribute('data-option-index', idx + 1);
+                optionDiv.innerHTML = `
+                    <span class="option-label">${optionLetter}.</span>
+                    <input type="text" class="option-input" data-option-letter="${optionLetter}" value="${escapeHtml(opt)}" placeholder="Enter option ${optionLetter} text here..." required>
+                    <button type="button" onclick="removeOption(this)" class="btn btn-danger">Remove</button>
+                `;
+                container.appendChild(optionDiv);
+            });
+            attachOptionInputListeners();
+            updateCorrectAnswerSelector();
+        }
+        document.getElementById('optionsSection').style.display = 'block';
     } else if (questionType === 'short_answer' || questionType === 'essay') {
         document.getElementById('textAnswerSection').style.display = 'block';
     }
@@ -1009,12 +1042,23 @@ async function handleQuestionFormSubmit(e) {
         options = JSON.stringify(optionValues);
         
     } else if (questionType === 'true_false') {
-        const trueFalseRadio = document.querySelector('input[name="trueFalseAnswer"]:checked');
-        if (!trueFalseRadio) {
-            showError('Please select correct answer (True/False)', 'Missing Selection');
+        // This should no longer happen as true_false is converted to multiple_choice
+        // But keep for backward compatibility
+        const container = document.getElementById('optionsContainer');
+        if (container) {
+            const optionInputs = container.querySelectorAll('.option-input');
+            const selectedLetter = document.getElementById('correctAnswerSelect').value;
+            if (selectedLetter) {
+                const answerIndex = selectedLetter.toUpperCase().charCodeAt(0) - 65;
+                if (optionInputs[answerIndex]) {
+                    correctAnswer = optionInputs[answerIndex].value.trim();
+                }
+            }
+        }
+        if (!correctAnswer) {
+            showError('Please select correct answer', 'Missing Selection');
             return;
         }
-        correctAnswer = trueFalseRadio.value;
         
     } else if (questionType === 'short_answer' || questionType === 'essay') {
         const rawTextAnswer = document.getElementById('textAnswer').value;
@@ -1804,12 +1848,51 @@ function editQuestion(questionId) {
             }, 10);
         }
     } else if (question.question_type === 'true_false') {
-        const radios = document.querySelectorAll('input[name="trueFalseAnswer"]');
-        if (question.correct_answer === 'True') {
-            radios[0].checked = true;
-        } else {
-            radios[1].checked = true;
+        // Convert true/false to multiple choice with True/False as options
+        // Set question type to multiple_choice
+        document.getElementById('questionType').value = 'multiple_choice';
+        
+        // Add True and False as options
+        const container = document.getElementById('optionsContainer');
+        if (container) {
+            container.innerHTML = '';
+            
+            const options = ['True', 'False'];
+            options.forEach((opt, idx) => {
+                const optionLetter = String.fromCharCode(65 + idx);
+                const optionDiv = document.createElement('div');
+                optionDiv.className = 'option-row';
+                optionDiv.setAttribute('data-option-index', idx + 1);
+                optionDiv.innerHTML = `
+                    <span class="option-label">${optionLetter}.</span>
+                    <input type="text" class="option-input" data-option-letter="${optionLetter}" value="${escapeHtml(opt)}" placeholder="Enter option ${optionLetter} text here..." required>
+                    <button type="button" onclick="removeOption(this)" class="btn btn-danger">Remove</button>
+                `;
+                container.appendChild(optionDiv);
+            });
+            
+            // Attach listeners
+            attachOptionInputListeners();
+            updateCorrectAnswerSelector();
+            
+            // Set correct answer
+            const correctAnswer = question.correct_answer === 'True' ? 'True' : 'False';
+            setTimeout(() => {
+                const correctAnswerSelect = document.getElementById('correctAnswerSelect');
+                if (correctAnswerSelect) {
+                    // Find the option that matches the correct answer
+                    const options = parseQuestionOptions(JSON.stringify(['True', 'False']));
+                    const answerIndex = options.indexOf(correctAnswer);
+                    if (answerIndex >= 0) {
+                        const answerLetter = String.fromCharCode(65 + answerIndex);
+                        correctAnswerSelect.value = answerLetter;
+                    }
+                }
+            }, 100);
         }
+        
+        // Trigger the question type change handler to show correct section
+        handleQuestionTypeChange();
     } else if (question.question_type === 'short_answer' || question.question_type === 'essay') {
         document.getElementById('textAnswer').value = question.correct_answer || '';
     }
@@ -2163,6 +2246,13 @@ function parseQuestionsFromText(text) {
         const answerMatch = line.match(/^(?:Correct\s+)?Answer:?\s*(.+)$/i);
         if (answerMatch) {
             currentAnswer = answerMatch[1].trim();
+            
+            // Check if answer is True or False - indicate it's a true/false question
+            const answerLower = currentAnswer.toLowerCase().trim();
+            if (answerLower === 'true' || answerLower === 'false' || answerLower === 't' || answerLower === 'f') {
+                // This will be converted to multiple_choice in buildQuestionData
+            }
+            
             isCollectingQuestion = false;
             isCollectingOptions = false;
             continue;
@@ -2188,6 +2278,10 @@ function parseQuestionsFromText(text) {
         }
         // If we have a question but no options yet, might be continuation of question text
         else if (currentQuestion && currentOptions.length === 0 && !answerMatch && !optionMatch) {
+            // Check if line contains True/False indicator
+            if (/true\s*\/\s*false|true\s+or\s+false|true\/false/i.test(line)) {
+                // This will be detected in buildQuestionData
+            }
             if (!line.match(/^\d+\.|^Q\d+|^Answer/i)) {
                 currentQuestion += ' ' + line;
             }
@@ -2231,14 +2325,29 @@ function buildQuestionData(questionText, options, answer, sequenceOrder) {
     let correctAnswer = answer;
     
     // Check for True/False (answer is True or False, and no multiple choice options)
+    // Convert to multiple_choice with True/False as options
     const answerLower = answer.toLowerCase();
-    if ((answerLower === 'true' || answerLower === 'false' || answerLower === 't' || answerLower === 'f') && 
-        options.length === 0) {
-        questionType = 'true_false';
+    const hasTrueFalseInText = /true\s*\/\s*false|true\s+or\s+false|true\/false/i.test(questionText);
+    
+    if (((answerLower === 'true' || answerLower === 'false' || answerLower === 't' || answerLower === 'f') && 
+        options.length === 0) || hasTrueFalseInText) {
+        questionType = 'multiple_choice';
+        // Add True and False as options
+        options = ['True', 'False'];
+        optionsJson = JSON.stringify(options);
+        
         if (answerLower === 't' || answerLower === 'true') {
             correctAnswer = 'True';
-        } else {
+        } else if (answerLower === 'f' || answerLower === 'false') {
             correctAnswer = 'False';
+        } else {
+            // Try to extract from question text if answer not provided
+            const tfMatch = questionText.match(/(?:answer|ans):\s*(true|false)/i);
+            if (tfMatch) {
+                correctAnswer = tfMatch[1].charAt(0).toUpperCase() + tfMatch[1].slice(1).toLowerCase();
+            } else {
+                correctAnswer = 'True'; // Default
+            }
         }
     }
     // Check for multiple choice (has options A, B, C, etc.)
@@ -2623,7 +2732,8 @@ function parseQuestionsFromExcel(data) {
         if (questionType.includes('multiple') || questionType.includes('choice') || questionType === 'mcq') {
             questionType = 'multiple_choice';
         } else if (questionType.includes('true') || questionType.includes('false')) {
-            questionType = 'true_false';
+            // Convert true/false to multiple_choice with True/False as options
+            questionType = 'multiple_choice';
         } else if (questionType.includes('short')) {
             questionType = 'short_answer';
         } else if (questionType.includes('essay')) {
@@ -2683,7 +2793,17 @@ function parseQuestionsFromExcel(data) {
                     }
                 }
             }
-        } else if (questionType === 'true_false') {
+        } else if (questionType === 'multiple_choice' && correctAnswer && (correctAnswer.toLowerCase() === 'true' || correctAnswer.toLowerCase() === 'false')) {
+            // Handle true/false imported as multiple choice - ensure options are set
+            const optionA = String(row[optionACol] || '').trim();
+            const optionB = String(row[optionBCol] || '').trim();
+            
+            // If options are empty or just dashes, use True/False
+            if ((!optionA || optionA === '-' || optionA.toLowerCase() === 'n/a') && 
+                (!optionB || optionB === '-' || optionB.toLowerCase() === 'n/a')) {
+                options = ['True', 'False'];
+            }
+            
             // Normalize true/false answer
             correctAnswer = String(correctAnswer || '').trim();
             if (correctAnswer && !['true', 'false'].includes(correctAnswer.toLowerCase())) {

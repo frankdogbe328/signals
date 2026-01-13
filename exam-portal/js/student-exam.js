@@ -530,15 +530,18 @@ function renderQuestion(question, index) {
             });
         }
     } else if (questionType === 'true_false' || questionType === 'true/false') {
+        // Convert true/false to multiple choice format with True/False as options
+        const trueFalseOptions = ['True', 'False'];
         html += `
-            <label class="answer-option">
-                <input type="radio" name="question_${question.id}" value="True" onchange="saveAnswer('${question.id}', 'True')">
-                True
-            </label>
-            <label class="answer-option">
-                <input type="radio" name="question_${question.id}" value="False" onchange="saveAnswer('${question.id}', 'False')">
-                False
-            </label>
+            ${trueFalseOptions.map((opt, idx) => {
+                const letter = String.fromCharCode(65 + idx); // A, B
+                return `
+                    <label class="answer-option">
+                        <input type="radio" name="question_${question.id}" value="${escapeHtml(opt)}" onchange="saveAnswer('${question.id}', '${escapeHtml(opt)}')">
+                        ${letter}. ${escapeHtml(opt)}
+                    </label>
+                `;
+            }).join('')}
         `;
     } else if (questionType === 'short_answer') {
         html += `
@@ -567,18 +570,20 @@ function renderQuestion(question, index) {
         const correctAnswer = (question.correct_answer || '').toString().trim();
         const answerLower = correctAnswer.toLowerCase();
         
-        // If answer is True/False and no options, treat as true/false
+        // If answer is True/False and no options, treat as true/false (show as multiple choice options)
         if ((answerLower === 'true' || answerLower === 'false') && (!question.options || question.options === '[]' || question.options === '')) {
-            // Auto-detected true/false question type
+            // Auto-detected true/false question type - show as multiple choice options
+            const trueFalseOptions = ['True', 'False'];
             html += `
-                <label class="answer-option">
-                    <input type="radio" name="question_${question.id}" value="True" onchange="saveAnswer('${question.id}', 'True')">
-                    True
-                </label>
-                <label class="answer-option">
-                    <input type="radio" name="question_${question.id}" value="False" onchange="saveAnswer('${question.id}', 'False')">
-                    False
-                </label>
+                ${trueFalseOptions.map((opt, idx) => {
+                    const letter = String.fromCharCode(65 + idx); // A, B
+                    return `
+                        <label class="answer-option">
+                            <input type="radio" name="question_${question.id}" value="${escapeHtml(opt)}" onchange="saveAnswer('${question.id}', '${escapeHtml(opt)}')">
+                            ${letter}. ${escapeHtml(opt)}
+                        </label>
+                    `;
+                }).join('')}
             `;
         } else {
             // Unknown type - show textarea as fallback
