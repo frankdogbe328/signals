@@ -149,15 +149,18 @@ function parseQuestionBlock(block, questionNumber) {
             }
         }
         
-        // Detect answer line that is just True or False
-        if (/^(?:Correct\s+)?(?:Answer|Ans|Key|Solution):?\s*(true|false)$/i.test(line)) {
-            const tfAnswer = line.match(/(true|false)$/i);
-            if (tfAnswer && options.length === 0) {
+        // Detect answer line that is just True or False (allow whitespace)
+        const tfAnswerLineMatch = line.match(/^(?:Correct\s+)?(?:Answer|Ans|Key|Solution):?\s*(true|false|t|f)\s*$/i);
+        if (tfAnswerLineMatch) {
+            const tfAnswer = tfAnswerLineMatch[1];
+            if (options.length === 0) {
                 questionType = 'multiple_choice';
                 options.push('True');
                 options.push('False');
-                correctAnswer = tfAnswer[0].charAt(0).toUpperCase() + tfAnswer[0].slice(1).toLowerCase();
             }
+            // Normalize answer
+            const ansLower = tfAnswer.toLowerCase();
+            correctAnswer = (ansLower === 'true' || ansLower === 't') ? 'True' : 'False';
             continue;
         }
         
@@ -181,10 +184,12 @@ function parseQuestionBlock(block, questionNumber) {
             
             // Check if answer is True or False - convert to multiple choice if needed
             const answerLower = correctAnswer.toLowerCase().trim();
-            if ((answerLower === 'true' || answerLower === 'false' || answerLower === 't' || answerLower === 'f') && options.length === 0) {
-                questionType = 'multiple_choice';
-                options.push('True');
-                options.push('False');
+            if (/^(true|false|t|f)$/i.test(answerLower)) {
+                if (options.length === 0) {
+                    questionType = 'multiple_choice';
+                    options.push('True');
+                    options.push('False');
+                }
                 // Normalize answer
                 if (answerLower === 'true' || answerLower === 't') {
                     correctAnswer = 'True';
@@ -231,56 +236,49 @@ function parseQuestionBlock(block, questionNumber) {
     
     // Check if question text contains True/False indicators
     const questionLower = questionText.toLowerCase();
-    const hasTrueFalseInText = /true\s*\/\s*false|true\s+or\s+false|^true\s*:?\s*false|^false\s*:?\s*true|true\/false/i.test(questionText);
+    const hasTrueFalseInText = /true\s*\/\s*false|true\s+or\s+false|^true\s*:?\s*false|^false\s*:?\s*true|true\/false|^\s*true\s*or\s*false/i.test(questionText);
     
-    // Determine question type if not already set
-    if (questionType === 'multiple_choice') {
-        if (options.length === 0) {
-            // Check if it's a true/false question based on text or answer
-            if (hasTrueFalseInText || (correctAnswer && /^true|false$/i.test(correctAnswer.trim()))) {
-                // It's a true/false question - add options
-                options = ['True', 'False'];
-                // Set correct answer if not set
-                if (!correctAnswer || !/^true|false$/i.test(correctAnswer.trim())) {
-                    // Try to extract from question text
-                    const tfMatch = questionText.match(/(?:answer|ans):\s*(true|false)/i);
-                    if (tfMatch) {
-                        correctAnswer = tfMatch[1].charAt(0).toUpperCase() + tfMatch[1].slice(1).toLowerCase();
-                    } else {
-                        correctAnswer = 'True'; // Default
-                    }
-                } else {
-                    // Normalize correct answer
-                    const ansLower = correctAnswer.trim().toLowerCase();
-                    correctAnswer = (ansLower === 'true' || ansLower === 't') ? 'True' : 'False';
-                }
-                questionType = 'multiple_choice';
-            } else {
-                // No options and not true/false - check if it's short answer or essay
-                if (questionText.length > 200 || /explain|describe|discuss|analyze/i.test(questionText)) {
-                    questionType = 'essay';
-                } else {
-                    questionType = 'short_answer';
-                }
-            }
-        } else if (options.length === 2 && 
-                   (options.some(opt => /^true$/i.test(opt.trim())) && options.some(opt => /^false$/i.test(opt.trim())))) {
-            // If True/False detected as options, keep as multiple_choice (not true_false type)
-            // This way students see it as options A) True, B) False
-            questionType = 'multiple_choice';
-        }
-    } else if (questionType !== 'multiple_choice' && questionType !== 'essay' && questionType !== 'short_answer') {
-        // Check if it's a true/false question that wasn't detected yet
-        if (hasTrueFalseInText || (correctAnswer && /^true|false$/i.test(correctAnswer.trim()))) {
-            questionType = 'multiple_choice';
-            options = ['True', 'False'];
+    // Check if answer is True or False (with better matching for whitespace)
+    const answerLower = correctAnswer ? correctAnswer.trim().toLowerCase() : '';
+    const isTrueFalseAnswer = /^(true|false|t|f)$/i.test(answerLower);
+    
+    // FINAL CHECK: Determine question type - prioritize true/false detection
+    // This runs AFTER all parsing to catch any missed true/false questions
+    if ((hasTrueFalseInText || isTrueFalseAnswer) && options.length === 0) {
+        // It's a true/false question - convert to multiple choice
+        questionType = 'multiple_choice';
+        options = ['True', 'False'];
+        
+        // Set correct answer
+        if (correctAnswer && isTrueFalseAnswer) {
             // Normalize correct answer
-            if (correctAnswer) {
-                const ansLower = correctAnswer.trim().toLowerCase();
-                correctAnswer = (ansLower === 'true' || ansLower === 't') ? 'True' : 'False';
+            if (answerLower === 'true' || answerLower === 't') {
+                correctAnswer = 'True';
+            } else {
+                correctAnswer = 'False';
+            }
+        } else {
+            // Try to extract from question text
+            const tfMatch = questionText.match(/(?:answer|ans|correct\s+answer):\s*(true|false|t|f)/i);
+            if (tfMatch) {
+                const matchValue = tfMatch[1].toLowerCase();
+                correctAnswer = (matchValue === 'true' || matchValue === 't') ? 'True' : 'False';
             } else {
                 correctAnswer = 'True'; // Default
             }
+        }
+    } else if (questionType === 'multiple_choice') {
+        if (options.length === 0) {
+            // No options and not detected as true/false - check if it's short answer or essay
+            if (questionText.length > 200 || /explain|describe|discuss|analyze/i.test(questionText)) {
+                questionType = 'essay';
+            } else {
+                questionType = 'short_answer';
+            }
+        } else if (options.length === 2 && 
+                   (options.some(opt => /^true$/i.test(opt.trim())) && options.some(opt => /^false$/i.test(opt.trim())))) {
+            // If True/False detected as options, keep as multiple_choice
+            questionType = 'multiple_choice';
         }
     }
     
@@ -325,6 +323,23 @@ function parseQuestionBlock(block, questionNumber) {
         .replace(/\[.*?marks?.*?\]/gi, '')
         .replace(/\(.*?marks?.*?\)/gi, '')
         .trim();
+    
+    // FINAL SAFETY CHECK: If answer is True/False but no options set, fix it
+    const finalAnswerLower = correctAnswer ? correctAnswer.trim().toLowerCase() : '';
+    if (questionType === 'multiple_choice' && options.length === 0) {
+        // Double-check if it's a true/false question
+        if (/^(true|false|t|f)$/i.test(finalAnswerLower) || /true\s*\/\s*false|true\s+or\s+false/i.test(questionText)) {
+            options = ['True', 'False'];
+            // Normalize answer
+            if (/^(true|t)$/i.test(finalAnswerLower)) {
+                correctAnswer = 'True';
+            } else if (/^(false|f)$/i.test(finalAnswerLower)) {
+                correctAnswer = 'False';
+            } else {
+                correctAnswer = 'True'; // Default
+            }
+        }
+    }
     
     return {
         question_text: questionText,
