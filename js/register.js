@@ -4,6 +4,17 @@ document.addEventListener('DOMContentLoaded', function() {
     if (registerForm) {
         registerForm.addEventListener('submit', handleRegistration);
     }
+    
+    // Always attach event listener to class dropdown for course updates
+    const regClass = document.getElementById('regClass');
+    if (regClass) {
+        // Remove any existing listeners to prevent duplicates
+        const newRegClass = regClass.cloneNode(true);
+        regClass.parentNode.replaceChild(newRegClass, regClass);
+        
+        // Add the event listener
+        document.getElementById('regClass').addEventListener('change', updateCoursesForClass);
+    }
 });
 
 function showRegisterForm(role) {
@@ -34,12 +45,22 @@ function showRegisterForm(role) {
         courseGroup.style.display = 'block';
         regClass.setAttribute('required', 'required');
         
-        // Add event listener for class change to update courses
-        regClass.addEventListener('change', updateCoursesForClass);
+        // Ensure event listener is attached (it should already be from DOMContentLoaded, but ensure it's there)
+        // The event listener is already attached in DOMContentLoaded, so this is just a safety check
+        if (!regClass.hasAttribute('data-listener-attached')) {
+            regClass.addEventListener('change', updateCoursesForClass);
+            regClass.setAttribute('data-listener-attached', 'true');
+        }
     }
     
     // Reset form
     document.getElementById('registerForm').reset();
+    
+    // Reset course dropdown
+    const courseSelect = document.getElementById('regCourse');
+    if (courseSelect) {
+        courseSelect.innerHTML = '<option value="">Skip - Register later</option>';
+    }
 }
 
 // Update courses dropdown based on selected class
@@ -53,8 +74,15 @@ function updateCoursesForClass() {
     }
     
     const courses = getCoursesForClass(classSelect);
+    console.log('Selected class:', classSelect);
+    console.log('Available courses:', courses);
+    console.log('Telecom in courses?', courses.includes('Telecom'));
+    
     courseSelect.innerHTML = '<option value="">Skip - Register later</option>' +
         courses.map(course => `<option value="${course}">${course}</option>`).join('');
+    
+    // Log the final HTML to verify Telecom is included
+    console.log('Course dropdown HTML includes Telecom?', courseSelect.innerHTML.includes('Telecom'));
 }
 
 function showLoginForm() {
