@@ -2708,12 +2708,36 @@ function parseQuestionsFromExcel(data) {
             continue;
         }
         
+        // For multiple choice, ensure correct answer matches one of the options exactly
+        if (questionType === 'multiple_choice' && options && options.length > 0) {
+            const answerMatches = options.some(opt => 
+                opt.toLowerCase().trim() === correctAnswer.toLowerCase().trim()
+            );
+            
+            if (!answerMatches) {
+                console.warn(`Row ${i + 1}: WARNING - Correct answer "${correctAnswer}" doesn't exactly match any option. Options: ${options.join(', ')}`);
+                // Try to find closest match
+                const closestMatch = options.find(opt => 
+                    opt.toLowerCase().includes(correctAnswer.toLowerCase()) ||
+                    correctAnswer.toLowerCase().includes(opt.toLowerCase())
+                );
+                if (closestMatch) {
+                    console.log(`Row ${i + 1}: Using closest match: "${closestMatch}"`);
+                    correctAnswer = closestMatch;
+                } else {
+                    // Use first option as fallback to ensure question is valid
+                    console.warn(`Row ${i + 1}: No match found, using first option as fallback`);
+                    correctAnswer = options[0];
+                }
+            }
+        }
+        
         // Build question data
         const questionData = {
             question_text: questionText,
             question_type: questionType,
-            options: options,
-            correct_answer: correctAnswer,
+            options: options, // Array for multiple choice, null for others
+            correct_answer: correctAnswer, // Always the exact option text for multiple choice
             marks: marks
         };
         
