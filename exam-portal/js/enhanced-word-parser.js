@@ -47,8 +47,24 @@ function parseQuestionsFromTextEnhanced(text) {
     
     blocks.forEach((block, index) => {
         const question = parseQuestionBlock(block, index + 1);
-        if (question && validateQuestion(question)) {
-            questions.push(question);
+        if (question) {
+            // Debug: Log parsed question before validation
+            console.log(`Parsing question ${index + 1}:`, {
+                text: question.question_text?.substring(0, 50),
+                type: question.question_type,
+                hasOptions: !!question.options,
+                options: question.options,
+                hasAnswer: !!question.correct_answer,
+                answer: question.correct_answer
+            });
+            
+            if (validateQuestion(question)) {
+                questions.push(question);
+            } else {
+                console.warn(`Question ${index + 1} failed validation:`, question);
+            }
+        } else {
+            console.warn(`Block ${index + 1} returned null:`, block.substring(0, 100));
         }
     });
     
@@ -83,7 +99,19 @@ function splitIntoQuestionBlocks(text) {
         blocks.push(text);
     }
     
-    return blocks.filter(block => block.trim().length > 10); // Minimum question length
+    // Filter blocks but allow shorter blocks if they might be true/false questions
+    return blocks.filter(block => {
+        const trimmed = block.trim();
+        // Allow shorter blocks if they contain true/false indicators
+        if (trimmed.length < 10) {
+            const hasTrueFalse = /true\s*\/\s*false|true\s+or\s+false|true\/false|answer:?\s*(true|false)/i.test(trimmed);
+            if (!hasTrueFalse) {
+                console.warn('Block too short and not true/false:', trimmed.substring(0, 50));
+                return false;
+            }
+        }
+        return trimmed.length > 3; // Very minimum length
+    });
 }
 
 /**
@@ -115,6 +143,15 @@ function parseQuestionBlock(block, questionNumber) {
                 questionText = line;
             }
             currentSection = 'question';
+            
+            // Check if first line already contains True/False indicator
+            if (/true\s*\/\s*false|true\s+or\s+false|true\/false/i.test(questionText)) {
+                questionType = 'multiple_choice';
+                if (options.length === 0) {
+                    options.push('True');
+                    options.push('False');
+                }
+            }
             continue;
         }
         
@@ -356,18 +393,47 @@ function parseQuestionBlock(block, questionNumber) {
  */
 function validateQuestion(question) {
     if (!question.question_text || question.question_text.length < 5) {
+        console.warn('Validation failed: Question text too short or missing');
         return false;
     }
     
     if (question.question_type === 'multiple_choice') {
+        // Check if it might be a true/false question that needs fixing
+        const questionLower = question.question_text.toLowerCase();
+        const hasTrueFalseInText = /true\s*\/\s*false|true\s+or\s+false|true\/false/i.test(questionLower);
+        const answerLower = question.correct_answer ? question.correct_answer.toLowerCase().trim() : '';
+        const isTrueFalseAnswer = /^(true|false|t|f)$/i.test(answerLower);
+        
+        // If it's clearly a true/false question but missing options, fix it
+        if ((hasTrueFalseInText || isTrueFalseAnswer) && (!question.options || question.options === '[]')) {
+            console.log('Auto-fixing true/false question: Adding options');
+            question.options = JSON.stringify(['True', 'False']);
+            if (!question.correct_answer || !/^(true|false|t|f)$/i.test(answerLower)) {
+                // Try to extract from question text
+                const tfMatch = question.question_text.match(/(?:answer|ans):\s*(true|false|t|f)/i);
+                if (tfMatch) {
+                    const matchValue = tfMatch[1].toLowerCase();
+                    question.correct_answer = (matchValue === 'true' || matchValue === 't') ? 'True' : 'False';
+                } else {
+                    question.correct_answer = 'True'; // Default
+                }
+            } else {
+                // Normalize answer
+                question.correct_answer = (answerLower === 'true' || answerLower === 't') ? 'True' : 'False';
+            }
+        }
+        
         if (!question.options || question.options === '[]') {
+            console.warn('Validation failed: Multiple choice question missing options');
             return false;
         }
         const options = parseQuestionOptions(question.options);
         if (options.length < 2) {
+            console.warn('Validation failed: Multiple choice question has less than 2 options');
             return false;
         }
         if (!question.correct_answer) {
+            console.warn('Validation failed: Multiple choice question missing correct answer');
             return false;
         }
     }
