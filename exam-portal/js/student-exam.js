@@ -283,6 +283,11 @@ async function startExam(examId) {
         // Load first question
         loadQuestion(0);
         
+        // Enable exam security when exam starts
+        if (typeof enableExamSecurity === 'function') {
+            enableExamSecurity();
+        }
+        
     } catch (error) {
         console.error('Error starting exam:', error);
         showError('Failed to start exam. Please try again or contact support if the issue persists.', 'Error Starting Exam');
@@ -291,6 +296,10 @@ async function startExam(examId) {
 
 // Load exam for existing attempt
 async function loadExamForAttempt(examId, attemptId) {
+    // Enable exam security when exam loads
+    if (typeof enableExamSecurity === 'function') {
+        enableExamSecurity();
+    }
     try {
         const client = getSupabaseClient();
         if (!client) {
@@ -973,6 +982,17 @@ async function finalizeExam(status) {
             throw new Error('Missing required data for grade record');
         }
         
+        // Disable exam security after submission
+        if (typeof disableExamSecurity === 'function') {
+            // Log security events before disabling
+            if (typeof getSecurityLog === 'function') {
+                const securityLog = getSecurityLog();
+                console.log('Security log at submission:', securityLog);
+                // TODO: Save security log to database for review
+            }
+            disableExamSecurity();
+        }
+        
         // Show results if released - with null check
         if (currentExam && currentExam.results_released) {
             showResults(totalScore, totalMarks, percentage);
@@ -1468,6 +1488,11 @@ function formatClassName(classId) {
 
 // Go back to exams list
 function goBackToExams() {
+    // Disable exam security when leaving exam view
+    if (typeof disableExamSecurity === 'function') {
+        disableExamSecurity();
+    }
+    
     showExamsTab();
     
     // Reset state
