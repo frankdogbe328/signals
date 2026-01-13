@@ -2079,7 +2079,10 @@ async function processWordDocument() {
             throw new Error('No questions found in the document. Please check the format and try again.');
         }
         
-        if (statusDiv) statusDiv.textContent = `Found ${parsedQuestions.length} question(s). Saving...`;
+        // Count questions with correct answers
+        const questionsWithAnswers = parsedQuestions.filter(q => q.correct_answer && q.correct_answer.trim().length > 0).length;
+        
+        if (statusDiv) statusDiv.textContent = `Found ${parsedQuestions.length} question(s) with ${questionsWithAnswers} correct answer(s). Saving...`;
         if (progressBar) progressBar.style.width = '80%';
         
         // Save questions to database
@@ -2088,7 +2091,11 @@ async function processWordDocument() {
         if (statusDiv) statusDiv.textContent = `Successfully imported ${parsedQuestions.length} question(s)!`;
         if (progressBar) progressBar.style.width = '100%';
         
-        showSuccess(`Successfully imported ${parsedQuestions.length} question(s) from the Word document!`, 'Import Successful');
+        const successMsg = questionsWithAnswers === parsedQuestions.length 
+            ? `Successfully imported ${parsedQuestions.length} question(s) with correct answers from the Word document!`
+            : `Successfully imported ${parsedQuestions.length} question(s) (${questionsWithAnswers} with correct answers). Please review questions without answers.`;
+        
+        showSuccess(successMsg, 'Import Successful');
         
         // Close modal and refresh exam details after a short delay
         setTimeout(() => {
@@ -2468,7 +2475,10 @@ async function processExcelDocument() {
             throw new Error('No questions found in the Excel file. Please check the format and ensure columns are correct.');
         }
         
-        if (statusDiv) statusDiv.textContent = `Found ${parsedQuestions.length} question(s). Saving...`;
+        // Count questions with correct answers
+        const questionsWithAnswers = parsedQuestions.filter(q => q.correct_answer && q.correct_answer.trim().length > 0).length;
+        
+        if (statusDiv) statusDiv.textContent = `Found ${parsedQuestions.length} question(s) with ${questionsWithAnswers} correct answer(s). Saving...`;
         if (progressBar) progressBar.style.width = '80%';
         
         // Save questions to database
@@ -2477,7 +2487,11 @@ async function processExcelDocument() {
         if (statusDiv) statusDiv.textContent = `Successfully imported ${parsedQuestions.length} question(s)!`;
         if (progressBar) progressBar.style.width = '100%';
         
-        showSuccess(`Successfully imported ${parsedQuestions.length} question(s) from the Excel file!`, 'Import Successful');
+        const successMsg = questionsWithAnswers === parsedQuestions.length 
+            ? `Successfully imported ${parsedQuestions.length} question(s) with correct answers from the Excel file!`
+            : `Successfully imported ${parsedQuestions.length} question(s) (${questionsWithAnswers} with correct answers). Please review questions without answers.`;
+        
+        showSuccess(successMsg, 'Import Successful');
         
         // Close modal and refresh exam details after a short delay
         setTimeout(() => {
