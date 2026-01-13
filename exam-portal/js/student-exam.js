@@ -793,7 +793,25 @@ async function autoSubmitExam() {
 
 // Finalize exam (submit and grade)
 async function finalizeExam(status) {
-    if (!currentAttempt || !currentExam) return;
+    // Enhanced null checks
+    if (!currentAttempt || !currentExam) {
+        console.error('Cannot finalize exam: currentAttempt or currentExam is null');
+        showError('Unable to submit exam. Please refresh and try again.', 'Submission Error');
+        return;
+    }
+    
+    // Additional check for required properties
+    if (!currentAttempt.id) {
+        console.error('Cannot finalize exam: currentAttempt.id is null or undefined');
+        showError('Exam attempt data is invalid. Please refresh and try again.', 'Submission Error');
+        return;
+    }
+    
+    if (!currentExam.id) {
+        console.error('Cannot finalize exam: currentExam.id is null or undefined');
+        showError('Exam data is invalid. Please refresh and try again.', 'Submission Error');
+        return;
+    }
     
     clearInterval(timerInterval);
     
@@ -810,6 +828,12 @@ async function finalizeExam(status) {
             return;
         }
         
+        if (!currentUser.id) {
+            console.error('Cannot finalize exam: currentUser.id is null');
+            showError('User session is invalid. Please log in again.', 'Session Error');
+            return;
+        }
+        
         // Authorization check: Verify attempt belongs to current student
         const { data: attempt, error: attemptError } = await client
             .from('student_exam_attempts')
@@ -823,7 +847,11 @@ async function finalizeExam(status) {
             return;
         }
         
-        // Grade all answers
+        // Grade all answers - with null check
+        if (!currentAttempt || !currentAttempt.id) {
+            throw new Error('Cannot grade responses: attempt ID is missing');
+        }
+        
         const { data: responses } = await client
             .from('student_responses')
             .select('*, questions(*)')
@@ -840,8 +868,12 @@ async function finalizeExam(status) {
             let isCorrect = false;
             let marksAwarded = 0;
             
+            // Treat true_false as multiple_choice for grading
             if (question.question_type === 'multiple_choice' || question.question_type === 'true_false') {
-                isCorrect = response.student_answer.trim().toLowerCase() === question.correct_answer.trim().toLowerCase();
+                // Normalize answers for comparison
+                const studentAns = response.student_answer ? response.student_answer.trim().toLowerCase() : '';
+                const correctAns = question.correct_answer ? question.correct_answer.trim().toLowerCase() : '';
+                isCorrect = studentAns === correctAns;
                 marksAwarded = isCorrect ? question.marks : 0;
             } else {
                 // For short_answer and essay, auto-grade if exact match, otherwise 0
@@ -864,38 +896,55 @@ async function finalizeExam(status) {
         
         const percentage = totalMarks > 0 ? (totalScore / totalMarks) * 100 : 0;
         
-        // Update attempt
-        await client
-            .from('student_exam_attempts')
-            .update({
-                status: status,
-                submitted_at: new Date().toISOString(),
-                time_remaining_seconds: timeRemaining,
-                score: totalScore,
-                total_marks: totalMarks,
-                percentage: percentage
-            })
-            .eq('id', currentAttempt.id);
+        // Update attempt - with additional null check
+        if (currentAttempt && currentAttempt.id) {
+            await client
+                .from('student_exam_attempts')
+                .update({
+                    status: status,
+                    submitted_at: new Date().toISOString(),
+                    time_remaining_seconds: timeRemaining,
+                    score: totalScore,
+                    total_marks: totalMarks,
+                    percentage: percentage
+                })
+                .eq('id', currentAttempt.id);
+        } else {
+            throw new Error('Current attempt ID is missing');
+        }
         
         // Calculate scaled score based on exam type percentage
         const examTypePercentage = getExamTypePercentageForStudent(currentExam.exam_type);
         const scaledScore = (percentage * examTypePercentage) / 100;
         
-        // Create grade record with scaling
-        await client
-            .from('exam_grades')
-            .upsert([{
-                student_id: getCurrentUser().id,
-                exam_id: currentExam.id,
-                attempt_id: currentAttempt.id,
-                score: totalScore,
-                percentage: percentage,
-                grade: calculateGrade(percentage),
-                scaling_percentage: examTypePercentage,
-                scaled_score: scaledScore
-            }], {
-                onConflict: 'student_id,exam_id'
+        // Create grade record with scaling - with null checks
+        const currentUserForGrade = getCurrentUser();
+        if (currentUserForGrade && currentUserForGrade.id && currentExam && currentExam.id && currentAttempt && currentAttempt.id) {
+            await client
+                .from('exam_grades')
+                .upsert([{
+                    student_id: currentUserForGrade.id,
+                    exam_id: currentExam.id,
+                    attempt_id: currentAttempt.id,
+                    score: totalScore,
+                    percentage: percentage,
+                    grade: calculateGrade(percentage),
+                    scaling_percentage: examTypePercentage,
+                    scaled_score: scaledScore
+                }], {
+                    onConflict: 'student_id,exam_id'
+                });
+        } else {
+            console.error('Missing required data for grade record:', {
+                user: !!currentUserForGrade,
+                userId: currentUserForGrade?.id,
+                exam: !!currentExam,
+                examId: currentExam?.id,
+                attempt: !!currentAttempt,
+                attemptId: currentAttempt?.id
             });
+            throw new Error('Missing required data for grade record');
+        }
         
         // Show results if released
         if (currentExam.results_released) {
