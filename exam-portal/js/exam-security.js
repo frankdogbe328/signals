@@ -53,10 +53,14 @@ function disableExamSecurity() {
     securityWarnings = [];
     
     // Re-enable copy/paste
-    document.removeEventListener('copy', preventCopy);
-    document.removeEventListener('paste', preventPaste);
-    document.removeEventListener('cut', preventCut);
-    document.removeEventListener('keydown', preventCopyPasteKeys);
+    document.removeEventListener('copy', preventCopy, true);
+    window.removeEventListener('copy', preventCopy, true);
+    document.removeEventListener('paste', preventPaste, true);
+    window.removeEventListener('paste', preventPaste, true);
+    document.removeEventListener('cut', preventCut, true);
+    window.removeEventListener('cut', preventCut, true);
+    document.removeEventListener('keydown', preventCopyPasteKeys, true);
+    window.removeEventListener('keydown', preventCopyPasteKeys, true);
     
     // Re-enable right-click
     document.removeEventListener('contextmenu', preventRightClick);
@@ -211,27 +215,39 @@ function showFullscreenRequirement(onSuccess, onCancel) {
     
     document.body.appendChild(modal);
     
-    // Button handlers
-    document.getElementById('enableFullscreenBtn').addEventListener('click', () => {
-        requestFullscreen()
-            .then(() => {
-                hideFullscreenRequirement();
-                if (onSuccess) onSuccess();
-            })
-            .catch(() => {
-                document.getElementById('fullscreenStatus').textContent = 
-                    'Fullscreen request was denied. Please enable fullscreen manually (F11) or use browser menu.';
+    // Button handlers - wait for DOM to be ready
+    setTimeout(() => {
+        const enableBtn = document.getElementById('enableFullscreenBtn');
+        const cancelBtn = document.getElementById('cancelExamBtn');
+        
+        if (enableBtn) {
+            enableBtn.addEventListener('click', () => {
+                requestFullscreen()
+                    .then(() => {
+                        hideFullscreenRequirement();
+                        if (onSuccess) onSuccess();
+                    })
+                    .catch(() => {
+                        const statusEl = document.getElementById('fullscreenStatus');
+                        if (statusEl) {
+                            statusEl.textContent = 
+                                'Fullscreen request was denied. Please enable fullscreen manually (F11) or use browser menu.';
+                        }
+                    });
             });
-    });
-    
-    document.getElementById('cancelExamBtn').addEventListener('click', () => {
-        hideFullscreenRequirement();
-        if (onCancel) onCancel();
-        // Go back to exams list
-        if (typeof goBackToExams === 'function') {
-            goBackToExams();
         }
-    });
+        
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                hideFullscreenRequirement();
+                if (onCancel) onCancel();
+                // Go back to exams list
+                if (typeof goBackToExams === 'function') {
+                    goBackToExams();
+                }
+            });
+        }
+    }, 100);
     
     // Monitor fullscreen changes
     const checkFullscreen = setInterval(() => {
@@ -317,17 +333,28 @@ function showExamContent() {
 
 // Disable copy, paste, and cut
 function disableCopyPaste() {
-    // Prevent copy
-    document.addEventListener('copy', preventCopy);
+    // Prevent copy - use capture phase to catch early
+    document.addEventListener('copy', preventCopy, true);
+    window.addEventListener('copy', preventCopy, true);
     
-    // Prevent paste
-    document.addEventListener('paste', preventPaste);
+    // Prevent paste - use capture phase
+    document.addEventListener('paste', preventPaste, true);
+    window.addEventListener('paste', preventPaste, true);
     
-    // Prevent cut
-    document.addEventListener('cut', preventCut);
+    // Prevent cut - use capture phase
+    document.addEventListener('cut', preventCut, true);
+    window.addEventListener('cut', preventCut, true);
     
-    // Prevent keyboard shortcuts
+    // Prevent keyboard shortcuts - use capture phase with high priority
     document.addEventListener('keydown', preventCopyPasteKeys, true);
+    window.addEventListener('keydown', preventCopyPasteKeys, true);
+    
+    // Also prevent on input elements directly
+    document.addEventListener('keydown', function(e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+            preventCopyPasteKeys(e);
+        }
+    }, true);
     
     // Prevent text selection (optional - can be annoying, so commented out)
     // document.addEventListener('selectstart', preventSelect);
@@ -336,6 +363,7 @@ function disableCopyPaste() {
 function preventCopy(e) {
     e.preventDefault();
     e.stopPropagation();
+    e.stopImmediatePropagation();
     showWarning('Copy is disabled during the exam.');
     return false;
 }
@@ -343,6 +371,7 @@ function preventCopy(e) {
 function preventPaste(e) {
     e.preventDefault();
     e.stopPropagation();
+    e.stopImmediatePropagation();
     showWarning('Paste is disabled during the exam.');
     return false;
 }
@@ -350,6 +379,7 @@ function preventPaste(e) {
 function preventCut(e) {
     e.preventDefault();
     e.stopPropagation();
+    e.stopImmediatePropagation();
     showWarning('Cut is disabled during the exam.');
     return false;
 }
@@ -357,48 +387,65 @@ function preventCut(e) {
 function preventCopyPasteKeys(e) {
     // Check for Ctrl+C, Ctrl+V, Ctrl+X, Ctrl+A (Windows/Linux)
     // Check for Cmd+C, Cmd+V, Cmd+X, Cmd+A (Mac)
-    if ((e.ctrlKey || e.metaKey) && (
-        e.key === 'c' || e.key === 'C' ||
-        e.key === 'v' || e.key === 'V' ||
-        e.key === 'x' || e.key === 'X' ||
-        e.key === 'a' || e.key === 'A' ||
-        e.key === 's' || e.key === 'S' // Also disable save
+    const key = e.key.toLowerCase();
+    const isCtrlOrCmd = e.ctrlKey || e.metaKey;
+    
+    if (isCtrlOrCmd && (
+        key === 'c' ||
+        key === 'v' ||
+        key === 'x' ||
+        key === 'a' ||
+        key === 's' // Also disable save
     )) {
         e.preventDefault();
         e.stopPropagation();
-        showWarning('This keyboard shortcut is disabled during the exam.');
+        e.stopImmediatePropagation();
+        showWarning('This keyboard shortcut (Copy/Paste/Cut) is disabled during the exam.');
         return false;
     }
     
     // Disable F12 (Developer Tools)
-    if (e.key === 'F12') {
+    if (e.key === 'F12' || e.keyCode === 123) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         showWarning('Developer tools are disabled during the exam.');
         return false;
     }
     
     // Disable Ctrl+Shift+I (Developer Tools)
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'I' || e.key === 'i')) {
+    if (isCtrlOrCmd && e.shiftKey && (key === 'i')) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         showWarning('Developer tools are disabled during the exam.');
         return false;
     }
     
     // Disable Ctrl+Shift+C (Element Inspector)
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'C' || e.key === 'c')) {
+    if (isCtrlOrCmd && e.shiftKey && (key === 'c')) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         showWarning('Developer tools are disabled during the exam.');
         return false;
     }
     
     // Disable Ctrl+Shift+J (Console)
-    if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'J' || e.key === 'j')) {
+    if (isCtrlOrCmd && e.shiftKey && (key === 'j')) {
         e.preventDefault();
         e.stopPropagation();
+        e.stopImmediatePropagation();
         showWarning('Developer tools are disabled during the exam.');
+        return false;
+    }
+    
+    // Disable Ctrl+U (View Source)
+    if (isCtrlOrCmd && (key === 'u')) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        showWarning('View source is disabled during the exam.');
         return false;
     }
 }
