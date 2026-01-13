@@ -2526,8 +2526,8 @@ async function processExcelDocument() {
         if (progressBar) progressBar.style.width = '100%';
         
         const successMsg = questionsWithAnswers === parsedQuestions.length 
-            ? `Successfully imported ${parsedQuestions.length} question(s) with correct answers from the Excel file!`
-            : `Successfully imported ${parsedQuestions.length} question(s) (${questionsWithAnswers} with correct answers). Please review questions without answers.`;
+            ? `✅ Successfully imported ${parsedQuestions.length} question(s) with ALL correct answers set automatically! Questions are ready for students - no editing needed!`
+            : `⚠️ Successfully imported ${parsedQuestions.length} question(s) (${questionsWithAnswers} with correct answers). ${parsedQuestions.length - questionsWithAnswers} question(s) missing answers - please check your Excel file.`;
         
         showSuccess(successMsg, 'Import Successful');
         
