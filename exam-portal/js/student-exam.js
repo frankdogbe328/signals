@@ -985,6 +985,42 @@ async function finalizeExam(status) {
         
     } catch (error) {
         console.error('Error submitting exam:', error);
+        
+        // Check if submission actually succeeded despite the error
+        // This can happen if error occurs in cleanup/non-critical code
+        const errorMessage = error?.message || String(error);
+        const isNullReferenceError = errorMessage.includes("Cannot read properties of null") || 
+                                    errorMessage.includes("reading 'id'");
+        
+        if (isNullReferenceError) {
+            // If it's just a null reference error and exam was likely submitted, 
+            // try to show success message instead
+            console.warn('Null reference error detected, but submission may have succeeded');
+            
+            // Try to verify if submission actually succeeded
+            try {
+                const client = getSupabaseClient();
+                if (client && currentAttempt && currentAttempt.id) {
+                    const { data: attempt } = await client
+                        .from('student_exam_attempts')
+                        .select('status')
+                        .eq('id', currentAttempt.id)
+                        .single();
+                    
+                    if (attempt && (attempt.status === 'submitted' || attempt.status === 'auto_submitted')) {
+                        // Submission succeeded, show success
+                        showInfo('Exam submitted successfully! Results will be available once released by your lecturer.', 'Exam Submitted');
+                        setTimeout(() => {
+                            goBackToExams();
+                        }, 2000);
+                        return;
+                    }
+                }
+            } catch (verifyError) {
+                console.error('Error verifying submission:', verifyError);
+            }
+        }
+        
         showError('Failed to submit exam. Please try again. If the issue persists, contact your lecturer.', 'Error Submitting Exam');
     }
 }
