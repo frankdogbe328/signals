@@ -97,11 +97,15 @@ async function loadAvailableExams() {
         
         if (error) throw error;
         
-        // Filter by date if applicable
+        // Filter by date - show exams that have started or are available
+        // Students can join late but will have less time
         const now = new Date();
         const availableExams = (exams || []).filter(exam => {
+            // Hide exams that haven't started yet
             if (exam.start_date && new Date(exam.start_date) > now) return false;
+            // Hide exams that have completely ended
             if (exam.end_date && new Date(exam.end_date) < now) return false;
+            // Show exams that are in progress (students can join late)
             return true;
         });
         
@@ -141,10 +145,37 @@ function displayAvailableExams(exams, attemptsMap) {
         const hasAttempted = attempt && (attempt.status === 'submitted' || attempt.status === 'auto_submitted' || attempt.status === 'time_expired');
         const canViewResults = exam.results_released && hasAttempted;
         
+        // Calculate time information
+        const now = new Date();
+        const examStartTime = exam.start_date ? new Date(exam.start_date) : null;
+        const examEndTime = exam.end_date ? new Date(exam.end_date) : null;
+        
+        let timeInfoHtml = '';
+        if (examStartTime && examEndTime) {
+            const isStarted = now >= examStartTime;
+            const isEnded = now >= examEndTime;
+            const remainingMinutes = isEnded ? 0 : Math.floor(((examEndTime - now) / 1000) / 60);
+            const isLate = isStarted && now > examStartTime;
+            
+            timeInfoHtml = `
+                <div style="background: ${isLate ? '#fff3cd' : '#e6f2ff'}; padding: 10px; border-radius: 5px; margin-bottom: 10px;">
+                    <div><strong>Start Time:</strong> ${examStartTime.toLocaleString()}</div>
+                    <div><strong>End Time:</strong> ${examEndTime.toLocaleString()}</div>
+                    ${isStarted && !isEnded ? `
+                        <div style="color: ${isLate ? '#856404' : '#004085'}; font-weight: bold; margin-top: 5px;">
+                            ${isLate ? `⚠️ Exam in progress. ${remainingMinutes} minute(s) remaining if you start now.` : `✅ Exam started. ${remainingMinutes} minute(s) remaining.`}
+                        </div>
+                    ` : ''}
+                    ${isEnded ? '<div style="color: #721c24; font-weight: bold; margin-top: 5px;">❌ Exam period has ended</div>' : ''}
+                </div>
+            `;
+        }
+        
         return `
             <div class="card" style="margin-bottom: 20px;">
                 <h3>${escapeHtml(exam.title)}</h3>
                 <p style="color: #666; margin-bottom: 10px;">${escapeHtml(exam.description || 'No description')}</p>
+                ${timeInfoHtml}
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 15px;">
                     <div><strong>Subject:</strong> ${escapeHtml(exam.subject)}</div>
                     <div><strong>Exam Type:</strong> ${formatExamTypeForStudent(exam.exam_type || 'N/A')} ${exam.exam_type ? `(${getExamTypePercentageForStudent(exam.exam_type)}%)` : ''}</div>
@@ -243,20 +274,66 @@ async function startExam(examId) {
             return;
         }
         
-        if (!confirm(`You have ${exam.duration_minutes} minutes to complete this exam. Once you start, the timer will begin. Continue?`)) {
+        // Calculate remaining time based on scheduled times
+        const now = new Date();
+        const examStartTime = exam.start_date ? new Date(exam.start_date) : null;
+        const examEndTime = exam.end_date ? new Date(exam.end_date) : null;
+        
+        // Check if exam has already ended
+        if (examEndTime && now >= examEndTime) {
+            showError('This exam has already ended. The exam period has closed.', 'Exam Ended');
+            return;
+        }
+        
+        // Check if exam hasn't started yet
+        if (examStartTime && now < examStartTime) {
+            const timeUntilStart = Math.floor((examStartTime - now) / 1000);
+            const minutes = Math.floor(timeUntilStart / 60);
+            const seconds = timeUntilStart % 60;
+            showError(`This exam hasn't started yet. It will begin in ${minutes} minute(s) and ${seconds} second(s).`, 'Exam Not Started');
+            return;
+        }
+        
+        // Calculate remaining time based on scheduled end time
+        let timeRemainingSeconds;
+        let warningMessage = '';
+        
+        if (examEndTime) {
+            // Use scheduled end time
+            timeRemainingSeconds = Math.max(0, Math.floor((examEndTime - now) / 1000));
+            
+            if (examStartTime && now > examStartTime) {
+                // Student is starting late
+                const lateBy = Math.floor((now - examStartTime) / 1000);
+                const lateMinutes = Math.floor(lateBy / 60);
+                warningMessage = `\n\n⚠️ WARNING: You are ${lateMinutes} minute(s) late. The exam timer started at ${examStartTime.toLocaleTimeString()} and you will only have ${Math.floor(timeRemainingSeconds / 60)} minute(s) remaining.`;
+            }
+        } else {
+            // Fallback to duration if no end time set
+            timeRemainingSeconds = exam.duration_minutes * 60;
+        }
+        
+        if (timeRemainingSeconds <= 0) {
+            showError('No time remaining. The exam period has ended.', 'No Time Remaining');
+            return;
+        }
+        
+        const confirmMessage = `You have ${Math.floor(timeRemainingSeconds / 60)} minute(s) to complete this exam.${warningMessage}\n\nThe timer is based on the scheduled exam end time. Continue?`;
+        
+        if (!confirm(confirmMessage)) {
             return;
         }
         
         // Create new attempt
-        const durationSeconds = exam.duration_minutes * 60;
         const { data: attempt, error: attemptError } = await client
             .from('student_exam_attempts')
             .insert([{
                 student_id: currentUser.id,
                 exam_id: examId,
                 status: 'in_progress',
-                time_remaining_seconds: durationSeconds,
-                total_marks: exam.total_marks
+                time_remaining_seconds: timeRemainingSeconds,
+                total_marks: exam.total_marks,
+                started_at: now.toISOString()
             }])
             .select()
             .single();
@@ -272,7 +349,7 @@ async function startExam(examId) {
         questions = questionsData;
         currentQuestionIndex = 0;
         answers = {};
-        timeRemaining = durationSeconds;
+        timeRemaining = timeRemainingSeconds;
         
         // Show exam taking view
         showExamTakingView();
@@ -403,7 +480,26 @@ async function loadExamForAttempt(examId, attemptId) {
         currentExam = exam;
         currentAttempt = attempt;
         questions = questionsData;
-        timeRemaining = attempt.time_remaining_seconds || (exam.duration_minutes * 60);
+        
+        // Calculate remaining time based on scheduled end time (for existing attempts)
+        const now = new Date();
+        const examEndTime = exam.end_date ? new Date(exam.end_date) : null;
+        
+        if (examEndTime) {
+            // Use scheduled end time - calculate actual remaining time
+            timeRemaining = Math.max(0, Math.floor((examEndTime - now) / 1000));
+            
+            if (timeRemaining <= 0) {
+                // Exam has ended, auto-submit
+                showError('The exam period has ended. Your exam will be automatically submitted.', 'Exam Ended');
+                await finalizeExam('time_expired');
+                goBackToExams();
+                return;
+            }
+        } else {
+            // Fallback to stored time remaining
+            timeRemaining = attempt.time_remaining_seconds || (exam.duration_minutes * 60);
+        }
         
         // Show exam taking view
         showExamTakingView();
@@ -771,12 +867,21 @@ function previousQuestion() {
     showError('You cannot go back to previous questions', 'Navigation Restricted');
 }
 
-// Start timer
+// Start timer - now uses scheduled end time for accuracy
 function startTimer() {
     updateTimerDisplay();
     
     timerInterval = setInterval(() => {
-        timeRemaining--;
+        // Recalculate time remaining from scheduled end time for accuracy
+        if (currentExam && currentExam.end_date) {
+            const now = new Date();
+            const examEndTime = new Date(currentExam.end_date);
+            timeRemaining = Math.max(0, Math.floor((examEndTime - now) / 1000));
+        } else {
+            // Fallback: countdown from stored time
+            timeRemaining--;
+        }
+        
         updateTimerDisplay();
         
         // Update time remaining in database every 30 seconds
@@ -788,7 +893,10 @@ function startTimer() {
             clearInterval(timerInterval);
             autoSubmitExam();
         } else if (timeRemaining <= 300) { // 5 minutes warning
-            document.getElementById('timerText').classList.add('timer-warning');
+            const timerText = document.getElementById('timerText');
+            if (timerText) {
+                timerText.classList.add('timer-warning');
+            }
         }
     }, 1000);
 }
