@@ -146,10 +146,19 @@ function requireFullscreen() {
 
 // Show blocking fullscreen requirement modal
 function showFullscreenRequirement(onSuccess, onCancel) {
+    console.log('Showing fullscreen requirement modal');
+    
     // Remove existing modal if any
     const existing = document.getElementById('fullscreenRequirementModal');
     if (existing) {
         existing.remove();
+    }
+    
+    // Ensure body exists
+    if (!document.body) {
+        console.error('Document body not ready');
+        setTimeout(() => showFullscreenRequirement(onSuccess, onCancel), 100);
+        return;
     }
     
     const modal = document.createElement('div');
@@ -214,9 +223,11 @@ function showFullscreenRequirement(onSuccess, onCancel) {
     `;
     
     document.body.appendChild(modal);
+    console.log('Fullscreen modal added to DOM');
     
     // Button handlers - wait for DOM to be ready
     setTimeout(() => {
+        console.log('Setting up button handlers');
         const enableBtn = document.getElementById('enableFullscreenBtn');
         const cancelBtn = document.getElementById('cancelExamBtn');
         
