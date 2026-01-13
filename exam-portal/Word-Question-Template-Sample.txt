@@ -1,0 +1,91 @@
+1. What is the capital city of Ghana?
+A. Kumasi
+B. Accra
+C. Tamale
+D. Cape Coast
+Answer: B
+
+2. True or False: Ghana is located in West Africa.
+Answer: True
+
+3. Explain the importance of communication in military operations.
+Answer: Communication is crucial for coordination and successful mission execution. It ensures clear understanding of orders, enables real-time situational awareness, and facilitates effective teamwork among units.
+
+4. Which of the following are components of a radio communication system?
+A. Transmitter only
+B. Receiver only
+C. Both transmitter and receiver
+D. None of the above
+Answer: C
+
+5. True or False: All military personnel must follow the chain of command.
+Answer: True
+
+6. What does the acronym SOP stand for in military terminology?
+A. Standard Operating Procedure
+B. Special Operations Protocol
+C. Strategic Operations Plan
+D. System Operating Program
+Answer: A
+
+7. Describe the process of encryption in secure communications.
+Answer: Encryption converts readable data into coded format using algorithms and keys to prevent unauthorized access.
+
+8. True or False: Radio signals travel faster than sound waves.
+Answer: True
+
+9. What is the primary purpose of frequency modulation (FM)?
+A. To increase signal strength
+B. To reduce interference
+C. To change frequency of carrier wave
+D. To extend transmission range
+Answer: C
+
+10. List three key principles of effective military communication.
+Answer: Clarity, Conciseness, and Accuracy
+
+11. True or False: Military communications can be intercepted by enemy forces without proper security measures.
+Answer: True
+
+12. Which communication method is most secure for sensitive information?
+A. Radio
+B. Telephone
+C. Encrypted digital
+D. Public announcement
+Answer: C
+
+13. True or False: Hand signals are an effective form of non-verbal communication in the military.
+Answer: True
+
+14. What factors affect radio signal propagation?
+A. Terrain only
+B. Weather only
+C. Both terrain and weather
+D. Time of day only
+Answer: C
+
+15. Explain the difference between tactical and strategic communication.
+Answer: Tactical communication focuses on immediate battlefield operations and unit coordination, while strategic communication involves high-level planning and policy decisions affecting overall military objectives.
+
+16. True or False: All military communications are automatically encrypted.
+Answer: False
+
+17. What is the range of Very High Frequency (VHF) communications?
+A. 30-300 MHz
+B. 300-3000 MHz
+C. 3-30 MHz
+D. 30-300 GHz
+Answer: A
+
+18. Which is NOT a type of military communication equipment?
+A. Radio set
+B. Signal flag
+C. Encryption device
+D. Cooking stove
+Answer: D
+
+19. True or False: Standardized communication protocols prevent misunderstandings in military operations.
+Answer: True
+
+20. What should you do if you receive unclear instructions?
+Answer: Seek clarification through proper channels before taking action.
