@@ -866,7 +866,26 @@ async function finalizeExam(status) {
         
         // Grade each response
         for (const response of (responses || [])) {
+            // Skip if response is invalid
+            if (!response || !response.id) {
+                console.warn('Skipping invalid response:', response);
+                continue;
+            }
+            
+            // Skip if question data is missing
+            if (!response.questions) {
+                console.warn('Skipping response with missing question data:', response.id);
+                continue;
+            }
+            
             const question = response.questions;
+            
+            // Skip if question doesn't have required properties
+            if (!question || !question.marks || !question.correct_answer) {
+                console.warn('Skipping response with invalid question data:', response.id);
+                continue;
+            }
+            
             totalMarks += question.marks;
             
             let isCorrect = false;
@@ -882,20 +901,24 @@ async function finalizeExam(status) {
             } else {
                 // For short_answer and essay, auto-grade if exact match, otherwise 0
                 // In production, you might want manual grading for essays
-                isCorrect = response.student_answer.trim().toLowerCase() === question.correct_answer.trim().toLowerCase();
+                const studentAns = response.student_answer ? response.student_answer.trim().toLowerCase() : '';
+                const correctAns = question.correct_answer ? question.correct_answer.trim().toLowerCase() : '';
+                isCorrect = studentAns === correctAns;
                 marksAwarded = isCorrect ? question.marks : 0;
             }
             
             totalScore += marksAwarded;
             
-            // Update response with grading
-            await client
-                .from('student_responses')
-                .update({
-                    is_correct: isCorrect,
-                    marks_awarded: marksAwarded
-                })
-                .eq('id', response.id);
+            // Update response with grading - only if response.id exists
+            if (response.id) {
+                await client
+                    .from('student_responses')
+                    .update({
+                        is_correct: isCorrect,
+                        marks_awarded: marksAwarded
+                    })
+                    .eq('id', response.id);
+            }
         }
         
         const percentage = totalMarks > 0 ? (totalScore / totalMarks) * 100 : 0;
