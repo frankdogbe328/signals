@@ -140,11 +140,14 @@ function parseQuestionBlock(block, questionNumber) {
             continue;
         }
         
-        // Detect True/False
+        // Detect True/False - convert to multiple choice with True/False as options
         if (/^(true|false)\s*:?\s*(true|false)/i.test(line)) {
-            questionType = 'true_false';
+            questionType = 'multiple_choice';
             const tfMatch = line.match(/(true|false)/gi);
-            if (tfMatch) {
+            if (tfMatch && options.length === 0) {
+                // Add True and False as options
+                options.push('True');
+                options.push('False');
                 correctAnswer = tfMatch[0].charAt(0).toUpperCase() + tfMatch[0].slice(1).toLowerCase();
             }
             continue;
@@ -194,8 +197,46 @@ function parseQuestionBlock(block, questionNumber) {
             }
         } else if (options.length === 2 && 
                    (options.some(opt => /true/i.test(opt)) && options.some(opt => /false/i.test(opt)))) {
-            questionType = 'true_false';
+            // If True/False detected as options, keep as multiple_choice (not true_false type)
+            // This way students see it as options A) True, B) False
+            questionType = 'multiple_choice';
         }
+    }
+    
+    // If questionType was set to true_false from detection, convert to multiple_choice with options
+    if (questionType === 'true_false') {
+        // Convert to multiple choice with True/False as options
+        if (options.length === 0) {
+            options = ['True', 'False'];
+        } else {
+            // Ensure True and False are in options
+            if (!options.some(opt => /true/i.test(opt))) {
+                options.unshift('True');
+            }
+            if (!options.some(opt => /false/i.test(opt))) {
+                options.push('False');
+            }
+            // Normalize to exactly ['True', 'False']
+            options = ['True', 'False'];
+        }
+        
+        // Set correct answer to match one of the options
+        if (correctAnswer) {
+            const answerLower = correctAnswer.toLowerCase().trim();
+            if (answerLower === 'true' || answerLower === 't') {
+                correctAnswer = 'True';
+            } else if (answerLower === 'false' || answerLower === 'f') {
+                correctAnswer = 'False';
+            } else {
+                // Try to match existing answer to options
+                const matchedOption = options.find(opt => opt.toLowerCase() === answerLower);
+                correctAnswer = matchedOption || 'True'; // Default to True if no match
+            }
+        } else {
+            correctAnswer = 'True'; // Default
+        }
+        
+        questionType = 'multiple_choice'; // Change to multiple_choice so students see options
     }
     
     // Clean up question text
@@ -208,7 +249,7 @@ function parseQuestionBlock(block, questionNumber) {
         question_text: questionText,
         question_type: questionType,
         options: questionType === 'multiple_choice' ? JSON.stringify(options) : null,
-        correct_answer: correctAnswer || (questionType === 'true_false' ? 'True' : ''),
+        correct_answer: correctAnswer || '',
         marks: marks,
         sequence_order: questionNumber
     };
@@ -235,11 +276,8 @@ function validateQuestion(question) {
         }
     }
     
-    if (question.question_type === 'true_false') {
-        if (!['True', 'False'].includes(question.correct_answer)) {
-            return false;
-        }
-    }
+    // True/false questions are now handled as multiple_choice with True/False options
+    // No separate validation needed
     
     if (question.marks < 1 || question.marks > 1000) {
         question.marks = 1; // Default to 1 if invalid
