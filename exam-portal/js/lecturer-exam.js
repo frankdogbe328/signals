@@ -2575,16 +2575,30 @@ function parseQuestionsFromExcel(data) {
     // Try to detect column positions from header if available
     if (startRow === 1 && firstRow.length > 0) {
         for (let i = 0; i < firstRow.length; i++) {
-            const header = String(firstRow[i]).toLowerCase();
+            const header = String(firstRow[i]).toLowerCase().trim();
             if (header.includes('question')) questionCol = i;
             else if (header.includes('type')) typeCol = i;
             else if (header.includes('option') && (header.includes('a') || i === 2)) optionACol = i;
             else if (header.includes('option') && (header.includes('b') || i === 3)) optionBCol = i;
             else if (header.includes('option') && (header.includes('c') || i === 4)) optionCCol = i;
             else if (header.includes('option') && (header.includes('d') || i === 5)) optionDCol = i;
-            else if (header.includes('correct') || header.includes('answer')) correctAnswerCol = i;
+            else if (header.includes('correct') || header.includes('answer') || header === 'ans' || header === 'key') {
+                correctAnswerCol = i;
+            }
             else if (header.includes('mark')) marksCol = i;
         }
+        
+        // Log detected columns for debugging
+        console.log('Detected columns:', {
+            question: questionCol,
+            type: typeCol,
+            optionA: optionACol,
+            optionB: optionBCol,
+            optionC: optionCCol,
+            optionD: optionDCol,
+            correctAnswer: correctAnswerCol,
+            marks: marksCol
+        });
     }
     
     // Process each row
