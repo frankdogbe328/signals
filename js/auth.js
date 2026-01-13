@@ -71,7 +71,7 @@ async function handleLogin(e) {
     // Rate limiting check
     if (typeof SecurityUtils !== 'undefined' && SecurityUtils.checkRateLimit) {
         const rateLimitKey = `login_${username}`;
-        const rateLimit = SecurityUtils.checkRateLimit(rateLimitKey, 5, 15); // 5 attempts per 15 minutes
+        const rateLimit = SecurityUtils.checkRateLimit(rateLimitKey, 5, 3); // 5 attempts per 3 minutes
         
         if (!rateLimit.allowed) {
             errorMessage.textContent = `Too many login attempts. Please try again in ${rateLimit.timeRemaining} minutes.`;
