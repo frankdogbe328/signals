@@ -52,6 +52,12 @@ function disableExamSecurity() {
     tabSwitchCount = 0;
     securityWarnings = [];
     
+    // Clear long-press timer
+    if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+    }
+    
     // Re-enable copy/paste
     document.removeEventListener('copy', preventCopy, true);
     window.removeEventListener('copy', preventCopy, true);
@@ -62,14 +68,30 @@ function disableExamSecurity() {
     document.removeEventListener('keydown', preventCopyPasteKeys, true);
     window.removeEventListener('keydown', preventCopyPasteKeys, true);
     
+    // Re-enable text selection
+    document.removeEventListener('selectstart', preventSelect, true);
+    document.removeEventListener('selectionchange', preventSelect, true);
+    document.removeEventListener('contextmenu', preventContextMenu, true);
+    document.removeEventListener('touchstart', preventLongPress);
+    document.removeEventListener('touchmove', preventLongPress);
+    document.removeEventListener('touchend', preventLongPress);
+    
+    // Restore text selection CSS
+    document.body.style.userSelect = '';
+    document.body.style.webkitUserSelect = '';
+    document.body.style.mozUserSelect = '';
+    document.body.style.msUserSelect = '';
+    
     // Re-enable right-click
     document.removeEventListener('contextmenu', preventRightClick);
     
     // Remove blur/focus listeners
     window.removeEventListener('blur', handleWindowBlur);
     window.removeEventListener('focus', handleWindowFocus);
+    document.removeEventListener('visibilitychange', handleVisibilityChange);
     
-    // Remove beforeunload warning (but keep it for a moment in case of navigation)
+    // Remove beforeunload warning
+    window.removeEventListener('beforeunload', handleBeforeUnload);
     
     console.log('Exam security disabled');
 }
@@ -87,12 +109,22 @@ function requestFullscreen() {
     return new Promise((resolve, reject) => {
         const elem = document.documentElement;
         
+        // MOBILE-SPECIFIC: Check if device is mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
         if (elem.requestFullscreen) {
+            // Standard fullscreen API
             elem.requestFullscreen()
                 .then(() => resolve())
                 .catch(err => {
                     console.warn('Fullscreen request denied:', err);
-                    reject(err);
+                    // On mobile, fullscreen might not be available, but we still want to proceed
+                    if (isMobile) {
+                        console.log('Mobile device detected - fullscreen may not be available, but security will still be enforced');
+                        resolve(); // Allow exam to proceed on mobile even if fullscreen fails
+                    } else {
+                        reject(err);
+                    }
                 });
         } else if (elem.webkitRequestFullscreen) { // Safari
             elem.webkitRequestFullscreen();
@@ -101,7 +133,12 @@ function requestFullscreen() {
                 if (isFullscreenActive()) {
                     resolve();
                 } else {
-                    reject(new Error('Fullscreen not supported or denied'));
+                    if (isMobile) {
+                        console.log('Mobile Safari - fullscreen may not be available, but security will still be enforced');
+                        resolve(); // Allow exam to proceed on mobile Safari
+                    } else {
+                        reject(new Error('Fullscreen not supported or denied'));
+                    }
                 }
             }, 100);
         } else if (elem.msRequestFullscreen) { // IE/Edge
@@ -110,11 +147,33 @@ function requestFullscreen() {
                 if (isFullscreenActive()) {
                     resolve();
                 } else {
-                    reject(new Error('Fullscreen not supported or denied'));
+                    if (isMobile) {
+                        resolve(); // Allow exam to proceed on mobile
+                    } else {
+                        reject(new Error('Fullscreen not supported or denied'));
+                    }
+                }
+            }, 100);
+        } else if (elem.webkitEnterFullscreen) { // iOS Safari
+            // iOS Safari has different fullscreen API
+            elem.webkitEnterFullscreen();
+            setTimeout(() => {
+                if (isFullscreenActive()) {
+                    resolve();
+                } else {
+                    // On iOS, fullscreen might not work, but allow exam to proceed
+                    console.log('iOS device detected - fullscreen may not be available');
+                    resolve();
                 }
             }, 100);
         } else {
-            reject(new Error('Fullscreen API not supported in this browser'));
+            // No fullscreen support
+            if (isMobile) {
+                console.log('Mobile device without fullscreen support - security will still be enforced');
+                resolve(); // Allow exam to proceed on mobile devices
+            } else {
+                reject(new Error('Fullscreen API not supported in this browser'));
+            }
         }
     });
 }
@@ -419,8 +478,28 @@ function disableCopyPaste() {
         }
     }, true);
     
-    // Prevent text selection (optional - can be annoying, so commented out)
-    // document.addEventListener('selectstart', preventSelect);
+    // MOBILE-SPECIFIC: Prevent text selection on mobile devices
+    document.addEventListener('selectstart', preventSelect, true);
+    document.addEventListener('selectionchange', preventSelect, true);
+    
+    // MOBILE-SPECIFIC: Prevent long-press context menu (mobile copy/paste)
+    document.addEventListener('contextmenu', preventContextMenu, true);
+    document.addEventListener('touchstart', preventLongPress, { passive: false });
+    document.addEventListener('touchmove', preventLongPress, { passive: false });
+    document.addEventListener('touchend', preventLongPress, { passive: false });
+    
+    // MOBILE-SPECIFIC: Prevent text selection via CSS
+    document.body.style.userSelect = 'none';
+    document.body.style.webkitUserSelect = 'none';
+    document.body.style.mozUserSelect = 'none';
+    document.body.style.msUserSelect = 'none';
+    
+    // Allow selection in input/textarea fields only
+    const inputs = document.querySelectorAll('input, textarea');
+    inputs.forEach(input => {
+        input.style.userSelect = 'text';
+        input.style.webkitUserSelect = 'text';
+    });
 }
 
 function preventCopy(e) {
@@ -514,9 +593,52 @@ function preventCopyPasteKeys(e) {
 }
 
 function preventSelect(e) {
-    // Optional: prevent text selection
-    // e.preventDefault();
-    // return false;
+    // Prevent text selection on non-input elements
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        return false;
+    }
+}
+
+// MOBILE-SPECIFIC: Prevent long-press context menu
+let longPressTimer = null;
+function preventLongPress(e) {
+    // Clear any existing timer
+    if (longPressTimer) {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+    }
+    
+    // Prevent long-press on non-input elements
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') {
+        if (e.type === 'touchstart') {
+            // Set timer for long-press detection
+            longPressTimer = setTimeout(() => {
+                showWarning('Long-press is disabled during the exam.');
+                e.preventDefault();
+                e.stopPropagation();
+            }, 500); // 500ms threshold for long-press
+        } else if (e.type === 'touchmove' || e.type === 'touchend') {
+            // Clear timer if user moves finger or lifts it
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+        }
+    }
+}
+
+function preventContextMenu(e) {
+    // Allow context menu only in input/textarea fields
+    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        showWarning('Context menu is disabled during the exam.');
+        return false;
+    }
 }
 
 // Disable right-click
@@ -546,8 +668,32 @@ function monitorTabSwitching() {
     window.addEventListener('blur', handleWindowBlur);
     window.addEventListener('focus', handleWindowFocus);
     
-    // Also detect visibility changes
+    // Also detect visibility changes (works on mobile too)
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    // MOBILE-SPECIFIC: Detect app switching on mobile devices
+    // Page Visibility API works for mobile app switching
+    // Additional check for mobile browsers
+    if (typeof document.hidden !== 'undefined') {
+        // Already handled by visibilitychange
+    }
+    
+    // MOBILE-SPECIFIC: Detect when page loses focus (app switching, home button, etc.)
+    window.addEventListener('pagehide', function(e) {
+        if (securityEnabled) {
+            handleWindowBlur();
+            logSecurityEvent('mobile_app_switch', 'User switched to another app or pressed home button');
+        }
+    });
+    
+    // MOBILE-SPECIFIC: Detect when page regains focus
+    window.addEventListener('pageshow', function(e) {
+        if (securityEnabled && e.persisted) {
+            // Page was restored from cache (back button or app switch)
+            handleWindowFocus();
+            showWarning('Page was restored. Your activity has been logged.');
+        }
+    });
 }
 
 function handleWindowBlur() {
