@@ -40,6 +40,7 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAllUsers();
     loadAnalytics();
     loadGradeThresholds();
+    loadDatabaseStats();
     
     // Populate subject dropdown based on class
     document.getElementById('filterClass').addEventListener('change', function() {
@@ -1862,4 +1863,405 @@ function loadGradeThresholds() {
             console.error('Error loading grade thresholds:', e);
         }
     }
+}
+
+// ==================== DATABASE MANAGEMENT ====================
+
+// Load database statistics
+async function loadDatabaseStats() {
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            console.error('Supabase client not available');
+            return;
+        }
+        
+        // Get user counts
+        const { data: users } = await supabase
+            .from('users')
+            .select('id', { count: 'exact' });
+        
+        const { data: students } = await supabase
+            .from('users')
+            .select('id', { count: 'exact' })
+            .eq('role', 'student');
+        
+        const { data: lecturers } = await supabase
+            .from('users')
+            .select('id', { count: 'exact' })
+            .eq('role', 'lecturer');
+        
+        // Get exam counts
+        const { data: exams } = await supabase
+            .from('exams')
+            .select('id', { count: 'exact' });
+        
+        // Get grade counts
+        const { data: grades } = await supabase
+            .from('exam_grades')
+            .select('id', { count: 'exact' });
+        
+        // Get materials count (if table exists)
+        let materialsCount = 0;
+        try {
+            const { data: materials } = await supabase
+                .from('materials')
+                .select('id', { count: 'exact' });
+            materialsCount = materials?.length || 0;
+        } catch (e) {
+            // Materials table might not exist
+            materialsCount = 0;
+        }
+        
+        // Update display
+        document.getElementById('dbTotalUsers').textContent = users?.length || 0;
+        document.getElementById('dbStudents').textContent = students?.length || 0;
+        document.getElementById('dbLecturers').textContent = lecturers?.length || 0;
+        document.getElementById('dbExams').textContent = exams?.length || 0;
+        document.getElementById('dbGrades').textContent = grades?.length || 0;
+        document.getElementById('dbMaterials').textContent = materialsCount;
+        
+    } catch (error) {
+        console.error('Error loading database stats:', error);
+    }
+}
+
+// Backup all data
+async function backupAllData() {
+    if (!confirm('This will create a backup of ALL data. Continue?')) {
+        return;
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        showSuccess('Creating backup... This may take a moment.', 'Backup in Progress');
+        
+        // Get all data
+        const [users, exams, grades, attempts, questions, responses, materials] = await Promise.all([
+            supabase.from('users').select('*'),
+            supabase.from('exams').select('*'),
+            supabase.from('exam_grades').select('*'),
+            supabase.from('student_exam_attempts').select('*'),
+            supabase.from('questions').select('*'),
+            supabase.from('student_responses').select('*'),
+            supabase.from('materials').select('*').catch(() => ({ data: [] }))
+        ]);
+        
+        const backup = {
+            timestamp: new Date().toISOString(),
+            version: '1.0',
+            data: {
+                users: users.data || [],
+                exams: exams.data || [],
+                grades: grades.data || [],
+                attempts: attempts.data || [],
+                questions: questions.data || [],
+                responses: responses.data || [],
+                materials: materials.data || []
+            }
+        };
+        
+        // Save to Supabase storage or download as JSON
+        const json = JSON.stringify(backup, null, 2);
+        const filename = `backup_all_${new Date().toISOString().split('T')[0]}.json`;
+        
+        // Download file
+        downloadJSON(json, filename);
+        
+        // Also save to Supabase storage if possible
+        try {
+            const file = new Blob([json], { type: 'application/json' });
+            const { data, error } = await supabase.storage
+                .from('backups')
+                .upload(filename, file, {
+                    contentType: 'application/json',
+                    upsert: false
+                });
+            
+            if (error && error.message !== 'The resource already exists') {
+                console.warn('Could not save to Supabase storage:', error);
+            }
+        } catch (e) {
+            console.warn('Supabase storage not available, backup downloaded only');
+        }
+        
+        showSuccess(`Backup created successfully!\n\nFile: ${filename}\n\nSaved to Supabase storage and downloaded.`, 'Backup Complete');
+        
+    } catch (error) {
+        console.error('Error creating backup:', error);
+        showError('Failed to create backup. Please try again.', 'Error');
+    }
+}
+
+// Backup users only
+async function backupUsers() {
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        const { data: users, error } = await supabase
+            .from('users')
+            .select('*');
+        
+        if (error) throw error;
+        
+        const backup = {
+            timestamp: new Date().toISOString(),
+            type: 'users',
+            data: users || []
+        };
+        
+        const json = JSON.stringify(backup, null, 2);
+        const filename = `backup_users_${new Date().toISOString().split('T')[0]}.json`;
+        downloadJSON(json, filename);
+        
+        showSuccess(`Users backup created: ${filename}`, 'Backup Complete');
+        
+    } catch (error) {
+        console.error('Error backing up users:', error);
+        showError('Failed to backup users.', 'Error');
+    }
+}
+
+// Backup exams and results
+async function backupExams() {
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        const [exams, grades, attempts, questions, responses] = await Promise.all([
+            supabase.from('exams').select('*'),
+            supabase.from('exam_grades').select('*'),
+            supabase.from('student_exam_attempts').select('*'),
+            supabase.from('questions').select('*'),
+            supabase.from('student_responses').select('*')
+        ]);
+        
+        const backup = {
+            timestamp: new Date().toISOString(),
+            type: 'exams_and_results',
+            data: {
+                exams: exams.data || [],
+                grades: grades.data || [],
+                attempts: attempts.data || [],
+                questions: questions.data || [],
+                responses: responses.data || []
+            }
+        };
+        
+        const json = JSON.stringify(backup, null, 2);
+        const filename = `backup_exams_${new Date().toISOString().split('T')[0]}.json`;
+        downloadJSON(json, filename);
+        
+        showSuccess(`Exams backup created: ${filename}`, 'Backup Complete');
+        
+    } catch (error) {
+        console.error('Error backing up exams:', error);
+        showError('Failed to backup exams.', 'Error');
+    }
+}
+
+// Backup materials
+async function backupMaterials() {
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        const { data: materials, error } = await supabase
+            .from('materials')
+            .select('*');
+        
+        if (error && error.message.includes('does not exist')) {
+            showError('Materials table does not exist.', 'Error');
+            return;
+        }
+        
+        if (error) throw error;
+        
+        const backup = {
+            timestamp: new Date().toISOString(),
+            type: 'materials',
+            data: materials || []
+        };
+        
+        const json = JSON.stringify(backup, null, 2);
+        const filename = `backup_materials_${new Date().toISOString().split('T')[0]}.json`;
+        downloadJSON(json, filename);
+        
+        showSuccess(`Materials backup created: ${filename}`, 'Backup Complete');
+        
+    } catch (error) {
+        console.error('Error backing up materials:', error);
+        showError('Failed to backup materials.', 'Error');
+    }
+}
+
+// Clear test/demo data only
+async function clearTestData() {
+    const confirmMsg = `⚠️ WARNING: This will delete TEST/DEMO data only:\n\n` +
+        `- Users with usernames: lecturer1, student1, lecturer, student, demo_lecturer, demo_student\n` +
+        `- Exams created by demo accounts\n` +
+        `- Materials uploaded by demo accounts\n\n` +
+        `Real user data will be preserved.\n\n` +
+        `Have you created a backup? Continue?`;
+    
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+    
+    if (!confirm('⚠️ FINAL CONFIRMATION: Delete test/demo data? This cannot be undone!')) {
+        return;
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        showSuccess('Clearing test data...', 'In Progress');
+        
+        // Get demo user IDs
+        const demoUsernames = ['lecturer1', 'student1', 'lecturer', 'student', 'demo_lecturer', 'demo_student'];
+        const { data: demoUsers } = await supabase
+            .from('users')
+            .select('id')
+            .in('username', demoUsernames);
+        
+        const demoUserIds = demoUsers?.map(u => u.id) || [];
+        
+        if (demoUserIds.length === 0) {
+            showSuccess('No test/demo data found to clear.', 'Complete');
+            return;
+        }
+        
+        // Delete in order (respecting foreign keys)
+        await supabase.from('student_responses').delete().in('student_id', demoUserIds);
+        await supabase.from('exam_grades').delete().in('student_id', demoUserIds);
+        await supabase.from('student_exam_attempts').delete().in('student_id', demoUserIds);
+        
+        // Delete exams created by demo lecturers
+        const { data: demoExams } = await supabase
+            .from('exams')
+            .select('id')
+            .in('lecturer_id', demoUserIds);
+        
+        const demoExamIds = demoExams?.map(e => e.id) || [];
+        
+        if (demoExamIds.length > 0) {
+            await supabase.from('student_responses').delete().in('exam_id', demoExamIds);
+            await supabase.from('exam_grades').delete().in('exam_id', demoExamIds);
+            await supabase.from('student_exam_attempts').delete().in('exam_id', demoExamIds);
+            await supabase.from('questions').delete().in('exam_id', demoExamIds);
+            await supabase.from('exams').delete().in('id', demoExamIds);
+        }
+        
+        // Delete materials uploaded by demo users
+        try {
+            await supabase.from('materials').delete().in('lecturer_id', demoUserIds);
+        } catch (e) {
+            // Materials table might not exist
+        }
+        
+        // Delete demo users
+        await supabase.from('users').delete().in('id', demoUserIds);
+        
+        showSuccess(`Test data cleared successfully!\n\nDeleted ${demoUserIds.length} demo users.`, 'Complete');
+        loadDatabaseStats();
+        loadAllUsers();
+        
+    } catch (error) {
+        console.error('Error clearing test data:', error);
+        showError('Failed to clear test data. Please try again.', 'Error');
+    }
+}
+
+// Clear all data
+async function clearAllData() {
+    const confirmMsg = `⚠️⚠️⚠️ EXTREME WARNING ⚠️⚠️⚠️\n\n` +
+        `This will DELETE EVERYTHING:\n` +
+        `- ALL users (students, lecturers, admins)\n` +
+        `- ALL exams, questions, and results\n` +
+        `- ALL materials and progress\n` +
+        `- ALL data in the database\n\n` +
+        `THIS CANNOT BE UNDONE!\n\n` +
+        `Have you created a backup? Type "DELETE ALL" to confirm:`;
+    
+    const userInput = prompt(confirmMsg);
+    
+    if (userInput !== 'DELETE ALL') {
+        showError('Operation cancelled. You must type "DELETE ALL" to confirm.', 'Cancelled');
+        return;
+    }
+    
+    if (!confirm('⚠️ FINAL CONFIRMATION: Delete ALL data? This is your last chance!')) {
+        return;
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        showSuccess('Clearing all data... This may take a moment.', 'In Progress');
+        
+        // Delete in order (respecting foreign key constraints)
+        await supabase.from('student_responses').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('exam_grades').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('student_exam_attempts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('questions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        await supabase.from('exams').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        // Delete LMS data if tables exist
+        try {
+            await supabase.from('materials').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            await supabase.from('student_progress').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        } catch (e) {
+            // Tables might not exist
+        }
+        
+        // Delete users last (may have foreign key constraints)
+        await supabase.from('users').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        
+        showSuccess('All data cleared successfully!', 'Complete');
+        loadDatabaseStats();
+        loadAllUsers();
+        loadResults();
+        loadStatistics();
+        
+    } catch (error) {
+        console.error('Error clearing all data:', error);
+        showError('Failed to clear data. Some data may have been deleted. Please check the database.', 'Error');
+    }
+}
+
+// Download JSON file
+function downloadJSON(json, filename) {
+    const blob = new Blob([json], { type: 'application/json' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
 }

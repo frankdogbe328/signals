@@ -475,6 +475,85 @@
                 </div>
             </div>
         </div>
+        
+        <!-- Database Management Section -->
+        <div class="card" style="border: 2px solid #dc3545;">
+            <h3 style="color: #dc3545;">🗄️ Database Management</h3>
+            <p style="color: #666; margin-bottom: 20px;">
+                <strong>⚠️ WARNING:</strong> Database operations are irreversible. Always backup data before clearing.
+            </p>
+            
+            <!-- Database Statistics -->
+            <div class="filter-section" style="background: #f8f9fa;">
+                <h4 style="margin-bottom: 15px; color: var(--primary-color);">Database Statistics</h4>
+                <div class="admin-stats" style="grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));">
+                    <div class="stat-card" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                        <h3>Total Users</h3>
+                        <div class="value" id="dbTotalUsers">-</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                        <h3>Students</h3>
+                        <div class="value" id="dbStudents">-</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
+                        <h3>Lecturers</h3>
+                        <div class="value" id="dbLecturers">-</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                        <h3>Exams</h3>
+                        <div class="value" id="dbExams">-</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);">
+                        <h3>Materials</h3>
+                        <div class="value" id="dbMaterials">-</div>
+                    </div>
+                    <div class="stat-card" style="background: linear-gradient(135deg, #fd7e14 0%, #e8650e 100%);">
+                        <h3>Grades</h3>
+                        <div class="value" id="dbGrades">-</div>
+                    </div>
+                </div>
+                <div style="margin-top: 15px;">
+                    <button onclick="loadDatabaseStats()" class="btn btn-primary">Refresh Statistics</button>
+                </div>
+            </div>
+            
+            <!-- Backup Options -->
+            <div class="filter-section" style="background: #d4edda; border-left: 4px solid #28a745;">
+                <h4 style="margin-bottom: 15px; color: #155724;">📦 Backup Data</h4>
+                <p style="color: #155724; margin-bottom: 15px;">
+                    Export all data before clearing. Backups are saved as JSON files.
+                </p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="backupAllData()" class="btn btn-success">Backup All Data</button>
+                    <button onclick="backupUsers()" class="btn btn-success">Backup Users Only</button>
+                    <button onclick="backupExams()" class="btn btn-success">Backup Exams & Results</button>
+                    <button onclick="backupMaterials()" class="btn btn-success">Backup Materials</button>
+                </div>
+            </div>
+            
+            <!-- Clear Options -->
+            <div class="filter-section" style="background: #f8d7da; border-left: 4px solid #dc3545;">
+                <h4 style="margin-bottom: 15px; color: #721c24;">🗑️ Clear Data</h4>
+                <p style="color: #721c24; margin-bottom: 15px;">
+                    <strong>⚠️ DANGER ZONE:</strong> These operations cannot be undone. Always backup first!
+                </p>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="clearTestData()" class="btn btn-warning">Clear Test/Demo Data Only</button>
+                    <button onclick="clearAllData()" class="btn btn-danger">Clear ALL Data</button>
+                </div>
+                <div style="margin-top: 15px; padding: 15px; background: white; border-radius: 5px;">
+                    <h5 style="color: #721c24; margin-bottom: 10px;">Alternative: Use SQL Scripts</h5>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 10px;">
+                        For more control, you can use SQL scripts in Supabase Dashboard:
+                    </p>
+                    <ul style="color: #666; font-size: 14px; margin-left: 20px;">
+                        <li><code>exam-portal/supabase-clear-all-data-complete.sql</code> - Clear all data</li>
+                        <li><code>exam-portal/supabase-clear-test-data.sql</code> - Clear test data only</li>
+                        <li><code>lms/supabase-clear-all-data.sql</code> - Clear LMS data</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- Scripts -->
