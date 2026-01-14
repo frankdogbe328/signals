@@ -17,10 +17,31 @@ function getSupabaseClient() {
                 if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
                     console.log('Supabase client initialized in helper function');
                     return window.supabaseClient;
+                } else {
+                    console.error('Supabase client created but missing from method');
                 }
             } catch (err) {
                 console.error('Error creating Supabase client in helper:', err);
             }
+        } else {
+            console.error('Supabase config variables not available:', {
+                SUPABASE_URL: typeof SUPABASE_URL,
+                SUPABASE_ANON_KEY: typeof SUPABASE_ANON_KEY
+            });
+        }
+    } else {
+        console.error('Supabase library not loaded:', {
+            supabase: typeof window.supabase,
+            createClient: typeof window.supabase?.createClient
+        });
+    }
+    
+    // Try calling initSupabase if available
+    if (typeof window.initSupabase === 'function') {
+        console.log('Attempting to initialize Supabase via initSupabase...');
+        window.initSupabase();
+        if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
+            return window.supabaseClient;
         }
     }
     

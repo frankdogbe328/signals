@@ -265,12 +265,28 @@ async function handleRegistration(e) {
         };
     }
     
+    // Ensure Supabase is initialized before trying to use it
+    if (typeof window.initSupabase === 'function') {
+        window.initSupabase();
+    }
+    
+    // Wait a moment for Supabase to initialize if needed
+    if (!window.supabaseClient && typeof window.supabase !== 'undefined') {
+        console.log('Waiting for Supabase client initialization...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        if (typeof window.initSupabase === 'function') {
+            window.initSupabase();
+        }
+    }
+    
     // Try Supabase first - REQUIRED for cross-device access
     let createdUser = null;
     let supabaseError = null;
     
     if (typeof createUserInSupabase === 'function') {
         try {
+            console.log('Attempting to create user in Supabase...');
+            console.log('Supabase client available:', !!window.supabaseClient);
             createdUser = await createUserInSupabase(newUser);
             if (!createdUser) {
                 supabaseError = 'Failed to create user in Supabase';
@@ -280,7 +296,8 @@ async function handleRegistration(e) {
             supabaseError = err.message || 'Supabase error';
         }
     } else {
-        supabaseError = 'Supabase functions not available';
+        console.error('createUserInSupabase function not available');
+        supabaseError = 'Database functions not available. Please refresh the page.';
     }
     
     // If Supabase failed, show error - don't silently fallback to localStorage
@@ -289,6 +306,12 @@ async function handleRegistration(e) {
         errorMessage.textContent = `Registration failed: ${supabaseError || 'Unable to connect to database. Please check your connection and try again.'}`;
         errorMessage.classList.add('show');
         console.error('Registration failed - user not saved to Supabase:', supabaseError);
+        console.error('Debug info:', {
+            createUserInSupabase: typeof createUserInSupabase,
+            supabaseClient: typeof window.supabaseClient,
+            supabase: typeof window.supabase,
+            SUPABASE_URL: typeof SUPABASE_URL
+        });
         return; // Don't continue if Supabase save failed
     }
     

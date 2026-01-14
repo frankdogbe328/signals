@@ -74,3 +74,19 @@ if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClien
     initSupabase();
 }
 
+// Make initSupabase globally available
+window.initSupabase = initSupabase;
+
+// Try to initialize on DOMContentLoaded as well (faster than window.load)
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+        initSupabase();
+    } else {
+        // Wait a bit and try again
+        setTimeout(function() {
+            if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+                initSupabase();
+            }
+        }, 200);
+    }
+});
