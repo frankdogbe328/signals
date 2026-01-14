@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Use setTimeout to prevent navigation throttling
             setTimeout(() => {
                 // If redirect parameter exists and is valid, use it
-                if (redirectTo && (redirectTo.includes('exam-portal') || redirectTo.includes('lecturer-dashboard') || redirectTo.includes('student-dashboard'))) {
+                if (redirectTo && (redirectTo.includes('exam-portal') || redirectTo.includes('lecturer-dashboard') || redirectTo.includes('student-dashboard') || redirectTo.includes('admin-portal'))) {
                     window.location.href = redirectTo;
                 } else {
                     // Default redirect based on role

@@ -87,6 +87,17 @@ async function handleLogin(e) {
     if (typeof getUserFromSupabase === 'function') {
         try {
             user = await getUserFromSupabase(username, password, userType);
+            // Verify the user role matches what was selected
+            if (user && user.role !== userType) {
+                console.warn('Role mismatch:', user.role, 'expected:', userType);
+                // For admin, this is critical - reject if role doesn't match
+                if (userType === 'admin' && user.role !== 'admin') {
+                    user = null;
+                    errorMessage.textContent = 'Invalid credentials for admin access.';
+                    errorMessage.classList.add('show');
+                    return;
+                }
+            }
         } catch (err) {
             console.error('Supabase login error:', err);
             errorMessage.textContent = 'Login failed. Please try again.';
