@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Links - Signal Training School</title>
+    <link rel="icon" type="image/png" href="images/led.jpg">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .links-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        .links-container h1 {
+            color: var(--primary-color);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .links-container p {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .portal-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary-color);
+        }
+        .portal-section h2 {
+            color: var(--primary-color);
+            margin-top: 0;
+            margin-bottom: 15px;
+            font-size: 20px;
+        }
+        .portal-link {
+            display: block;
+            padding: 15px 20px;
+            margin-bottom: 10px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .portal-link:hover {
+            border-color: var(--primary-color);
+            background: #f0f8ff;
+            transform: translateX(5px);
+        }
+        .portal-link strong {
+            color: var(--primary-color);
+            font-size: 16px;
+        }
+        .portal-link .description {
+            color: #666;
+            font-size: 14px;
+        }
+        .portal-link .arrow {
+            color: var(--primary-color);
+            font-size: 20px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .badge-admin {
+            background: #dc3545;
+            color: white;
+        }
+        .badge-lecturer {
+            background: #28a745;
+            color: white;
+        }
+        .badge-student {
+            background: #17a2b8;
+            color: white;
+        }
+        .badge-restricted {
+            background: #ffc107;
+            color: #000;
+        }
+        .current-url {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            border-left: 4px solid var(--primary-color);
+        }
+        .current-url strong {
+            color: var(--primary-color);
+        }
+        .copy-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        .copy-btn:hover {
+            background: #0052a3;
+        }
+        @media (max-width: 768px) {
+            .links-container {
+                padding: 20px;
+            }
+            .portal-link {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .portal-link .arrow {
+                align-self: flex-end;
+                margin-top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="links-container">
+        <h1>🔗 Portal Access Links</h1>
+        <p>Quick access to all portals for Signal Training School LMS</p>
+        
+        <div class="current-url">
+            <strong>Current Base URL:</strong> <span id="baseUrl"></span>
+            <button class="copy-btn" onclick="copyBaseUrl()">Copy</button>
+        </div>
+        
+        <!-- Admin Portal -->
+        <div class="portal-section">
+            <h2>🔐 Admin Portal <span class="badge badge-admin">RESTRICTED</span></h2>
+            <a href="admin-login.html" class="portal-link" target="_blank">
+                <div>
+                    <strong>Admin Login</strong>
+                    <div class="description">Login page for admin access (One person only)</div>
+                </div>
+                <span class="arrow">→</span>
+            </a>
+            <a href="admin-portal.html" class="portal-link" target="_blank">
+                <div>
+                    <strong>Admin Dashboard</strong>
+                    <div class="description">Result management, BFT score entry, final grades</div>
+                </div>
+                <span class="arrow">→</span>
+            </a>
+        </div>
+        
+        <!-- Lecturer Portals -->
+        <div class="portal-section">
+            <h2>👨‍🏫 Lecturer Portals <span class="badge badge-lecturer">RESTRICTED</span></h2>
+            <a href="lecturer-login.html" class="portal-link" target="_blank">
+                <div>
+                    <strong>Lecturer Login</strong>
+                    <div class="description">Login page for lecturers (Hidden from students)</div>
+                </div>
+                <span class="arrow">→</span>
+            </a>
+            <a href="lecturer-register.html" class="portal-link" target="_blank">
+                <div>
+                    <strong>Lecturer Registration</strong>
+                    <div class="description">Register new lecturer account (Requires code)</div>
+                </div>
+                <span class="arrow">→</span>
+            </a>
+            <a href="lecturer-dashboard.html" class="portal-link" target="_blank">
+                <div>
+                    <strong>Lecturer LMS Portal</strong>
+                    <div class="description">Upload learning materials, manage content</div>
+                </div>
+                <span class="arrow">→</span>
+            </a>
+            <a href="exam-portal/lecturer-exam-dashboard.html" class="portal-link" target="_blank">
+                <div>
+                    <strong>Lecturer Exam Portal</strong>
+                    <div class="description">Create exams, manage quizzes, view results</div>
+                </div>
+                <span class="arrow">→</span>
+            </a>
+        </div>
+        
+        <!-- Student Portals -->
+        <div class="portal-section">
+            <h2>👨‍🎓 Student Portals <span class="badge badge-student">PUBLIC</span></h2>
+            <a href="index.html" class="portal-link" target="_blank">
+                <div>
+                    <strong>Student Login & Registration</strong>
+                    <div class="description">Main login page for students</div>
+                </div>
+                <span class="arrow">→</span>
+            </a>
+            <a href="student-dashboard.html" class="portal-link" target="_blank">
+                <div>
+                    <strong>Student LMS Portal</strong>
+                    <div class="description">View learning materials, track progress</div>
+                </div>
+                <span class="arrow">→</span>
+            </a>
+            <a href="exam-portal/student-exam-portal.html" class="portal-link" target="_blank">
+                <div>
+                    <strong>Student Exam Portal</strong>
+                    <div class="description">Take exams, view results</div>
+                </div>
+                <span class="arrow">→</span>
+            </a>
+        </div>
+        
+        <!-- Quick Access Instructions -->
+        <div class="portal-section" style="background: #fff3cd; border-left-color: #ffc107;">
+            <h2>📋 Quick Access Instructions</h2>
+            <p style="margin: 0; color: #856404;">
+                <strong>For Vercel Deployment:</strong><br>
+                Replace <code>your-project.vercel.app</code> with your actual Vercel domain in the URLs above.<br>
+                Example: <code>https://your-project.vercel.app/admin-login.html</code>
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        // Display current base URL
+        const baseUrl = window.location.origin;
+        document.getElementById('baseUrl').textContent = baseUrl;
+        
+        // Copy base URL to clipboard
+        function copyBaseUrl() {
+            navigator.clipboard.writeText(baseUrl).then(() => {
+                alert('Base URL copied to clipboard!');
+            });
+        }
+        
+        // Update all links to use current base URL
+        document.querySelectorAll('.portal-link').forEach(link => {
+            const href = link.getAttribute('href');
+            if (href && !href.startsWith('http')) {
+                link.href = baseUrl + '/' + href;
+            }
+        });
+    </script>
+</body>
+</html>
