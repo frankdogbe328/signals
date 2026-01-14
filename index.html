@@ -55,6 +55,25 @@
                     </select>
                 </div>
                 <script>
+                    // Hide portal selection for admin, show for lecturer/student
+                    function handleUserTypeChange() {
+                        const userType = document.getElementById('userType').value;
+                        const portalGroup = document.getElementById('portalTypeGroup');
+                        if (userType === 'admin') {
+                            portalGroup.style.display = 'none';
+                        } else {
+                            portalGroup.style.display = 'block';
+                        }
+                    }
+                    
+                    // Attach event listener to user type dropdown
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const userTypeSelect = document.getElementById('userType');
+                        if (userTypeSelect) {
+                            userTypeSelect.addEventListener('change', handleUserTypeChange);
+                        }
+                    });
+                    
                     // Update portal dropdown text for mobile
                     (function() {
                         const portalSelect = document.getElementById('portalType');
@@ -103,8 +122,8 @@
                 <p style="text-align: center; margin-top: 20px; color: #666;">
                     <a href="#" onclick="showRegisterForm('student'); return false;" style="color: var(--primary-color); font-weight: 600;">Register as Student</a>
                 </p>
-                <p style="text-align: center; margin-top: 10px; color: #666; font-size: 14px;">
-                    <a href="lecturer-register.html" style="color: var(--primary-color); font-weight: 600;">🔒 Lecturer Registration (Restricted Access)</a>
+                <p style="text-align: center; margin-top: 10px; color: #999; font-size: 12px; font-style: italic;">
+                    Lecturer registration is restricted. Contact administration for access.
                 </p>
             </div>
             

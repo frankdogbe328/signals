@@ -131,8 +131,13 @@ async function handleLogin(e) {
         // Set current user (legacy support)
         setCurrentUser(user);
         
-        // Check for portal selection
-        const portalType = document.getElementById('portalType')?.value || 'lms';
+        // ADMIN: Redirect directly to admin portal (no portal selection)
+        if (userType === 'admin' || user.role === 'admin') {
+            setTimeout(() => {
+                window.location.href = 'admin-portal.html';
+            }, 100);
+            return; // Exit early for admin
+        }
         
         // Check for redirect parameter in URL (takes priority) - sanitize redirect
         const urlParams = new URLSearchParams(window.location.search);
@@ -156,12 +161,15 @@ async function handleLogin(e) {
             }
         }
         
+        // Check for portal selection (only for lecturer/student, not admin)
+        const portalType = document.getElementById('portalType')?.value || 'lms';
+        
         console.log('Login - Portal type:', portalType);
         console.log('Login - Redirect parameter:', redirectTo);
         console.log('Login - User role:', userType);
         
         // If redirect parameter exists and is valid, use it
-        if (redirectTo && (redirectTo.includes('exam-portal') || redirectTo.includes('lecturer-dashboard') || redirectTo.includes('student-dashboard'))) {
+        if (redirectTo && (redirectTo.includes('exam-portal') || redirectTo.includes('lecturer-dashboard') || redirectTo.includes('student-dashboard') || redirectTo.includes('admin-portal'))) {
             console.log('Login - Redirecting to:', redirectTo);
             setTimeout(() => {
                 window.location.href = redirectTo;

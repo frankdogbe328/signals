@@ -88,11 +88,22 @@ system fot military/
 
 ## 🔗 Quick Links
 
-- **LMS Login:** `index.html`
-- **Lecturer Dashboard:** `lecturer-dashboard.html`
-- **Student Dashboard:** `student-dashboard.html`
-- **Lecturer Exam Portal:** `exam-portal/lecturer-exam-dashboard.html`
-- **Student Exam Portal:** `exam-portal/student-exam-portal.html`
+### Main Access
+- **Login/Registration:** `index.html`
+
+### Admin Portal (Admin Only - One Person)
+- **Admin Portal:** `admin-portal.html` - Centralized result management
+
+### Lecturer Portals
+- **Lecturer LMS Portal:** `lecturer-dashboard.html` - Learning materials management
+- **Lecturer Exam Portal:** `exam-portal/lecturer-exam-dashboard.html` - Exam creation and management
+- **Lecturer Registration:** `lecturer-register.html` - Restricted registration (requires code)
+
+### Student Portals
+- **Student LMS Portal:** `student-dashboard.html` - View learning materials
+- **Student Exam Portal:** `exam-portal/student-exam-portal.html` - Take exams and view results
+
+📖 **For complete portal access guide, see:** `PORTAL_LINKS_GUIDE.md`
 
 ## 👨‍💻 Developer
 
