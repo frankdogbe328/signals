@@ -45,9 +45,12 @@
                         <option value="lecturer">Lecturer</option>
                         <option value="student">Student</option>
                     </select>
+                    <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">
+                        <a href="admin-login.html" style="color: var(--primary-color); font-weight: 600;">🔐 Admin Login (Separate Portal)</a>
+                    </small>
                 </div>
                 
-                <div class="form-group">
+                <div class="form-group" id="portalTypeGroup">
                     <label for="portalType">Portal</label>
                     <select id="portalType" name="portalType">
                         <option value="lms" data-full="📚 LMS Portal (Learning Materials)" data-short="📚 LMS Portal">📚 LMS Portal (Learning Materials)</option>
@@ -55,13 +58,11 @@
                     </select>
                 </div>
                 <script>
-                    // Hide portal selection for admin, show for lecturer/student
+                    // Update portal dropdown text for mobile
                     function handleUserTypeChange() {
-                        const userType = document.getElementById('userType').value;
+                        // Portal selection always visible for lecturer/student
                         const portalGroup = document.getElementById('portalTypeGroup');
-                        if (userType === 'admin') {
-                            portalGroup.style.display = 'none';
-                        } else {
+                        if (portalGroup) {
                             portalGroup.style.display = 'block';
                         }
                     }
