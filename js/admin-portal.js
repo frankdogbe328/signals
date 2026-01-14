@@ -2222,25 +2222,178 @@ async function clearAllData() {
         
         showSuccess('Clearing all data... This may take a moment.', 'In Progress');
         
+        let deletedCounts = {
+            responses: 0,
+            grades: 0,
+            attempts: 0,
+            questions: 0,
+            exams: 0,
+            materials: 0,
+            progress: 0,
+            users: 0
+        };
+        
         // Delete in order (respecting foreign key constraints)
-        await supabase.from('student_responses').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await supabase.from('exam_grades').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await supabase.from('student_exam_attempts').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await supabase.from('questions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        await supabase.from('exams').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        // Get all IDs first, then delete them (Supabase requires a filter for delete)
+        try {
+            // Delete student responses - get all IDs first
+            const { data: allResponses } = await supabase.from('student_responses').select('id');
+            if (allResponses && allResponses.length > 0) {
+                const responseIds = allResponses.map(r => r.id);
+                const { error: respError } = await supabase
+                    .from('student_responses')
+                    .delete()
+                    .in('id', responseIds);
+                if (!respError) deletedCounts.responses = allResponses.length;
+            }
+        } catch (e) {
+            console.warn('Error deleting responses:', e);
+        }
+        
+        try {
+            // Delete exam grades
+            const { data: allGrades } = await supabase.from('exam_grades').select('id');
+            if (allGrades && allGrades.length > 0) {
+                const gradeIds = allGrades.map(g => g.id);
+                const { error: gradesError } = await supabase
+                    .from('exam_grades')
+                    .delete()
+                    .in('id', gradeIds);
+                if (!gradesError) deletedCounts.grades = allGrades.length;
+            }
+        } catch (e) {
+            console.warn('Error deleting grades:', e);
+        }
+        
+        try {
+            // Delete exam attempts
+            const { data: allAttempts } = await supabase.from('student_exam_attempts').select('id');
+            if (allAttempts && allAttempts.length > 0) {
+                const attemptIds = allAttempts.map(a => a.id);
+                const { error: attemptsError } = await supabase
+                    .from('student_exam_attempts')
+                    .delete()
+                    .in('id', attemptIds);
+                if (!attemptsError) deletedCounts.attempts = allAttempts.length;
+            }
+        } catch (e) {
+            console.warn('Error deleting attempts:', e);
+        }
+        
+        try {
+            // Delete questions
+            const { data: allQuestions } = await supabase.from('questions').select('id');
+            if (allQuestions && allQuestions.length > 0) {
+                const questionIds = allQuestions.map(q => q.id);
+                const { error: questionsError } = await supabase
+                    .from('questions')
+                    .delete()
+                    .in('id', questionIds);
+                if (!questionsError) deletedCounts.questions = allQuestions.length;
+            }
+        } catch (e) {
+            console.warn('Error deleting questions:', e);
+        }
+        
+        try {
+            // Delete exams
+            const { data: allExams } = await supabase.from('exams').select('id');
+            if (allExams && allExams.length > 0) {
+                const examIds = allExams.map(e => e.id);
+                const { error: examsError } = await supabase
+                    .from('exams')
+                    .delete()
+                    .in('id', examIds);
+                if (!examsError) deletedCounts.exams = allExams.length;
+            }
+        } catch (e) {
+            console.warn('Error deleting exams:', e);
+        }
         
         // Delete LMS data if tables exist
         try {
-            await supabase.from('materials').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-            await supabase.from('student_progress').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            const { data: allMaterials } = await supabase.from('materials').select('id');
+            if (allMaterials && allMaterials.length > 0) {
+                const materialIds = allMaterials.map(m => m.id);
+                const { error: materialsError } = await supabase
+                    .from('materials')
+                    .delete()
+                    .in('id', materialIds);
+                if (!materialsError) deletedCounts.materials = allMaterials.length;
+            }
         } catch (e) {
-            // Tables might not exist
+            console.warn('Materials table might not exist or error:', e);
+        }
+        
+        try {
+            const { data: allProgress } = await supabase.from('student_progress').select('id');
+            if (allProgress && allProgress.length > 0) {
+                const progressIds = allProgress.map(p => p.id);
+                const { error: progressError } = await supabase
+                    .from('student_progress')
+                    .delete()
+                    .in('id', progressIds);
+                if (!progressError) deletedCounts.progress = allProgress.length;
+            }
+        } catch (e) {
+            console.warn('Progress table might not exist or error:', e);
         }
         
         // Delete users last (may have foreign key constraints)
-        await supabase.from('users').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        // Note: We need to preserve at least one admin user or the current admin
+        try {
+            // Get current admin user ID to preserve
+            let currentUser = null;
+            if (typeof SecurityUtils !== 'undefined' && SecurityUtils.getSecureSession) {
+                const session = SecurityUtils.getSecureSession();
+                if (session && session.user) {
+                    currentUser = session.user;
+                }
+            }
+            if (!currentUser) {
+                currentUser = getCurrentUser();
+            }
+            
+            // Get all users
+            const { data: allUsers } = await supabase.from('users').select('id');
+            if (allUsers && allUsers.length > 0) {
+                let userIdsToDelete = allUsers.map(u => u.id);
+                
+                // Preserve current admin if exists
+                if (currentUser && currentUser.role === 'admin') {
+                    userIdsToDelete = userIdsToDelete.filter(id => id !== currentUser.id);
+                    deletedCounts.users = `${userIdsToDelete.length} (current admin preserved)`;
+                } else {
+                    deletedCounts.users = allUsers.length;
+                }
+                
+                if (userIdsToDelete.length > 0) {
+                    const { error: usersError } = await supabase
+                        .from('users')
+                        .delete()
+                        .in('id', userIdsToDelete);
+                    if (usersError) {
+                        console.error('Error deleting users:', usersError);
+                        deletedCounts.users = 'error';
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Error deleting users:', e);
+        }
         
-        showSuccess('All data cleared successfully!', 'Complete');
+        const summary = `Data cleared successfully!\n\n` +
+            `Deleted:\n` +
+            `- Student responses: ${deletedCounts.responses}\n` +
+            `- Exam grades: ${deletedCounts.grades}\n` +
+            `- Exam attempts: ${deletedCounts.attempts}\n` +
+            `- Questions: ${deletedCounts.questions}\n` +
+            `- Exams: ${deletedCounts.exams}\n` +
+            `- Materials: ${deletedCounts.materials}\n` +
+            `- Progress records: ${deletedCounts.progress}\n` +
+            `- Users: ${deletedCounts.users}`;
+        
+        showSuccess(summary, 'Complete');
         loadDatabaseStats();
         loadAllUsers();
         loadResults();
@@ -2248,7 +2401,7 @@ async function clearAllData() {
         
     } catch (error) {
         console.error('Error clearing all data:', error);
-        showError('Failed to clear data. Some data may have been deleted. Please check the database.', 'Error');
+        showError(`Failed to clear data: ${error.message}\n\nSome data may have been deleted. Please check the database.`, 'Error');
     }
 }
 
