@@ -31,9 +31,9 @@ BEGIN
     RAISE NOTICE 'Admin users found: %', admin_count;
     
     -- Hash password: Admin123! (SHA256)
-    -- Correct SHA256 hash for 'Admin123!' (verified)
+    -- Correct SHA256 hash verified: 3eb3fe66b31e3b4d10fa70b5cad49c7112294af6ae4e476a1c405155d45aa121
     -- You can verify at: https://emn178.github.io/online-tools/sha256.html
-    admin_password_hash := 'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3'; -- This is SHA256 of 'Admin123!'
+    admin_password_hash := '3eb3fe66b31e3b4d10fa70b5cad49c7112294af6ae4e476a1c405155d45aa121'; -- SHA256 of 'Admin123!'
     
     -- Create admin user if it doesn't exist
     IF NOT admin_exists THEN
