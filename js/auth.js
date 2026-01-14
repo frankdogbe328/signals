@@ -55,7 +55,7 @@ async function handleLogin(e) {
     // Sanitize inputs
     const username = usernameInput ? SecurityUtils ? SecurityUtils.sanitizeInput(usernameInput.value) : usernameInput.value.trim() : '';
     const password = passwordInput ? passwordInput.value : '';
-    const userType = userTypeInput ? userTypeInput.value : '';
+    let userType = userTypeInput ? userTypeInput.value : '';
     
     // Clear previous errors
     errorMessage.classList.remove('show');
