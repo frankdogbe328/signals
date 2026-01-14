@@ -2,13 +2,13 @@
 
 ## 🔗 All Portal Links
 
-### **Main Login/Registration**
+### **Main Login/Registration** (Student Only)
 - **URL:** `index.html` or root URL
-- **Access:** Public (for login/student registration)
+- **Access:** Public (for student login/registration only)
 - **Features:**
-  - Login for Admin, Lecturer, and Student
-  - Student registration only
-  - Lecturer registration link is hidden from students
+  - Login for **Students only** (lecturer/admin options hidden)
+  - Student registration
+  - Lecturer and admin login options are **NOT visible** to students
 
 ---
 
@@ -30,10 +30,19 @@
 
 ---
 
-### **2. Lecturer LMS Portal** 📚
+### **2. Lecturer Login** 👨‍🏫 (Separate Portal - Hidden from Students)
+- **URL:** `lecturer-login.html`
+- **Access:** Lecturer role only
+- **NOT visible on main login page** - Students cannot see this
+- **Features:**
+  - Dedicated lecturer login page
+  - Select portal (LMS or Exam) after login
+  - Link to lecturer registration
+
+### **3. Lecturer LMS Portal** 📚
 - **URL:** `lecturer-dashboard.html`
 - **Access:** Lecturer role only
-- **Login As:** Select "Lecturer" → Choose "LMS Portal"
+- **Login:** Via `lecturer-login.html` → Select "LMS Portal"
 - **Features:**
   - Upload learning materials
   - Manage materials by subject and class
@@ -43,10 +52,10 @@
 
 ---
 
-### **3. Lecturer Exam Portal** 📝
+### **4. Lecturer Exam Portal** 📝
 - **URL:** `exam-portal/lecturer-exam-dashboard.html`
 - **Access:** Lecturer role only
-- **Login As:** Select "Lecturer" → Choose "Exam Portal"
+- **Login:** Via `lecturer-login.html` → Select "Exam Portal"
 - **Features:**
   - Create exams and quizzes
   - Add questions (Multiple Choice, True/False, Short Answer, Essay)
@@ -58,10 +67,10 @@
 
 ---
 
-### **4. Student LMS Portal** 📚
+### **5. Student LMS Portal** 📚
 - **URL:** `student-dashboard.html`
 - **Access:** Student role only
-- **Login As:** Select "Student" → Choose "LMS Portal"
+- **Login:** Via `index.html` → Select "Student" → Choose "LMS Portal"
 - **Features:**
   - View and download learning materials
   - Register for subjects
@@ -70,10 +79,10 @@
 
 ---
 
-### **5. Student Exam Portal** 📝
+### **6. Student Exam Portal** 📝
 - **URL:** `exam-portal/student-exam-portal.html`
 - **Access:** Student role only
-- **Login As:** Select "Student" → Choose "Exam Portal"
+- **Login:** Via `index.html` → Select "Student" → Choose "Exam Portal"
 - **Features:**
   - View available exams
   - Take timed exams
@@ -82,11 +91,11 @@
 
 ---
 
-### **6. Lecturer Registration** 🔒 (Restricted)
+### **7. Lecturer Registration** 🔒 (Restricted - Hidden from Students)
 - **URL:** `lecturer-register.html`
 - **Access:** Restricted - Requires registration code
 - **Registration Code:** `LECTURER2026` (⚠️ CHANGE IN PRODUCTION!)
-- **Hidden from:** Students cannot see this link
+- **Hidden from:** Students cannot see this link (only accessible via `lecturer-login.html`)
 - **Features:**
   - Restricted lecturer registration
   - Requires special access code
