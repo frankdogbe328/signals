@@ -172,13 +172,22 @@ async function loadResults() {
         }
         
         if (studentFilter) {
-            filteredResults = filteredResults.filter(r => 
-                r.student?.name?.toLowerCase().includes(studentFilter) ||
-                r.student?.username?.toLowerCase().includes(studentFilter)
-            );
+            // Enhanced search: search by username OR full name (case-insensitive)
+            const searchLower = studentFilter.toLowerCase().trim();
+            filteredResults = filteredResults.filter(r => {
+                const studentName = (r.student?.name || '').toLowerCase();
+                const studentUsername = (r.student?.username || '').toLowerCase();
+                // Search in both name and username
+                return studentName.includes(searchLower) || 
+                       studentUsername.includes(searchLower) ||
+                       // Also search partial matches (e.g., "John" matches "John Doe")
+                       studentName.split(' ').some(part => part.startsWith(searchLower)) ||
+                       studentUsername.split(' ').some(part => part.startsWith(searchLower));
+            });
         }
         
-        displayResults(filteredResults);
+        // Group results by class for better organization
+        displayResultsGroupedByClass(filteredResults);
         
     } catch (error) {
         console.error('Error loading results:', error);
@@ -186,8 +195,8 @@ async function loadResults() {
     }
 }
 
-// Display results in table
-function displayResults(results) {
+// Display results grouped by class
+function displayResultsGroupedByClass(results) {
     const container = document.getElementById('resultsContainer');
     if (!container) return;
     
@@ -200,61 +209,108 @@ function displayResults(results) {
     const hasUnreleased = results.some(r => !r.exam?.results_released);
     document.getElementById('releaseAllBtn').style.display = hasUnreleased ? 'block' : 'none';
     
-    let html = `
-        <div style="overflow-x: auto;">
-            <table class="results-table">
-                <thead>
-                    <tr>
-                        <th>Student Name</th>
-                        <th>Class</th>
-                        <th>Exam</th>
-                        <th>Subject</th>
-                        <th>Lecturer</th>
-                        <th>Score</th>
-                        <th>Percentage</th>
-                        <th>Grade</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
-    
+    // Group results by class
+    const classGroups = {};
     results.forEach(result => {
         const student = result.student || {};
-        const exam = result.exam || {};
-        const lecturer = exam.lecturer || {};
-        const grade = result.grade || calculateGrade(result.percentage);
-        const gradeClass = `grade-${grade}`;
-        const statusBadge = exam.results_released 
-            ? '<span style="color: #28a745; font-weight: bold;">Released</span>'
-            : '<span style="color: #ffc107; font-weight: bold;">Pending</span>';
+        const classId = student.class || 'unknown';
+        
+        if (!classGroups[classId]) {
+            classGroups[classId] = [];
+        }
+        classGroups[classId].push(result);
+    });
+    
+    // Sort classes alphabetically
+    const sortedClasses = Object.keys(classGroups).sort((a, b) => {
+        const nameA = formatClassName(a);
+        const nameB = formatClassName(b);
+        return nameA.localeCompare(nameB);
+    });
+    
+    let html = '';
+    
+    sortedClasses.forEach(classId => {
+        const className = formatClassName(classId);
+        const classResults = classGroups[classId];
+        
+        // Sort students within class alphabetically by name
+        classResults.sort((a, b) => {
+            const nameA = (a.student?.name || a.student?.username || '').toLowerCase();
+            const nameB = (b.student?.name || b.student?.username || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
         
         html += `
-            <tr>
-                <td>${escapeHtml(student.name || student.username || 'Unknown')}</td>
-                <td>${formatClassName(student.class || '')}</td>
-                <td>${escapeHtml(exam.title || 'Unknown')}</td>
-                <td>${escapeHtml(exam.subject || 'Unknown')}</td>
-                <td>${escapeHtml(lecturer.name || lecturer.username || 'Unknown')}</td>
-                <td>${result.score || 0} / ${exam.total_marks || 0}</td>
-                <td>${(result.percentage || 0).toFixed(1)}%</td>
-                <td><span class="grade-badge ${gradeClass}">${grade}</span></td>
-                <td>${statusBadge}</td>
-                <td>
-                    ${!exam.results_released ? `<button onclick="releaseExamResults('${exam.id}')" class="btn btn-success" style="padding: 6px 12px; font-size: 12px;">Release</button>` : ''}
-                </td>
-            </tr>
+            <div class="card" style="margin-bottom: 25px;">
+                <h4 style="color: var(--primary-color); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-color);">
+                    📚 ${className} 
+                    <span style="font-size: 14px; font-weight: normal; color: #666;">(${classResults.length} result${classResults.length !== 1 ? 's' : ''})</span>
+                </h4>
+                <div style="overflow-x: auto;">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Student Name / Username</th>
+                                <th>Exam</th>
+                                <th>Subject</th>
+                                <th>Lecturer</th>
+                                <th>Score</th>
+                                <th>Percentage</th>
+                                <th>Grade</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        
+        classResults.forEach(result => {
+            const student = result.student || {};
+            const exam = result.exam || {};
+            const lecturer = exam.lecturer || {};
+            const grade = result.grade || calculateGrade(result.percentage);
+            const gradeClass = `grade-${grade}`;
+            const statusBadge = exam.results_released 
+                ? '<span style="color: #28a745; font-weight: bold;">Released</span>'
+                : '<span style="color: #ffc107; font-weight: bold;">Pending</span>';
+            
+            // Display both name and username if available
+            const studentDisplay = student.name 
+                ? `${escapeHtml(student.name)} <small style="color: #666;">(${escapeHtml(student.username || 'N/A')})</small>`
+                : escapeHtml(student.username || 'Unknown');
+            
+            html += `
+                <tr>
+                    <td>${studentDisplay}</td>
+                    <td>${escapeHtml(exam.title || 'Unknown')}</td>
+                    <td>${escapeHtml(exam.subject || 'Unknown')}</td>
+                    <td>${escapeHtml(lecturer.name || lecturer.username || 'Unknown')}</td>
+                    <td>${result.score || 0} / ${exam.total_marks || 0}</td>
+                    <td>${(result.percentage || 0).toFixed(1)}%</td>
+                    <td><span class="grade-badge ${gradeClass}">${grade}</span></td>
+                    <td>${statusBadge}</td>
+                    <td>
+                        ${!exam.results_released ? `<button onclick="releaseExamResults('${exam.id}')" class="btn btn-success" style="padding: 6px 12px; font-size: 12px;">Release</button>` : ''}
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         `;
     });
     
-    html += `
-                </tbody>
-            </table>
-        </div>
-    `;
-    
     container.innerHTML = html;
+}
+
+// Display results in table (legacy function - kept for compatibility)
+function displayResults(results) {
+    displayResultsGroupedByClass(results);
 }
 
 // Release results for a specific exam
@@ -412,16 +468,28 @@ function displayFinalGrades(classGroups) {
                         <tbody>
         `;
         
-        students.forEach(studentData => {
+        // Sort students alphabetically by name
+        const sortedStudents = [...students].sort((a, b) => {
+            const nameA = (a.student?.name || a.student?.username || '').toLowerCase();
+            const nameB = (b.student?.name || b.student?.username || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+        
+        sortedStudents.forEach(studentData => {
             const student = studentData.student;
             const finalScore = studentData.totalScaledScore;
             const finalGrade = calculateFinalGrade(finalScore);
             const gradeClass = `grade-${finalGrade}`;
             const allReleased = studentData.exams.every(e => e.exam?.results_released);
             
+            // Display both name and username if available
+            const studentDisplay = student.name 
+                ? `${escapeHtml(student.name)} <small style="color: #666;">(${escapeHtml(student.username || 'N/A')})</small>`
+                : escapeHtml(student.username || 'Unknown');
+            
             html += `
                 <tr>
-                    <td>${escapeHtml(student.name || student.username || 'Unknown')}</td>
+                    <td>${studentDisplay}</td>
                     <td>${studentData.exams.length}</td>
                     <td>${finalScore.toFixed(1)}%</td>
                     <td><span class="grade-badge ${gradeClass}">${finalGrade}</span></td>

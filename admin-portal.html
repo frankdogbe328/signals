@@ -172,8 +172,9 @@
                     </select>
                 </div>
                 <div class="filter-group">
-                    <label for="filterStudent">Student</label>
-                    <input type="text" id="filterStudent" class="form-control" placeholder="Search by name..." oninput="loadResults()">
+                    <label for="filterStudent">Search Student</label>
+                    <input type="text" id="filterStudent" class="form-control" placeholder="Search by username or full name..." oninput="loadResults()" autocomplete="off">
+                    <small style="color: #666; font-size: 12px; display: block; margin-top: 5px;">Searches both username and full name</small>
                 </div>
                 <div class="filter-group">
                     <button onclick="loadResults()" class="btn btn-primary" style="min-width: 120px;">Refresh</button>
