@@ -17,9 +17,9 @@ WHERE username = 'admin' AND role = 'admin';
 
 -- Update admin password to correct SHA256 hash
 -- Password: Admin123!
--- SHA256 Hash: (will be calculated - use online tool or CryptoJS)
+-- SHA256 Hash: 3eb3fe66b31e3b4d10fa70b5cad49c7112294af6ae4e476a1c405155d45aa121
 UPDATE users 
-SET password = 'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3'
+SET password = '3eb3fe66b31e3b4d10fa70b5cad49c7112294af6ae4e476a1c405155d45aa121'
 WHERE username = 'admin' AND role = 'admin';
 
 -- Verify the update

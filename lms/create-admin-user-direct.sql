@@ -16,20 +16,20 @@ CHECK (role IN ('lecturer', 'student', 'admin'));
 
 -- Create admin user directly
 -- Password: Admin123!
--- SHA256 Hash: a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3
+-- SHA256 Hash: 3eb3fe66b31e3b4d10fa70b5cad49c7112294af6ae4e476a1c405155d45aa121
 INSERT INTO users (username, name, email, password, role, created_at)
 VALUES (
     'admin',
     'System Administrator',
     'admin@signalschool.mil.gh',
-    'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3',
+    '3eb3fe66b31e3b4d10fa70b5cad49c7112294af6ae4e476a1c405155d45aa121',
     'admin',
     NOW()
 )
 ON CONFLICT (username) DO UPDATE
 SET 
     role = 'admin',
-    password = 'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3',
+    password = '3eb3fe66b31e3b4d10fa70b5cad49c7112294af6ae4e476a1c405155d45aa121',
     name = 'System Administrator',
     email = 'admin@signalschool.mil.gh';
 
