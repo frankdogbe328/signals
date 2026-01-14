@@ -63,10 +63,25 @@ async function handleAdminLogin(e) {
     // Try Supabase first, fallback to localStorage for backward compatibility
     let user = null;
     
+    // Ensure Supabase client is initialized
+    if (typeof initSupabase === 'function') {
+        initSupabase();
+    }
+    
+    // Wait a moment for Supabase to initialize if needed
+    if (!window.supabaseClient && typeof window.supabase !== 'undefined') {
+        console.log('Waiting for Supabase client initialization...');
+        await new Promise(resolve => setTimeout(resolve, 500));
+        if (typeof initSupabase === 'function') {
+            initSupabase();
+        }
+    }
+    
     // Check if Supabase is available
     if (typeof getUserFromSupabase === 'function') {
         try {
             console.log('Attempting admin login for:', username);
+            console.log('Supabase client available:', !!window.supabaseClient);
             // Force admin role check
             user = await getUserFromSupabase(username, password, 'admin');
             
