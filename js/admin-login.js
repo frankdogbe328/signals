@@ -115,8 +115,16 @@ async function handleAdminLogin(e) {
         }
     } else {
         console.error('getUserFromSupabase function not available');
+        console.error('Debug info:', {
+            supabase: typeof window.supabase,
+            supabaseClient: typeof window.supabaseClient,
+            SUPABASE_URL: typeof SUPABASE_URL,
+            SUPABASE_ANON_KEY: typeof SUPABASE_ANON_KEY,
+            getUserFromSupabase: typeof getUserFromSupabase,
+            initSupabase: typeof initSupabase
+        });
         if (errorMessage) {
-            errorMessage.textContent = 'Database connection not available. Please check your configuration.';
+            errorMessage.textContent = 'Database connection not available. Please refresh the page and try again.';
             errorMessage.classList.add('show');
         }
         return;
