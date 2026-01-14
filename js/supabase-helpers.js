@@ -116,18 +116,31 @@ async function getUserFromSupabase(username, password, role) {
             if (CryptoJS) {
                 console.log('Using CryptoJS.SHA256 for verification');
                 const inputHash = CryptoJS.SHA256(password).toString();
+                console.log('Input password:', password);
                 console.log('Input password hash (SHA256):', inputHash);
+                console.log('Input hash length:', inputHash.length);
                 console.log('Database password hash:', data.password);
-                passwordMatch = inputHash.toLowerCase() === data.password.toLowerCase();
-                console.log('Password match (CryptoJS SHA256):', passwordMatch);
+                console.log('Database hash length:', data.password.length);
+                
+                // Compare hashes (case-insensitive for hex)
+                const inputHashLower = inputHash.toLowerCase();
+                const dbHashLower = data.password.toLowerCase();
+                passwordMatch = inputHashLower === dbHashLower;
+                
+                console.log('Hash comparison:');
+                console.log('  Input hash (lowercase):', inputHashLower);
+                console.log('  DB hash (lowercase):', dbHashLower);
+                console.log('  Match:', passwordMatch);
                 
                 if (!passwordMatch) {
-                    console.warn('Hashes do not match. Checking SecurityUtils as fallback...');
-                    // Try SecurityUtils as fallback
-                    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.verifyPassword) {
-                        passwordMatch = await SecurityUtils.verifyPassword(password, data.password);
-                        console.log('SecurityUtils verification result (fallback):', passwordMatch);
-                    }
+                    console.error('❌ HASHES DO NOT MATCH!');
+                    console.error('This means the password hash in the database is incorrect.');
+                    console.error('To fix:');
+                    console.error('  1. Go to: https://emn178.github.io/online-tools/sha256.html');
+                    console.error('  2. Enter password: Admin123!');
+                    console.error('  3. Copy the hash');
+                    console.error('  4. Run SQL: UPDATE users SET password = ''HASH_HERE'' WHERE username = ''admin'' AND role = ''admin'';');
+                    console.error('  5. Expected hash should be:', inputHashLower);
                 }
             } else {
                 console.warn('CryptoJS not available, trying SecurityUtils');
