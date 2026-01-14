@@ -45,48 +45,41 @@ function initSupabase() {
     return true;
 }
 
-// Wait for page to be fully loaded
-window.addEventListener('load', function() {
-    // Try to initialize with a small delay to ensure Supabase library is ready
-    setTimeout(function() {
-        if (typeof window.supabase !== 'undefined') {
-            initSupabase();
-        } else {
-            // Keep trying for a bit
-            let attempts = 0;
-            const maxAttempts = 20;
-            const checkInterval = setInterval(function() {
-                attempts++;
-                if (typeof window.supabase !== 'undefined') {
-                    initSupabase();
-                    clearInterval(checkInterval);
-                } else if (attempts >= maxAttempts) {
-                    console.error('Supabase library failed to load');
-                    clearInterval(checkInterval);
-                }
-            }, 100);
-        }
-    }, 100);
-});
-
-// Also try immediately if Supabase is already loaded
-if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
-    initSupabase();
-}
-
 // Make initSupabase globally available
 window.initSupabase = initSupabase;
 
-// Try to initialize on DOMContentLoaded as well (faster than window.load)
-document.addEventListener('DOMContentLoaded', function() {
+// Initialize immediately when script loads (don't wait for window.load)
+(function initializeSupabaseNow() {
+    // Check if Supabase library is loaded
     if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
         initSupabase();
     } else {
-        // Wait a bit and try again
-        setTimeout(function() {
+        // Wait a bit and try again (library might still be loading)
+        let attempts = 0;
+        const maxAttempts = 50; // Try for 5 seconds (50 * 100ms)
+        const checkInterval = setInterval(function() {
+            attempts++;
             if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
                 initSupabase();
+                clearInterval(checkInterval);
+            } else if (attempts >= maxAttempts) {
+                console.error('Supabase library failed to load after 5 seconds');
+                clearInterval(checkInterval);
             }
-        }, 200);
+        }, 100);
+    }
+})();
+
+// Also try on DOMContentLoaded (faster than window.load)
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+        initSupabase();
+    }
+});
+
+// Also try on window.load as backup
+window.addEventListener('load', function() {
+    if (typeof window.supabase !== 'undefined' && typeof window.supabase.createClient === 'function') {
+        initSupabase();
     }
 });
