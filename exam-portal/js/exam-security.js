@@ -180,9 +180,9 @@ function showFullscreenRequirement(onSuccess, onCancel) {
     `;
     
     modal.innerHTML = `
-        <div style="text-align: center; max-width: 600px; padding: 40px; background: #1a1a1a; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+        <div style="text-align: center; max-width: 600px; padding: 40px 20px; background: #1a1a1a; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.5); width: 95%; margin: 0 auto;">
             <div style="font-size: 64px; margin-bottom: 20px;">🔒</div>
-            <h2 style="color: #ff9800; margin-bottom: 20px; font-size: 28px;">Fullscreen Mode Required</h2>
+            <h2 style="color: #ff9800; margin-bottom: 20px; font-size: 28px; line-height: 1.3;">Fullscreen Mode Required</h2>
             <p style="font-size: 18px; line-height: 1.6; margin-bottom: 30px; color: #e0e0e0;">
                 For exam security and integrity, you must enable fullscreen mode before you can start the exam.
             </p>
@@ -194,7 +194,7 @@ function showFullscreenRequirement(onSuccess, onCancel) {
                     <li>Or use your browser's fullscreen option</li>
                 </ol>
             </div>
-            <div style="display: flex; gap: 15px; justify-content: center;">
+            <div id="fullscreenButtons" style="display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
                 <button id="enableFullscreenBtn" style="
                     background: #4CAF50;
                     color: white;
@@ -205,6 +205,10 @@ function showFullscreenRequirement(onSuccess, onCancel) {
                     cursor: pointer;
                     font-weight: bold;
                     transition: background 0.3s;
+                    min-height: 52px;
+                    min-width: 200px;
+                    -webkit-tap-highlight-color: transparent;
+                    touch-action: manipulation;
                 ">Enable Fullscreen</button>
                 <button id="cancelExamBtn" style="
                     background: #f44336;
@@ -216,10 +220,58 @@ function showFullscreenRequirement(onSuccess, onCancel) {
                     cursor: pointer;
                     font-weight: bold;
                     transition: background 0.3s;
+                    min-height: 52px;
+                    min-width: 200px;
+                    -webkit-tap-highlight-color: transparent;
+                    touch-action: manipulation;
                 ">Cancel</button>
             </div>
-            <p id="fullscreenStatus" style="margin-top: 20px; color: #ff9800; font-size: 14px;"></p>
+            <p id="fullscreenStatus" style="margin-top: 20px; color: #ff9800; font-size: 14px; word-wrap: break-word;"></p>
         </div>
+        <style>
+            @media (max-width: 768px) {
+                #fullscreenRequirementModal > div {
+                    padding: 30px 15px !important;
+                    width: 98% !important;
+                }
+                #fullscreenRequirementModal h2 {
+                    font-size: 22px !important;
+                }
+                #fullscreenRequirementModal p {
+                    font-size: 16px !important;
+                }
+                #fullscreenButtons {
+                    flex-direction: column !important;
+                    width: 100% !important;
+                }
+                #enableFullscreenBtn,
+                #cancelExamBtn {
+                    width: 100% !important;
+                    min-width: 100% !important;
+                    padding: 16px 20px !important;
+                    font-size: 16px !important;
+                }
+                #enableFullscreenBtn:active,
+                #cancelExamBtn:active {
+                    transform: scale(0.98);
+                    opacity: 0.9;
+                }
+            }
+            @media (max-width: 480px) {
+                #fullscreenRequirementModal > div {
+                    padding: 25px 12px !important;
+                }
+                #fullscreenRequirementModal h2 {
+                    font-size: 20px !important;
+                }
+                #fullscreenRequirementModal p {
+                    font-size: 15px !important;
+                }
+                #fullscreenRequirementModal div[style*="font-size: 64px"] {
+                    font-size: 48px !important;
+                }
+            }
+        </style>
     `;
     
     document.body.appendChild(modal);
