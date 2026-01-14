@@ -328,10 +328,9 @@ function displayResultsGroupedByClass(results) {
             return nameA.localeCompare(nameB);
         });
         
-        // Filter out students with no results if we're filtering by subject
-        const displayStudents = subjectFilter === 'all' 
-            ? students 
-            : students.filter(s => s.results.length > 0);
+        // Always show ALL students (even without results)
+        // Subject filter only affects which exam results are shown, not which students appear
+        const displayStudents = students;
         
         if (displayStudents.length === 0) {
             return; // Skip this class if no students to display
@@ -372,17 +371,31 @@ function displayResultsGroupedByClass(results) {
                 ? `${escapeHtml(student.name)} <small style="color: #666;">(${escapeHtml(student.username || 'N/A')})</small>`
                 : escapeHtml(student.username || 'Unknown');
             
-            if (studentResults.length === 0) {
-                // Student with no exam results yet
+            // Filter results by subject if filter is applied
+            let displayResults = studentResults;
+            if (subjectFilter !== 'all') {
+                displayResults = studentResults.filter(r => r.exam?.subject === subjectFilter);
+            }
+            
+            if (displayResults.length === 0 && studentResults.length === 0) {
+                // Student with no exam results yet (for any subject)
                 html += `
                     <tr style="opacity: 0.7;">
                         <td>${studentDisplay}</td>
                         <td colspan="8" style="color: #999; font-style: italic;">No exam results yet</td>
                     </tr>
                 `;
+            } else if (displayResults.length === 0 && studentResults.length > 0) {
+                // Student has results but not for the selected subject
+                html += `
+                    <tr style="opacity: 0.7;">
+                        <td>${studentDisplay}</td>
+                        <td colspan="8" style="color: #999; font-style: italic;">No results for selected subject</td>
+                    </tr>
+                `;
             } else {
-                // Student with exam results
-                studentResults.forEach(result => {
+                // Student with exam results (filtered by subject if applicable)
+                displayResults.forEach(result => {
                     const exam = result.exam || {};
                     const lecturer = exam.lecturer || {};
                     const grade = result.grade || calculateGrade(result.percentage);
