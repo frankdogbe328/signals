@@ -97,7 +97,8 @@ function getCoursesForClass(classId) {
             'Basic physics',
             'Basic maths',
             'Cable networking',
-            'Signal tactics'
+            'Signal tactics',
+            'Telecom'
         ],
         // SIGNALS B III – B II - Signal Basic subjects (intermediate level)
         'signals-b-iii-b-ii': [
@@ -113,7 +114,8 @@ function getCoursesForClass(classId) {
             'Basic physics',
             'Basic maths',
             'Cable networking',
-            'Signal tactics'
+            'Signal tactics',
+            'Telecom'
         ],
         // SIGNALS B II – B I - Signal Basic subjects (advanced level)
         'signals-b-ii-b-i': [
@@ -129,7 +131,8 @@ function getCoursesForClass(classId) {
             'Basic physics',
             'Basic maths',
             'Cable networking',
-            'Signal tactics'
+            'Signal tactics',
+            'Telecom'
         ],
         // SUPERINTENDENT - Signal Superintendent Course
         'superintendent': [
@@ -178,7 +181,8 @@ function getCoursesForClass(classId) {
             'Communication centre management',
             'Power management',
             'Information Technology',
-            'Signal tactics'
+            'Signal tactics',
+            'Telecom'
         ],
         // REGIMENTAL B II – B I - Signal – Regimental Basic subjects (advanced level)
         'regimental-b-ii-b-i': [
