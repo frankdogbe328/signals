@@ -746,3 +746,35 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// Get exam type percentage weight (matches lecturer-exam.js)
+function getExamTypePercentage(examType) {
+    if (!examType) return 0;
+    const percentages = {
+        'opening_exam': 5,
+        'quiz': 5,
+        'bft': 5,
+        'mid_course_exercise': 15,
+        'mid_cs_exam': 20,
+        'gen_assessment': 5,
+        'final_cse_exercise': 20,
+        'final_exam': 25
+    };
+    return percentages[examType] || 0;
+}
+
+// Format exam type for display (matches lecturer-exam.js)
+function formatExamType(examType) {
+    if (!examType || examType === 'N/A') return 'N/A';
+    const types = {
+        'opening_exam': 'Opening Exam',
+        'quiz': 'Quiz',
+        'bft': 'BFT (Written 2x Compulsory)',
+        'mid_course_exercise': 'Mid Course Exercise',
+        'mid_cs_exam': 'Mid CS Exam',
+        'gen_assessment': 'Gen Assessment',
+        'final_cse_exercise': 'Final CSE Exercise',
+        'final_exam': 'Final Exam'
+    };
+    return types[examType] || examType;
+}
