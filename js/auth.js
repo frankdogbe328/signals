@@ -142,12 +142,15 @@ async function handleLogin(e) {
         // Set current user (legacy support)
         setCurrentUser(user);
         
-        // ADMIN: Redirect directly to admin portal (no portal selection)
-        if (userType === 'admin' || user.role === 'admin') {
-            setTimeout(() => {
-                window.location.href = 'admin-portal.html';
-            }, 100);
-            return; // Exit early for admin
+        // Admin login should not happen from main login page
+        // If somehow admin tries to login here, redirect to admin login page
+        if (userType === 'admin' || (user && user.role === 'admin')) {
+            if (typeof SecurityUtils !== 'undefined' && SecurityUtils.clearSecureSession) {
+                SecurityUtils.clearSecureSession();
+            }
+            localStorage.removeItem('currentUser');
+            window.location.href = 'admin-login.html';
+            return;
         }
         
         // Check for redirect parameter in URL (takes priority) - sanitize redirect
