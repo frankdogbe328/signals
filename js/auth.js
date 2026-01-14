@@ -86,17 +86,34 @@ async function handleLogin(e) {
     // Check if Supabase is available
     if (typeof getUserFromSupabase === 'function') {
         try {
-            user = await getUserFromSupabase(username, password, userType);
-            // Verify the user role matches what was selected
-            if (user && user.role !== userType) {
-                console.warn('Role mismatch:', user.role, 'expected:', userType);
+            // Try to get user - if userType is student but user is lecturer, allow it
+            // This allows lecturers to login even if dropdown only shows student
+            let searchRole = userType;
+            user = await getUserFromSupabase(username, password, searchRole);
+            
+            // If not found with student role, try lecturer role (for hidden lecturer login)
+            if (!user && userType === 'student') {
+                user = await getUserFromSupabase(username, password, 'lecturer');
+                if (user) {
+                    searchRole = 'lecturer'; // Update to actual role
+                }
+            }
+            
+            // Verify the user role
+            if (user && user.role !== searchRole) {
+                console.warn('Role mismatch:', user.role, 'expected:', searchRole);
                 // For admin, this is critical - reject if role doesn't match
-                if (userType === 'admin' && user.role !== 'admin') {
+                if (searchRole === 'admin' && user.role !== 'admin') {
                     user = null;
                     errorMessage.textContent = 'Invalid credentials for admin access.';
                     errorMessage.classList.add('show');
                     return;
                 }
+            }
+            
+            // Update userType to actual role for redirect
+            if (user) {
+                userType = user.role;
             }
         } catch (err) {
             console.error('Supabase login error:', err);
