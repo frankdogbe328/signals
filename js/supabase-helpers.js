@@ -103,33 +103,52 @@ async function getUserFromSupabase(username, password, role) {
         // Check if password is already hashed (64 char hex string) or plaintext (for migration)
         let passwordMatch = false;
         
+        console.log('Verifying password...');
+        console.log('Password length in DB:', data.password ? data.password.length : 'null');
+        console.log('Password format check:', data.password && data.password.length === 64 && /^[a-f0-9]{64}$/i.test(data.password));
+        
         if (data.password && data.password.length === 64 && /^[a-f0-9]{64}$/i.test(data.password)) {
             // Password is hashed, verify using hash
+            console.log('Password is hashed (64 chars). Verifying...');
             if (typeof SecurityUtils !== 'undefined' && SecurityUtils.verifyPassword) {
+                console.log('Using SecurityUtils.verifyPassword');
                 passwordMatch = await SecurityUtils.verifyPassword(password, data.password);
+                console.log('SecurityUtils verification result:', passwordMatch);
             } else {
                 // Fallback: hash the input and compare (for migration period)
+                console.log('SecurityUtils not available, using CryptoJS fallback');
                 const CryptoJS = window.CryptoJS;
                 if (CryptoJS) {
                     const inputHash = CryptoJS.SHA256(password).toString();
+                    console.log('Input password hash:', inputHash);
+                    console.log('Database password hash:', data.password);
                     passwordMatch = inputHash === data.password;
+                    console.log('Password match (CryptoJS):', passwordMatch);
                 } else {
+                    console.warn('CryptoJS not available, trying plaintext comparison');
                     // Temporary fallback for plaintext during migration
                     passwordMatch = data.password === password;
+                    console.log('Password match (plaintext):', passwordMatch);
                 }
             }
         } else {
             // Legacy plaintext password (migration support)
+            console.log('Password is not in expected hash format, trying legacy methods');
             // Try hashed comparison first, then fallback to plaintext
             if (typeof SecurityUtils !== 'undefined' && SecurityUtils.hashPassword) {
                 const hashedInput = await SecurityUtils.hashPassword(password);
                 passwordMatch = hashedInput === data.password || data.password === password;
+                console.log('Password match (SecurityUtils hash):', passwordMatch);
             } else {
                 passwordMatch = data.password === password;
+                console.log('Password match (plaintext fallback):', passwordMatch);
             }
         }
         
+        console.log('Final password verification result:', passwordMatch);
+        
         if (passwordMatch) {
+            console.log('✅ Password verified successfully! Returning user object.');
             // Convert to format expected by app (don't return password hash)
             const userObj = {
                 id: data.id,
@@ -143,6 +162,14 @@ async function getUserFromSupabase(username, password, role) {
             // Store password hash in session only if needed (not recommended)
             // userObj.passwordHash = data.password;
             return userObj;
+        } else {
+            console.error('❌ Password verification FAILED!');
+            console.error('This means:');
+            console.error('  1. User exists in database');
+            console.error('  2. But password does not match');
+            console.error('  3. Check if password hash in database is correct');
+            console.error('  4. Expected password: Admin123!');
+            console.error('  5. Expected hash (SHA256): Should be 64 characters');
         }
         return null;
     } catch (err) {
