@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - Signal Training School LMS</title>
+    <link rel="icon" type="image/png" href="images/led.jpg">
+    <link rel="shortcut icon" type="image/png" href="images/led.jpg">
+    <link rel="apple-touch-icon" href="images/led.jpg">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .admin-login-box {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 450px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+        .admin-badge {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .admin-login-box h2 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .admin-login-box p {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <video autoplay muted loop playsinline id="backgroundVideo" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
+            <source src="giff.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="admin-login-box">
+            <div class="logo-section">
+                <span class="admin-badge">🔐 Admin Access Only</span>
+                <h2>Admin Portal Login</h2>
+                <p>Restricted access - Administrators only</p>
+                <img src="images/led.jpg" alt="Signal Training School Logo" class="logo-img" onclick="window.location.href='index.html'" style="cursor: pointer; margin-top: 20px;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div class="logo-text" style="display: none;">
+                    <h1>🇬🇭 Signal Training School</h1>
+                    <h2>Admin Portal</h2>
+                </div>
+            </div>
+            
+            <form id="adminLoginForm" class="login-form">
+                <div class="form-group">
+                    <label for="adminUsername">Username</label>
+                    <input type="text" id="adminUsername" name="username" placeholder="Enter admin username" required autocomplete="username" inputmode="text">
+                </div>
+                
+                <div class="form-group">
+                    <label for="adminPassword">Password</label>
+                    <div style="position: relative;">
+                        <input type="password" id="adminPassword" name="password" placeholder="Enter password" required autocomplete="current-password" style="padding-right: 45px;">
+                        <span class="password-toggle" onclick="togglePassword('adminPassword')" style="position: absolute; right: 15px; top: 12px; cursor: pointer; font-size: 18px; color: #666; user-select: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;">👁️</span>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Login as Admin</button>
+                
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="index.html" style="color: var(--primary-color); font-size: 14px; text-decoration: none;">← Back to Main Login</a>
+                </div>
+                
+                <div id="adminErrorMessage" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="js/security.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-helpers.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/admin-login.js"></script>
+    
+    <script>
+        // Toggle password visibility
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const toggle = input.nextElementSibling;
+            if (input.type === 'password') {
+                input.type = 'text';
+                toggle.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                toggle.textContent = '👁️';
+            }
+        }
+        
+        // Handle video loading error gracefully
+        function handleVideoError() {
+            const video = document.getElementById('backgroundVideo');
+            const container = document.querySelector('.login-container');
+            if (video) {
+                video.style.display = 'none';
+            }
+            if (container) {
+                container.style.background = 'linear-gradient(135deg, #0066cc 0%, #0052a3 100%)';
+            }
+        }
+        
+        const video = document.getElementById('backgroundVideo');
+        if (video) {
+            video.addEventListener('error', handleVideoError);
+        }
+    </script>
+</body>
+</html>

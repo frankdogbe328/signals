@@ -18,12 +18,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     if (!currentUser || currentUser.role !== 'admin') {
-        // Redirect to login
+        // Redirect to dedicated admin login page
         if (typeof SecurityUtils !== 'undefined' && SecurityUtils.clearSecureSession) {
             SecurityUtils.clearSecureSession();
         }
         localStorage.removeItem('currentUser');
-        window.location.href = 'index.html?redirect=admin-portal.html';
+        window.location.href = 'admin-login.html';
         return;
     }
     
