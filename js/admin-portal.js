@@ -1293,7 +1293,7 @@ async function loadAllUsers() {
     }
 }
 
-// Display users in table
+// Display users in table, grouped by role
 function displayUsers(users) {
     const container = document.getElementById('usersContainer');
     if (!container) return;
@@ -1303,55 +1303,109 @@ function displayUsers(users) {
         return;
     }
     
-    let html = `
-        <div style="overflow-x: auto;">
-            <table class="results-table">
-                <thead>
-                    <tr>
-                        <th>Name</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Role</th>
-                        <th>Class</th>
-                        <th>Registered</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-    `;
+    // Group users by role
+    const usersByRole = {
+        'student': [],
+        'lecturer': [],
+        'admin': []
+    };
     
     users.forEach(user => {
-        const roleBadge = {
-            'admin': '<span style="background: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Admin</span>',
-            'lecturer': '<span style="background: #17a2b8; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Lecturer</span>',
-            'student': '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Student</span>'
-        }[user.role] || '<span style="color: #666;">Unknown</span>';
-        
-        const className = user.class ? formatClassName(user.class) : '-';
-        const registeredDate = user.created_at ? new Date(user.created_at).toLocaleDateString() : '-';
-        const nameDisplay = user.name || user.username || 'Unknown';
-        
-        html += `
-            <tr>
-                <td>${escapeHtml(nameDisplay)}</td>
-                <td>${escapeHtml(user.username || 'N/A')}</td>
-                <td>${escapeHtml(user.email || 'N/A')}</td>
-                <td>${roleBadge}</td>
-                <td>${className}</td>
-                <td>${registeredDate}</td>
-                <td>
-                    <button onclick="editUser('${user.id}')" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">Edit</button>
-                    <button onclick="resetUserPassword('${user.id}', '${escapeHtml(nameDisplay)}')" class="btn btn-warning" style="padding: 6px 12px; font-size: 12px;">Reset Password</button>
-                </td>
-            </tr>
-        `;
+        const role = user.role || 'student';
+        if (usersByRole.hasOwnProperty(role)) {
+            usersByRole[role].push(user);
+        } else {
+            usersByRole['student'].push(user); // Default to student if unknown role
+        }
     });
     
-    html += `
-                </tbody>
-            </table>
-        </div>
-    `;
+    // Role display configuration
+    const roleConfig = {
+        'student': {
+            title: '👨‍🎓 Students',
+            color: '#28a745',
+            badge: '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Student</span>'
+        },
+        'lecturer': {
+            title: '👨‍🏫 Lecturers',
+            color: '#17a2b8',
+            badge: '<span style="background: #17a2b8; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Lecturer</span>'
+        },
+        'admin': {
+            title: '👑 Administrators',
+            color: '#dc3545',
+            badge: '<span style="background: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Admin</span>'
+        }
+    };
+    
+    let html = '';
+    
+    // Display each role group
+    ['student', 'lecturer', 'admin'].forEach(role => {
+        const roleUsers = usersByRole[role];
+        if (roleUsers.length === 0) return; // Skip empty groups
+        
+        const config = roleConfig[role];
+        
+        html += `
+            <div class="card" style="margin-bottom: 25px;">
+                <h4 style="color: ${config.color}; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid ${config.color};">
+                    ${config.title}
+                    <span style="font-size: 14px; font-weight: normal; color: #666;">
+                        (${roleUsers.length} ${roleUsers.length === 1 ? 'user' : 'users'})
+                    </span>
+                </h4>
+                <div style="overflow-x: auto;">
+                    <table class="results-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Class</th>
+                                <th>Registered</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+        `;
+        
+        // Sort users alphabetically by name
+        roleUsers.sort((a, b) => {
+            const nameA = (a.name || a.username || '').toLowerCase();
+            const nameB = (b.name || b.username || '').toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+        
+        roleUsers.forEach(user => {
+            const className = user.class ? formatClassName(user.class) : '-';
+            const registeredDate = user.created_at ? new Date(user.created_at).toLocaleDateString() : '-';
+            const nameDisplay = user.name || user.username || 'Unknown';
+            
+            html += `
+                <tr>
+                    <td>${escapeHtml(nameDisplay)}</td>
+                    <td>${escapeHtml(user.username || 'N/A')}</td>
+                    <td>${escapeHtml(user.email || 'N/A')}</td>
+                    <td>${config.badge}</td>
+                    <td>${className}</td>
+                    <td>${registeredDate}</td>
+                    <td>
+                        <button onclick="editUser('${user.id}')" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">Edit</button>
+                        <button onclick="resetUserPassword('${user.id}', '${escapeHtml(nameDisplay)}')" class="btn btn-warning" style="padding: 6px 12px; font-size: 12px;">Reset Password</button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    });
     
     container.innerHTML = html;
 }
@@ -1443,28 +1497,32 @@ function generateTempPassword() {
 
 // Export users to CSV
 function exportUsersToCSV() {
-    // This will use the current filtered users
+    // This will use the current filtered users (now grouped by role)
     const container = document.getElementById('usersContainer');
-    const table = container?.querySelector('table');
-    if (!table) {
+    const tables = container?.querySelectorAll('table');
+    if (!tables || tables.length === 0) {
         showError('No users to export. Please load users first.', 'Error');
         return;
     }
     
     let csv = 'Name,Username,Email,Role,Class,Registered\n';
-    const rows = table.querySelectorAll('tbody tr');
     
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length >= 6) {
-            const name = cells[0].textContent.trim().replace(/,/g, ';');
-            const username = cells[1].textContent.trim().replace(/,/g, ';');
-            const email = cells[2].textContent.trim().replace(/,/g, ';');
-            const role = cells[3].textContent.trim().replace(/,/g, ';');
-            const className = cells[4].textContent.trim().replace(/,/g, ';');
-            const registered = cells[5].textContent.trim().replace(/,/g, ';');
-            csv += `${name},${username},${email},${role},${className},${registered}\n`;
-        }
+    // Iterate through all tables (one for each role group)
+    tables.forEach(table => {
+        const rows = table.querySelectorAll('tbody tr');
+        
+        rows.forEach(row => {
+            const cells = row.querySelectorAll('td');
+            if (cells.length >= 6) {
+                const name = cells[0].textContent.trim().replace(/,/g, ';');
+                const username = cells[1].textContent.trim().replace(/,/g, ';');
+                const email = cells[2].textContent.trim().replace(/,/g, ';');
+                const role = cells[3].textContent.trim().replace(/,/g, ';');
+                const className = cells[4].textContent.trim().replace(/,/g, ';');
+                const registered = cells[5].textContent.trim().replace(/,/g, ';');
+                csv += `${name},${username},${email},${role},${className},${registered}\n`;
+            }
+        });
     });
     
     downloadCSV(csv, 'users_export.csv');
