@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signal Training School LMS - Complete Portal Features Documentation</title>
+    <style>
+        @media print {
+            body { margin: 0; }
+            .page-break { page-break-before: always; }
+            .no-print { display: none; }
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            border-bottom: 4px solid #0066cc;
+            padding-bottom: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .header h1 {
+            color: #0066cc;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header h2 {
+            color: #666;
+            font-size: 1.3em;
+            font-weight: normal;
+        }
+        
+        .header .date {
+            color: #999;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        
+        .section {
+            margin-bottom: 50px;
+        }
+        
+        .section-title {
+            background: linear-gradient(135deg, #0066cc 0%, #0052a3 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 1.8em;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        
+        .subsection {
+            margin-bottom: 35px;
+            border-left: 5px solid #0066cc;
+            padding-left: 20px;
+        }
+        
+        .subsection h3 {
+            color: #0066cc;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .feature-list li {
+            padding: 12px 0;
+            padding-left: 30px;
+            position: relative;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .feature-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #28a745;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        
+        .feature-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .security-section {
+            background: #fff3cd;
+            border: 3px solid #ffc107;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 30px 0;
+        }
+        
+        .security-section h3 {
+            color: #856404;
+            font-size: 1.6em;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #ffc107;
+            padding-bottom: 10px;
+        }
+        
+        .security-feature {
+            background: white;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .security-feature h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        
+        .security-feature p {
+            color: #333;
+            margin: 5px 0;
+        }
+        
+        .portal-card {
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 20px 0;
+        }
+        
+        .portal-card h4 {
+            color: #0066cc;
+            font-size: 1.3em;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #0066cc;
+            padding-bottom: 10px;
+        }
+        
+        .highlight {
+            background: #fff3cd;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: bold;
+        }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        
+        .badge-primary {
+            background: #0066cc;
+            color: white;
+        }
+        
+        .badge-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .badge-warning {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+            color: #666;
+        }
+        
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        
+        .print-button:hover {
+            background: #0052a3;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        
+        table th {
+            background: #0066cc;
+            color: white;
+            font-weight: bold;
+        }
+        
+        table tr:nth-child(even) {
+            background: #f8f9fa;
+        }
+        
+        .toc {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 40px;
+        }
+        
+        .toc h3 {
+            color: #0066cc;
+            margin-bottom: 15px;
+        }
+        
+        .toc ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .toc li {
+            padding: 8px 0;
+            padding-left: 20px;
+        }
+        
+        .toc a {
+            color: #0066cc;
+            text-decoration: none;
+        }
+        
+        .toc a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">🖨️ Print to PDF</button>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🇬🇭 Signal Training School</h1>
+            <h2>Learning Management System & Exam Portal</h2>
+            <h2 style="font-size: 1.1em; margin-top: 10px;">Complete Portal Features Documentation</h2>
+            <div class="date">January 2026</div>
+        </div>
+        
+        <div class="toc">
+            <h3>📑 Table of Contents</h3>
+            <ul>
+                <li><a href="#student-portal">1. Student Portal Features</a></li>
+                <li><a href="#lecturer-portal">2. Lecturer Portal Features</a></li>
+                <li><a href="#admin-portal">3. Admin Portal Features</a></li>
+                <li><a href="#security">4. Security Features</a></li>
+            </ul>
+        </div>
+        
+        <!-- STUDENT PORTAL SECTION -->
+        <div id="student-portal" class="section page-break">
+            <div class="section-title">📚 Student Portal Features</div>
+            
+            <div class="subsection">
+                <h3>🎓 LMS Portal (Learning Materials)</h3>
+                <div class="portal-card">
+                    <h4>Subject Registration</h4>
+                    <ul class="feature-list">
+                        <li>Register for subjects based on class</li>
+                        <li>View available subjects for your class</li>
+                        <li>Subject list updates automatically based on class selection</li>
+                        <li>Can register for multiple subjects</li>
+                    </ul>
+                </div>
+                
+                <div class="portal-card">
+                    <h4>Learning Materials Access</h4>
+                    <ul class="feature-list">
+                        <li>View all learning materials for registered subjects</li>
+                        <li>Download materials (PDFs, Word docs, images, PowerPoint)</li>
+                        <li>View text-based materials directly in browser</li>
+                        <li>Materials organized by subject, class, and category</li>
+                        <li>Filter materials by subject</li>
+                        <li>Search functionality for materials</li>
+                    </ul>
+                </div>
+                
+                <div class="portal-card">
+                    <h4>Progress Tracking</h4>
+                    <ul class="feature-list">
+                        <li>Mark materials as completed</li>
+                        <li>Track learning progress per subject</li>
+                        <li>View completion status</li>
+                        <li>Visual progress indicators</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3>📝 Exam Portal (Examinations)</h3>
+                <div class="portal-card">
+                    <h4>Exam Taking</h4>
+                    <ul class="feature-list">
+                        <li>View available exams for your class</li>
+                        <li>See exam details (duration, total marks, exam type)</li>
+                        <li>Start exam when ready</li>
+                        <li>Real-time countdown timer</li>
+                        <li>Auto-submit when time expires</li>
+                        <li>One-way navigation (cannot go back to previous questions)</li>
+                    </ul>
+                </div>
+                
+                <div class="portal-card">
+                    <h4>Question Types</h4>
+                    <ul class="feature-list">
+                        <li>Multiple Choice Questions (MCQ)</li>
+                        <li>True/False Questions</li>
+                        <li>Short Answer Questions</li>
+                        <li>Essay Questions</li>
+                    </ul>
+                </div>
+                
+                <div class="portal-card">
+                    <h4>Exam Security Features</h4>
+                    <ul class="feature-list">
+                        <li>Randomized question order (different for each student)</li>
+                        <li>Prevents going back to previous questions</li>
+                        <li>Auto-submit on time expiration</li>
+                        <li>Browser restrictions during exam</li>
+                        <li>Session validation</li>
+                    </ul>
+                </div>
+                
+                <div class="portal-card">
+                    <h4>Results & Grades</h4>
+                    <ul class="feature-list">
+                        <li>View exam results (when released by lecturer)</li>
+                        <li>See score, percentage, and grade</li>
+                        <li>View correct/incorrect answers</li>
+                        <li>See exam type and weight percentage</li>
+                        <li>View final semester grade (when released by admin)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- LECTURER PORTAL SECTION -->
+        <div id="lecturer-portal" class="section page-break">
+            <div class="section-title">👨‍🏫 Lecturer Portal Features</div>
+            
+            <div class="subsection">
+                <h3>📚 LMS Portal (Learning Materials Management)</h3>
+                <div class="portal-card">
+                    <h4>Subject Registration</h4>
+                    <ul class="feature-list">
+                        <li>Register for subjects you teach</li>
+                        <li>Select class and subject combination</li>
+                        <li>Register for multiple subjects across different classes</li>
+                        <li>View registered subjects grouped by class</li>
+                        <li>Subjects automatically filtered based on class</li>
+                    </ul>
+                </div>
+                
+                <div class="portal-card">
+                    <h4>Material Upload</h4>
+                    <ul class="feature-list">
+                        <li>Upload learning materials (PDFs, Word docs, images, PowerPoint, text)</li>
+                        <li>Organize by class, subject, and category</li>
+                        <li>File size limit: 10MB per file</li>
+                        <li>Supported formats: PDF, DOCX, PPTX, images (JPG, PNG), text</li>
+                        <li>Add descriptions and titles</li>
+                        <li>Preview uploaded files</li>
+                    </ul>
+                </div>
+                
+                <div class="portal-card">
+                    <h4>Material Management</h4>
+                    <ul class="feature-list">
+                        <li>View all uploaded materials</li>
+                        <li>Edit material information</li>
+                        <li>Delete materials</li>
+                        <li>Filter by class and subject</li>
+                        <li>Track student progress and completion rates</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3>📝 Exam Portal (Exam Creation & Management)</h3>
+                <div class="portal-card">
+                    <h4>Exam Creation</h4>
+                    <ul class="feature-list">
+                        <li>Create exams and quizzes</li>
+                        <li>Set exam title, description, and duration</li>
+                        <li>Select subject and class</li>
+                        <li>Choose exam type (Opening Exam, Quiz, BFT, Mid Course, Final Exam, etc.)</li>
+                        <li>Set total marks and passing score</li>
+                        <li>Set start and end dates (optional)</li>
+                        <li>Activate/deactivate exams</li>
+                    </ul>
+                </div>
+                
+                <div class="portal-card">
+                    <h4>Question Management</h4>
+                    <ul class="feature-list">
+                        <li>Add questions manually (one at a time)</li>
+                        <li>Bulk upload questions from Excel files</li>
+                        <li>Support for multiple question types:
+                            <ul style="margin-left: 30px; margin-top: 10px;">
+                                <li>Multiple Choice (4 options)</li>
+                                <li>True/False</li>
+                                <li>Short Answer</li>
+                                <li>Essay</li>
+                            </ul>
+                        </li>
+                        <li>Set marks per question</li>
+                        <li>Edit and delete questions</li>
+                        <li>Question sequence management</li>
+                    </ul>
+                </div>
+                
+                <div class="portal-card">
+                    <h4>Written Score Entry (Final Exams)</h4>
+                    <ul class="feature-list">
+                        <li>Enter written portion scores for final exams</li>
+                        <li>Final exams: 40 objective (auto-graded) + 60 written (manual entry)</li>
+                        <li>View objective scores (auto-graded)</li>
+                        <li>Enter written scores (0-60) for each student</li>
+                        <li>System calculates total: objective + written</li>
+                        <li>Save individual or all scores at once</li>
+                        <li>Real-time total score calculation</li>
+                    </ul>
+                </div>
+                
+                <div class="portal-card">
+                    <h4>Results Management</h4>
+                    <ul class="feature-list">
+                        <li>View all student attempts</li>
+                        <li>View exam statistics and performance</li>
+                        <li>Release exam results to students</li>
+                        <li>Export results to PDF</li>
+                        <li>Export results to Excel</li>
+                        <li>View detailed student responses</li>
+                    </ul>
+                </div>
+                
+                <div class="portal-card">
+                    <h4>Exam Analytics</h4>
+                    <ul class="feature-list">
+                        <li>View exam statistics</li>
+                        <li>See average scores</li>
+                        <li>Track completion rates</li>
+                        <li>View student performance breakdown</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ADMIN PORTAL SECTION -->
+        <div id="admin-portal" class="section page-break">
+            <div class="section-title">👑 Admin Portal Features</div>
+            
+            <div class="subsection">
+                <h3>📊 Dashboard & Statistics</h3>
+                <div class="portal-card">
+                    <h4>Overview Statistics</h4>
+                    <ul class="feature-list">
+                        <li>Total Students count</li>
+                        <li>Total Exams count</li>
+                        <li>Completed Exams count</li>
+                        <li>Results Released count</li>
+                        <li>Auto-refresh every 30 seconds</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3>👥 Student & Result Management</h3>
+                <div class="portal-card">
+                    <h4>View All Students</h4>
+                    <ul class="feature-list">
+                        <li>View all registered students (even without exam results)</li>
+                        <li>Students grouped by class</li>
+                        <li>Search by username or full name</li>
+                        <li>Filter by class</li>
+                        <li>Filter by subject</li>
+                        <li>See student details (name, username, email, class)</li>
+                    </ul>
+                </div>
+                
+                <div class="portal-card">
+                    <h4>View All Exam Results</h4>
+                    <ul class="feature-list">
+                        <li>View all exam results from all lecturers</li>
+                        <li>Results grouped by class</li>
+                        <li>See exam type and percentage weight</li>
+                        <li>View scaled scores and calculations</li>
+                        <li>See individual exam breakdown</li>
+                        <li>Filter by class, subject, or student</li>
+                        <li>Search functionality</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3>🎯 Result Release Controls</h3>
+                <div class="portal-card">
+                    <h4>Individual Exam Results Release</h4>
+                    <ul class="feature-list">
+                        <li>Release all pending individual exam results</li>
+                        <li>Students can see their exam scores when released</li>
+                        <li>Lecturers can also release their own exam results</li>
+                        <li>Button appears only when there are unreleased results</li>
+                    </ul>
+                </div>
+                
+                <div class="portal-card">
+                    <h4>Final Semester Results Release <span class="badge badge-primary">Admin-Only</span></h4>
+                    <ul class="feature-list">
+                        <li>Release final semester grades to all students</li>
+                        <li>Separate control from individual exam releases</li>
+                        <li>Students can only see final semester grade after admin releases</li>
+                        <li>Confirmation dialog before release</li>
+                        <li>Updates all exams with semester_results_released flag</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3>💪 BFT Score Entry</h3>
+                <div class="portal-card">
+                    <h4>Battle Fitness Test Management</h4>
+                    <ul class="feature-list">
+                        <li>Manual entry of BFT scores</li>
+                        <li>Select class and BFT number (1 or 2)</li>
+                        <li>Enter scores (0-100) for each student</li>
+                        <li>Each BFT contributes 2.5% (2 BFTs = 5% total)</li>
+                        <li>Real-time percentage and scaled score calculation</li>
+                        <li>Save individual scores</li>
+                        <li>Save all scores at once</li>
+                        <li>Auto-creates BFT exam records if needed</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3>📈 Final Grades Summary</h3>
+                <div class="portal-card">
+                    <h4>Grade Calculation & Display</h4>
+                    <ul class="feature-list">
+                        <li>View final grades by class</li>
+                        <li>Automatic calculation based on weighted percentages:
+                            <ul style="margin-left: 30px; margin-top: 10px;">
+                                <li>Opening Exam: 5%</li>
+                                <li>Quiz: 5%</li>
+                                <li>BFT 1: 2.5%</li>
+                                <li>BFT 2: 2.5%</li>
+                                <li>Mid Course Exercise: 15%</li>
+                                <li>Mid CS Exam: 20%</li>
+                                <li>Gen Assessment: 5%</li>
+                                <li>Final CSE Exercise: 20%</li>
+                                <li>Final Exam: 25%</li>
+                            </ul>
+                        </li>
+                        <li>Shows final score (scaled percentage)</li>
+                        <li>Shows final grade (A, B, C, D, F)</li>
+                        <li>Color-coded grade badges</li>
+                        <li>Exam breakdown by lecturer</li>
+                        <li>Status indicators (Individual Results Released / Final Semester Released)</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <!-- SECURITY FEATURES SECTION -->
+        <div id="security" class="section page-break">
+            <div class="section-title">🔐 Security Features</div>
+            
+            <div class="security-section">
+                <h3>🛡️ Authentication & Authorization</h3>
+                
+                <div class="security-feature">
+                    <h4>1. Password Security</h4>
+                    <p><strong>Password Hashing:</strong> All passwords are hashed using SHA-256 before storage in database</p>
+                    <p><strong>Password Validation:</strong> Strong password requirements enforced:
+                        <ul style="margin-left: 30px; margin-top: 10px;">
+                            <li>Minimum 8 characters</li>
+                            <li>At least one uppercase letter</li>
+                            <li>At least one lowercase letter</li>
+                            <li>At least one number</li>
+                            <li>At least one special character</li>
+                        </ul>
+                    </p>
+                    <p><strong>Password Storage:</strong> Passwords never stored in plaintext</p>
+                </div>
+                
+                <div class="security-feature">
+                    <h4>2. Session Management</h4>
+                    <p><strong>Secure Sessions:</strong> Cryptographically secure random session tokens</p>
+                    <p><strong>Session Expiration:</strong> Sessions automatically expire after 8 hours of inactivity</p>
+                    <p><strong>Session Validation:</strong> All protected routes check session validity before access</p>
+                    <p><strong>Auto-Logout:</strong> Users automatically logged out on session expiration</p>
+                </div>
+                
+                <div class="security-feature">
+                    <h4>3. Role-Based Access Control (RBAC)</h4>
+                    <p><strong>Role Verification:</strong> System verifies user role (Student, Lecturer, Admin) before granting access</p>
+                    <p><strong>Portal Separation:</strong> Each role has dedicated portals with role-specific features</p>
+                    <p><strong>Access Restrictions:</strong> Users can only access features allowed for their role</p>
+                    <p><strong>Admin-Only Features:</strong> Critical functions (final semester release) restricted to admin only</p>
+                </div>
+                
+                <div class="security-feature">
+                    <h4>4. Registration Code Protection</h4>
+                    <p><strong>Lecturer Registration:</strong> Requires registration code (LECTURER2026 - change in production)</p>
+                    <p><strong>Code Validation:</strong> Case-insensitive code validation</p>
+                    <p><strong>Restricted Access:</strong> Prevents unauthorized lecturer account creation</p>
+                </div>
+            </div>
+            
+            <div class="security-section">
+                <h3>🛡️ Input Validation & XSS Prevention</h3>
+                
+                <div class="security-feature">
+                    <h4>1. Input Sanitization</h4>
+                    <p><strong>HTML Escaping:</strong> All user inputs are escaped before display to prevent XSS attacks</p>
+                    <p><strong>Script Tag Removal:</strong> Removes script tags, event handlers, and malicious content</p>
+                    <p><strong>Safe HTML Rendering:</strong> Functions to safely set HTML content without XSS vulnerabilities</p>
+                    <p><strong>Filename Sanitization:</strong> Prevents path traversal and malicious filenames</p>
+                </div>
+                
+                <div class="security-feature">
+                    <h4>2. Data Validation</h4>
+                    <p><strong>Email Validation:</strong> RFC-compliant email format checking</p>
+                    <p><strong>Username Validation:</strong> Alphanumeric + underscore, 3-20 characters</p>
+                    <p><strong>Input Type Validation:</strong> Validates data types before processing</p>
+                    <p><strong>Range Validation:</strong> Validates numeric ranges (scores, marks, etc.)</p>
+                </div>
+            </div>
+            
+            <div class="security-section">
+                <h3>🛡️ CSRF Protection</h3>
+                
+                <div class="security-feature">
+                    <h4>1. CSRF Token Implementation</h4>
+                    <p><strong>Token Generation:</strong> Cryptographically secure random CSRF tokens</p>
+                    <p><strong>Form Protection:</strong> All forms include CSRF tokens</p>
+                    <p><strong>Token Validation:</strong> Server validates tokens before processing requests</p>
+                    <p><strong>Token Expiration:</strong> Tokens expire after use or time limit</p>
+                </div>
+            </div>
+            
+            <div class="security-section">
+                <h3>🛡️ Rate Limiting & Brute Force Protection</h3>
+                
+                <div class="security-feature">
+                    <h4>1. Login Rate Limiting</h4>
+                    <p><strong>Attempt Limiting:</strong> Maximum 5 login attempts per 15-minute window per username</p>
+                    <p><strong>Automatic Reset:</strong> Rate limits clear on successful login</p>
+                    <p><strong>Account Protection:</strong> Prevents brute force password attacks</p>
+                </div>
+            </div>
+            
+            <div class="security-section">
+                <h3>🛡️ File Upload Security</h3>
+                
+                <div class="security-feature">
+                    <h4>1. File Validation</h4>
+                    <p><strong>File Type Validation:</strong> Only allows approved file types (.pdf, .docx, .pptx, images)</p>
+                    <p><strong>File Size Limits:</strong> Maximum 10MB per file</p>
+                    <p><strong>Filename Sanitization:</strong> Removes dangerous characters and prevents path traversal</p>
+                    <p><strong>MIME Type Checking:</strong> Validates actual file type, not just extension</p>
+                    <p><strong>Malicious Content Detection:</strong> Scans for potentially dangerous content</p>
+                </div>
+            </div>
+            
+            <div class="security-section">
+                <h3>🛡️ Exam Security Features</h3>
+                
+                <div class="security-feature">
+                    <h4>1. Exam Integrity</h4>
+                    <p><strong>Question Randomization:</strong> Questions appear in different order for each student</p>
+                    <p><strong>One-Way Navigation:</strong> Students cannot go back to previous questions</p>
+                    <p><strong>Time Restrictions:</strong> Auto-submit when time expires</p>
+                    <p><strong>Session Validation:</strong> Validates student session during exam</p>
+                    <p><strong>Browser Restrictions:</strong> Attempts to prevent cheating during exam</p>
+                </div>
+                
+                <div class="security-feature">
+                    <h4>2. Result Protection</h4>
+                    <p><strong>Release Control:</strong> Results only visible when released by lecturer/admin</p>
+                    <p><strong>Final Grade Control:</strong> Final semester grades only visible when released by admin</p>
+                    <p><strong>Access Logging:</strong> Tracks when results are accessed</p>
+                </div>
+            </div>
+            
+            <div class="security-section">
+                <h3>🛡️ Database Security</h3>
+                
+                <div class="security-feature">
+                    <h4>1. SQL Injection Prevention</h4>
+                    <p><strong>Parameterized Queries:</strong> Supabase uses parameterized queries (prevents SQL injection)</p>
+                    <p><strong>Input Escaping:</strong> All user inputs properly escaped before database queries</p>
+                    <p><strong>Query Validation:</strong> Validates query structure before execution</p>
+                </div>
+                
+                <div class="security-feature">
+                    <h4>2. Data Protection</h4>
+                    <p><strong>Encrypted Connections:</strong> All database connections use HTTPS</p>
+                    <p><strong>Secure Storage:</strong> Sensitive data stored securely in Supabase</p>
+                    <p><strong>Access Control:</strong> Database access restricted to authorized users only</p>
+                </div>
+            </div>
+            
+            <div class="security-section">
+                <h3>🛡️ Error Handling & Information Disclosure</h3>
+                
+                <div class="security-feature">
+                    <h4>1. Secure Error Messages</h4>
+                    <p><strong>Generic Errors:</strong> Error messages don't reveal sensitive information</p>
+                    <p><strong>User Enumeration Prevention:</strong> Login errors don't reveal if username exists</p>
+                    <p><strong>Stack Trace Protection:</strong> Production errors don't expose code structure</p>
+                </div>
+            </div>
+            
+            <div class="security-section">
+                <h3>🛡️ Open Redirect Prevention</h3>
+                
+                <div class="security-feature">
+                    <h4>1. Redirect Validation</h4>
+                    <p><strong>URL Validation:</strong> Redirect URLs validated to prevent open redirect attacks</p>
+                    <p><strong>Origin Checking:</strong> Only allows redirects within same origin</p>
+                    <p><strong>Path Sanitization:</strong> Redirect paths sanitized before use</p>
+                </div>
+            </div>
+            
+            <div class="security-section">
+                <h3>⚠️ Production Recommendations</h3>
+                
+                <div class="security-feature">
+                    <h4>Critical (Must Implement)</h4>
+                    <ul style="margin-left: 30px; margin-top: 10px;">
+                        <li><strong>Server-Side Password Hashing:</strong> Use bcrypt or Argon2 with salt rounds ≥ 12</li>
+                        <li><strong>Server-Side Rate Limiting:</strong> Use Redis or database for rate limiting</li>
+                        <li><strong>HTTPS Only:</strong> Enforce HTTPS for all connections</li>
+                        <li><strong>Secure Cookies:</strong> Use HttpOnly, Secure, SameSite cookies for sessions</li>
+                        <li><strong>Content Security Policy (CSP):</strong> Implement CSP headers</li>
+                    </ul>
+                </div>
+                
+                <div class="security-feature">
+                    <h4>Important (Should Implement)</h4>
+                    <ul style="margin-left: 30px; margin-top: 10px;">
+                        <li><strong>Enhanced CSRF Protection:</strong> Expand CSRF token coverage</li>
+                        <li><strong>Authorization Checks:</strong> Verify users can only access their own resources</li>
+                        <li><strong>Audit Logging:</strong> Log all security-relevant events</li>
+                        <li><strong>Security Headers:</strong> Add X-Frame-Options, X-Content-Type-Options, etc.</li>
+                    </ul>
+                </div>
+                
+                <div class="security-feature">
+                    <h4>Recommended (Nice to Have)</h4>
+                    <ul style="margin-left: 30px; margin-top: 10px;">
+                        <li><strong>Two-Factor Authentication (2FA):</strong> Add TOTP-based 2FA</li>
+                        <li><strong>Password Reset:</strong> Secure password reset flow with email tokens</li>
+                        <li><strong>Account Lockout:</strong> Lock accounts after repeated failed attempts</li>
+                        <li><strong>IP Whitelisting:</strong> For admin accounts</li>
+                        <li><strong>Security Monitoring:</strong> Implement intrusion detection</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Ghana Armed Forces Signals Training School</strong></p>
+            <p>Learning Management System & Exam Portal</p>
+            <p style="margin-top: 20px;">Developed and Powered by <strong>Frank Kojo Dogbe</strong> | Co-developed by <strong>Solomon A. Nortey</strong></p>
+            <p style="margin-top: 10px; color: #999;">© 2026 All rights reserved</p>
+            <p style="margin-top: 20px; font-size: 0.9em; color: #999;">Document Version 1.0 | Last Updated: January 2026</p>
+        </div>
+    </div>
+    
+    <script>
+        // Smooth scrolling for table of contents links
+        document.querySelectorAll('.toc a').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
