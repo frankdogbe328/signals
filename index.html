@@ -29,13 +29,13 @@
             <form id="loginForm" class="login-form">
                 <div class="form-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required>
+                    <input type="text" id="username" name="username" required autocomplete="username" inputmode="text">
                 </div>
                 
                 <div class="form-group" style="position: relative;">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required style="padding-right: 45px;">
-                    <span class="password-toggle" onclick="togglePassword('password')" style="position: absolute; right: 15px; top: 38px; cursor: pointer; font-size: 18px; color: #666; user-select: none;">👁️</span>
+                    <input type="password" id="password" name="password" required autocomplete="current-password" style="padding-right: 45px;">
+                    <span class="password-toggle" onclick="togglePassword('password')" style="position: absolute; right: 15px; top: 38px; cursor: pointer; font-size: 18px; color: #666; user-select: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;">👁️</span>
                 </div>
                 
                 <div class="form-group">
@@ -111,26 +111,26 @@
                 
                 <div class="form-group">
                     <label for="regName">Full Name</label>
-                    <input type="text" id="regName" name="name" placeholder="e.g., Lt. John Doe" required>
+                    <input type="text" id="regName" name="name" placeholder="e.g., Lt. John Doe" required autocomplete="name" inputmode="text">
                 </div>
                 
                 <div class="form-group">
                     <label for="regUsername">Username</label>
-                    <input type="text" id="regUsername" name="username" placeholder="Choose a username" required>
+                    <input type="text" id="regUsername" name="username" placeholder="Choose a username" required autocomplete="username" inputmode="text">
                     <small style="color: #666; font-size: 12px;">Username must be unique</small>
                 </div>
                 
                 <div class="form-group">
                     <label for="regEmail">Email Address</label>
-                    <input type="email" id="regEmail" name="email" placeholder="your.email@example.com" required>
+                    <input type="email" id="regEmail" name="email" placeholder="your.email@example.com" required autocomplete="email" inputmode="email">
                     <small style="color: #666; font-size: 12px;">Used for password reset and notifications</small>
                 </div>
                 
                 <div class="form-group">
                     <label for="regPassword">Password</label>
                     <div style="position: relative;">
-                        <input type="password" id="regPassword" name="password" placeholder="Choose a password" required style="padding-right: 45px;">
-                        <span class="password-toggle" onclick="togglePassword('regPassword')" style="position: absolute; right: 15px; top: 12px; cursor: pointer; font-size: 18px; color: #666; user-select: none;">👁️</span>
+                        <input type="password" id="regPassword" name="password" placeholder="Choose a password" required autocomplete="new-password" style="padding-right: 45px;">
+                        <span class="password-toggle" onclick="togglePassword('regPassword')" style="position: absolute; right: 15px; top: 12px; cursor: pointer; font-size: 18px; color: #666; user-select: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;">👁️</span>
                     </div>
                     <small style="color: #666; font-size: 12px;">Minimum 6 characters</small>
                 </div>
@@ -138,8 +138,8 @@
                 <div class="form-group">
                     <label for="regConfirmPassword">Confirm Password</label>
                     <div style="position: relative;">
-                        <input type="password" id="regConfirmPassword" name="confirmPassword" placeholder="Re-enter password" required style="padding-right: 45px;">
-                        <span class="password-toggle" onclick="togglePassword('regConfirmPassword')" style="position: absolute; right: 15px; top: 12px; cursor: pointer; font-size: 18px; color: #666; user-select: none;">👁️</span>
+                        <input type="password" id="regConfirmPassword" name="confirmPassword" placeholder="Re-enter password" required autocomplete="new-password" style="padding-right: 45px;">
+                        <span class="password-toggle" onclick="togglePassword('regConfirmPassword')" style="position: absolute; right: 15px; top: 12px; cursor: pointer; font-size: 18px; color: #666; user-select: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;">👁️</span>
                     </div>
                 </div>
                 
