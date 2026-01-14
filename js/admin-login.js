@@ -104,6 +104,31 @@ async function handleAdminLogin(e) {
                 console.log('2. Username is exactly: admin');
                 console.log('3. Password is exactly: Admin123!');
                 console.log('4. Role is set to: admin');
+                
+                // Try to query database directly to see what's there
+                if (window.supabaseClient) {
+                    console.log('Attempting to query database for admin users...');
+                    try {
+                        const { data: adminUsers, error: queryError } = await window.supabaseClient
+                            .from('users')
+                            .select('username, name, role, email')
+                            .eq('role', 'admin')
+                            .limit(10);
+                        
+                        if (queryError) {
+                            console.error('Query error:', queryError);
+                        } else {
+                            console.log('Admin users found in database:', adminUsers);
+                            if (adminUsers && adminUsers.length > 0) {
+                                console.log('Found', adminUsers.length, 'admin user(s). Check if username matches exactly.');
+                            } else {
+                                console.error('No admin users found. Run SQL script: lms/verify-and-fix-admin.sql');
+                            }
+                        }
+                    } catch (err) {
+                        console.error('Error querying admin users:', err);
+                    }
+                }
             }
         } catch (err) {
             console.error('Supabase login error:', err);
