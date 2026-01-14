@@ -113,7 +113,8 @@ async function handleLogin(e) {
             
             // Update userType to actual role for redirect
             if (user) {
-                userType = user.role;
+                // Ensure userType can be reassigned (it's declared as 'let' above)
+                userType = user.role || userType;
             }
         } catch (err) {
             console.error('Supabase login error:', err);
