@@ -158,6 +158,7 @@ async function loadResults() {
                     title,
                     subject,
                     class_id,
+                    exam_type,
                     total_marks,
                     lecturer_id,
                     results_released,
@@ -350,10 +351,12 @@ function displayResultsGroupedByClass(results) {
                             <tr>
                                 <th>Student Name / Username</th>
                                 <th>Exam</th>
+                                <th>Exam Type</th>
                                 <th>Subject</th>
                                 <th>Lecturer</th>
                                 <th>Score</th>
                                 <th>Percentage</th>
+                                <th>Scaled Score</th>
                                 <th>Grade</th>
                                 <th>Status</th>
                                 <th>Actions</th>
@@ -382,7 +385,7 @@ function displayResultsGroupedByClass(results) {
                 html += `
                     <tr style="opacity: 0.7;">
                         <td>${studentDisplay}</td>
-                        <td colspan="8" style="color: #999; font-style: italic;">No exam results yet</td>
+                        <td colspan="10" style="color: #999; font-style: italic;">No exam results yet</td>
                     </tr>
                 `;
             } else if (displayResults.length === 0 && studentResults.length > 0) {
@@ -390,7 +393,7 @@ function displayResultsGroupedByClass(results) {
                 html += `
                     <tr style="opacity: 0.7;">
                         <td>${studentDisplay}</td>
-                        <td colspan="8" style="color: #999; font-style: italic;">No results for selected subject</td>
+                        <td colspan="10" style="color: #999; font-style: italic;">No results for selected subject</td>
                     </tr>
                 `;
             } else {
@@ -404,14 +407,24 @@ function displayResultsGroupedByClass(results) {
                         ? '<span style="color: #28a745; font-weight: bold;">Released</span>'
                         : '<span style="color: #ffc107; font-weight: bold;">Pending</span>';
                     
+                    const examType = exam.exam_type || 'N/A';
+                    const examTypeDisplay = formatExamType(examType);
+                    const examTypePercentage = getExamTypePercentage(examType);
+                    const scaledScore = result.scaled_score || (result.percentage ? (result.percentage * examTypePercentage / 100) : 0);
+                    
                     html += `
                         <tr>
                             <td>${studentDisplay}</td>
                             <td>${escapeHtml(exam.title || 'Unknown')}</td>
+                            <td>
+                                <span style="font-weight: 600; color: var(--primary-color);">${examTypeDisplay}</span>
+                                <br><small style="color: #666;">${examTypePercentage}%</small>
+                            </td>
                             <td>${escapeHtml(exam.subject || 'Unknown')}</td>
                             <td>${escapeHtml(lecturer.name || lecturer.username || 'Unknown')}</td>
                             <td>${result.score || 0} / ${exam.total_marks || 0}</td>
                             <td>${(result.percentage || 0).toFixed(1)}%</td>
+                            <td><strong style="color: var(--primary-color);">${scaledScore.toFixed(2)}%</strong></td>
                             <td><span class="grade-badge ${gradeClass}">${grade}</span></td>
                             <td>${statusBadge}</td>
                             <td>
@@ -516,13 +529,20 @@ async function loadFinalGrades() {
             return;
         }
         
-        // Get all grades with student and exam info
+        // Get all grades with student and exam info (including lecturer)
         const { data: grades, error } = await supabase
             .from('exam_grades')
             .select(`
                 *,
                 student:users!exam_grades_student_id_fkey(id, name, class),
-                exam:exams!exam_grades_exam_id_fkey(id, subject, class_id, exam_type)
+                exam:exams!exam_grades_exam_id_fkey(
+                    id, 
+                    subject, 
+                    class_id, 
+                    exam_type,
+                    lecturer_id,
+                    lecturer:users!exams_lecturer_id_fkey(id, name, username)
+                )
             `);
         
         if (error) {
@@ -530,11 +550,12 @@ async function loadFinalGrades() {
             return;
         }
         
-        // Group by class and student
+        // Group by class and student, calculate final grades automatically
         const classGroups = {};
         
         (grades || []).forEach(grade => {
             const student = grade.student || {};
+            const exam = grade.exam || {};
             const classId = student.class || 'unknown';
             const studentId = student.id;
             
@@ -546,12 +567,40 @@ async function loadFinalGrades() {
                 classGroups[classId][studentId] = {
                     student: student,
                     exams: [],
-                    totalScaledScore: 0
+                    totalScaledScore: 0,
+                    examBreakdown: {} // Track exams by type and lecturer
                 };
             }
             
+            // Calculate scaled score if not already calculated
+            const examType = exam.exam_type || 'N/A';
+            const examTypePercentage = getExamTypePercentage(examType);
+            const scaledScore = grade.scaled_score || (grade.percentage ? (grade.percentage * examTypePercentage / 100) : 0);
+            
+            // Update scaled_score in grade object for display
+            if (!grade.scaled_score && grade.percentage) {
+                grade.scaled_score = scaledScore;
+            }
+            
             classGroups[classId][studentId].exams.push(grade);
-            classGroups[classId][studentId].totalScaledScore += (grade.scaled_score || 0);
+            classGroups[classId][studentId].totalScaledScore += scaledScore;
+            
+            // Track exam breakdown by lecturer
+            const lecturerId = exam.lecturer_id || 'unknown';
+            const lecturerName = exam.lecturer?.name || exam.lecturer?.username || 'Unknown';
+            if (!classGroups[classId][studentId].examBreakdown[lecturerId]) {
+                classGroups[classId][studentId].examBreakdown[lecturerId] = {
+                    lecturerName: lecturerName,
+                    exams: []
+                };
+            }
+            classGroups[classId][studentId].examBreakdown[lecturerId].exams.push({
+                examType: examType,
+                examTypeDisplay: formatExamType(examType),
+                percentage: examTypePercentage,
+                score: grade.percentage || 0,
+                scaledScore: scaledScore
+            });
         });
         
         displayFinalGrades(classGroups);
@@ -588,6 +637,7 @@ function displayFinalGrades(classGroups) {
                                 <th>Total Exams</th>
                                 <th>Final Score</th>
                                 <th>Final Grade</th>
+                                <th>Exam Breakdown</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -613,12 +663,30 @@ function displayFinalGrades(classGroups) {
                 ? `${escapeHtml(student.name)} <small style="color: #666;">(${escapeHtml(student.username || 'N/A')})</small>`
                 : escapeHtml(student.username || 'Unknown');
             
+            // Build exam breakdown by lecturer
+            let breakdownHtml = '<div style="font-size: 12px;">';
+            const lecturers = Object.keys(studentData.examBreakdown || {});
+            if (lecturers.length === 0) {
+                breakdownHtml += '<span style="color: #999;">No exams</span>';
+            } else {
+                lecturers.forEach(lecturerId => {
+                    const lecturerData = studentData.examBreakdown[lecturerId];
+                    breakdownHtml += `<div style="margin-bottom: 8px;"><strong>${escapeHtml(lecturerData.lecturerName)}:</strong><br>`;
+                    lecturerData.exams.forEach(exam => {
+                        breakdownHtml += `<span style="color: #666;">${exam.examTypeDisplay} (${exam.percentage}%): ${exam.score.toFixed(1)}% = ${exam.scaledScore.toFixed(2)}%</span><br>`;
+                    });
+                    breakdownHtml += '</div>';
+                });
+            }
+            breakdownHtml += '</div>';
+            
             html += `
                 <tr>
                     <td>${studentDisplay}</td>
                     <td>${studentData.exams.length}</td>
-                    <td>${finalScore.toFixed(1)}%</td>
+                    <td><strong style="color: var(--primary-color); font-size: 16px;">${finalScore.toFixed(2)}%</strong></td>
                     <td><span class="grade-badge ${gradeClass}">${finalGrade}</span></td>
+                    <td style="max-width: 300px;">${breakdownHtml}</td>
                     <td>${allReleased ? '<span style="color: #28a745;">Complete</span>' : '<span style="color: #ffc107;">Pending</span>'}</td>
                 </tr>
             `;
