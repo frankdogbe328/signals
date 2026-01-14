@@ -43,6 +43,7 @@
                     <select id="userType" name="userType" required>
                         <option value="">Select Role</option>
                         <option value="student">👨‍🎓 Student</option>
+                        <option value="lecturer">👨‍🏫 Lecturer</option>
                     </select>
                 </div>
                 
@@ -347,6 +348,49 @@
             closeHelpModal();
         }
     }
+    
+    // Handle URL parameters for role pre-selection after registration
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const role = urlParams.get('role');
+        const registered = urlParams.get('registered');
+        
+        if (role && (role === 'student' || role === 'lecturer')) {
+            const userTypeSelect = document.getElementById('userType');
+            if (userTypeSelect) {
+                // Set the role in dropdown
+                userTypeSelect.value = role;
+                
+                // Trigger change event to show portal selection
+                const changeEvent = new Event('change', { bubbles: true });
+                userTypeSelect.dispatchEvent(changeEvent);
+                
+                // Show success message if just registered
+                if (registered === 'true') {
+                    const errorMessage = document.getElementById('errorMessage');
+                    if (errorMessage) {
+                        errorMessage.textContent = '✅ Registration successful! Please login with your credentials.';
+                        errorMessage.style.color = '#28a745';
+                        errorMessage.style.backgroundColor = '#d4edda';
+                        errorMessage.style.border = '1px solid #c3e6cb';
+                        errorMessage.style.borderRadius = '5px';
+                        errorMessage.style.padding = '10px';
+                        errorMessage.style.display = 'block';
+                        errorMessage.classList.add('show');
+                        
+                        // Remove the message after 5 seconds
+                        setTimeout(() => {
+                            errorMessage.style.display = 'none';
+                            errorMessage.classList.remove('show');
+                        }, 5000);
+                    }
+                    
+                    // Clean up URL parameters
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            }
+        }
+    });
     </script>
 </body>
 </html>

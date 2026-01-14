@@ -331,31 +331,22 @@ async function handleRegistration(e) {
         // Don't fail registration if localStorage backup fails
     }
     
-    // Automatically log in the newly registered user
-    setCurrentUser(createdUser);
-    
+    // Don't auto-login - redirect to login page with role pre-selected
     // Show success message
     const roleText = role === 'lecturer' ? 'Lecturer' : 'Student';
     if (typeof showSuccess === 'function') {
-        showSuccess(`${roleText} registration successful! Redirecting to your dashboard...`, 'Registration Successful');
-        // Redirect after a short delay to show the modal
+        showSuccess(`${roleText} registration successful! Redirecting to login page...`, 'Registration Successful');
+        // Redirect to login page with role pre-selected after a short delay
         setTimeout(() => {
-            if (role === 'lecturer') {
-                window.location.href = 'lecturer-dashboard.html';
-            } else {
-                window.location.href = 'student-dashboard.html';
-            }
+            // Redirect to login page with role parameter
+            window.location.href = `index.html?role=${role}&registered=true`;
         }, 1500);
         return;
     } else {
-        alert(`${roleText} registration successful! Redirecting to your dashboard...`);
+        alert(`${roleText} registration successful! Redirecting to login page...`);
     }
     
-    // Redirect to appropriate dashboard based on role
-    if (role === 'lecturer') {
-        window.location.href = 'lecturer-dashboard.html';
-    } else {
-        window.location.href = 'student-dashboard.html';
-    }
+    // Redirect to login page with role pre-selected
+    window.location.href = `index.html?role=${role}&registered=true`;
 }
 
