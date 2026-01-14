@@ -11,7 +11,19 @@ document.addEventListener('DOMContentLoaded', function() {
     isInitialized = true;
     // Check authentication
     let currentUser = getCurrentUser();
-    if (!currentUser || currentUser.role !== 'student') {
+    if (!currentUser) {
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    // Redirect admin to admin portal
+    if (currentUser.role === 'admin') {
+        window.location.href = 'admin-portal.html';
+        return;
+    }
+    
+    // Redirect non-students to login
+    if (currentUser.role !== 'student') {
         window.location.href = 'index.html';
         return;
     }

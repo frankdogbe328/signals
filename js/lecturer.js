@@ -291,7 +291,19 @@ function updateCoursesForLecturer() {
 document.addEventListener('DOMContentLoaded', async function() {
     // Check authentication
     let currentUser = getCurrentUser();
-    if (!currentUser || currentUser.role !== 'lecturer') {
+    if (!currentUser) {
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    // Redirect admin to admin portal
+    if (currentUser.role === 'admin') {
+        window.location.href = 'admin-portal.html';
+        return;
+    }
+    
+    // Redirect non-lecturers to login
+    if (currentUser.role !== 'lecturer') {
         window.location.href = 'index.html';
         return;
     }
