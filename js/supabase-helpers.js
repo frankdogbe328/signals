@@ -33,9 +33,15 @@ function getSupabaseClient() {
 // Get user by username/fullname and password
 async function getUserFromSupabase(username, password, role) {
     const client = getSupabaseClient();
-    if (!client) return null;
+    if (!client) {
+        console.error('Supabase client not available');
+        return null;
+    }
     
     try {
+        // Debug: Log what we're searching for
+        console.log('Searching for user:', { username, role });
+        
         // Search by username OR fullname (name field)
         // Use .maybeSingle() instead of .single() to handle 0 or 1 records
         // .single() throws 406 error if no record found
@@ -48,11 +54,48 @@ async function getUserFromSupabase(username, password, role) {
         
         if (error) {
             console.error('Supabase query error:', error);
+            console.error('Error details:', JSON.stringify(error, null, 2));
             return null;
         }
         
-        if (!data) {
-            // No user found with that username and role
+        // Debug: Log what we found
+        if (data) {
+            console.log('User found:', { 
+                id: data.id, 
+                username: data.username, 
+                name: data.name, 
+                role: data.role,
+                email: data.email 
+            });
+        } else {
+            console.warn('No user found matching:', { username, role });
+            
+            // Try to find any admin users to help debug
+            const { data: anyAdmin, error: adminError } = await client
+                .from('users')
+                .select('username, name, role')
+                .eq('role', 'admin')
+                .limit(5);
+            
+            if (!adminError && anyAdmin && anyAdmin.length > 0) {
+                console.log('Found admin users in database:', anyAdmin);
+                console.log('Note: Username might not match. Check case sensitivity.');
+            } else if (!adminError) {
+                console.warn('No admin users found in database at all. Run SQL script: lms/supabase-admin-support.sql');
+            }
+            
+            // Try to find user by username only (ignore role)
+            const { data: userByUsername, error: usernameError } = await client
+                .from('users')
+                .select('username, name, role')
+                .eq('username', username)
+                .maybeSingle();
+            
+            if (!usernameError && userByUsername) {
+                console.log('Found user with username but different role:', userByUsername);
+                console.log('Expected role: admin, Actual role:', userByUsername.role);
+            }
+            
             return null;
         }
         
