@@ -927,6 +927,23 @@ async function getOrCreateBFTExam(classId, examType) {
     const supabase = getSupabaseClient();
     if (!supabase) return null;
     
+    // Get current admin user for lecturer_id
+    let currentUser = null;
+    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.getSecureSession) {
+        const session = SecurityUtils.getSecureSession();
+        if (session && session.user) {
+            currentUser = session.user;
+        }
+    }
+    if (!currentUser) {
+        currentUser = getCurrentUser();
+    }
+    
+    if (!currentUser || !currentUser.id) {
+        console.error('Error: Admin user not found when creating BFT exam');
+        return null;
+    }
+    
     // Check if BFT exam exists
     const { data: existingExam } = await supabase
         .from('exams')
@@ -940,9 +957,11 @@ async function getOrCreateBFTExam(classId, examType) {
     }
     
     // Create BFT exam if it doesn't exist
+    // Use admin's ID as lecturer_id (required by database constraint)
     const { data: newExam, error } = await supabase
         .from('exams')
         .insert({
+            lecturer_id: currentUser.id, // Required field - use admin's ID
             title: `BFT ${examType.split('_')[1]} - ${formatClassName(classId)}`,
             exam_type: examType,
             subject: 'BFT (Battle Fitness Test)',
