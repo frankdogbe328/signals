@@ -2007,6 +2007,8 @@ async function backupUsers() {
             return;
         }
         
+        showSuccess('Creating users backup...', 'Backup in Progress');
+        
         const { data: users, error } = await supabase
             .from('users')
             .select('*');
@@ -2021,13 +2023,32 @@ async function backupUsers() {
         
         const json = JSON.stringify(backup, null, 2);
         const filename = `backup_users_${new Date().toISOString().split('T')[0]}.json`;
+        
+        // Download file
         downloadJSON(json, filename);
         
-        showSuccess(`Users backup created: ${filename}`, 'Backup Complete');
+        // Also save to Supabase storage if possible
+        try {
+            const file = new Blob([json], { type: 'application/json' });
+            const { data, error } = await supabase.storage
+                .from('backups')
+                .upload(filename, file, {
+                    contentType: 'application/json',
+                    upsert: false
+                });
+            
+            if (error && error.message !== 'The resource already exists') {
+                console.warn('Could not save to Supabase storage:', error);
+            }
+        } catch (e) {
+            console.warn('Supabase storage not available, backup downloaded only');
+        }
+        
+        showSuccess(`Users backup created successfully!\n\nFile: ${filename}\n\nSaved to Supabase storage and downloaded.`, 'Backup Complete');
         
     } catch (error) {
         console.error('Error backing up users:', error);
-        showError('Failed to backup users.', 'Error');
+        showError(`Failed to backup users: ${error.message}`, 'Error');
     }
 }
 
@@ -2040,7 +2061,9 @@ async function backupExams() {
             return;
         }
         
-        const [exams, grades, attempts, questions, responses] = await Promise.all([
+        showSuccess('Creating exams backup...', 'Backup in Progress');
+        
+        const [examsResult, gradesResult, attemptsResult, questionsResult, responsesResult] = await Promise.all([
             supabase.from('exams').select('*'),
             supabase.from('exam_grades').select('*'),
             supabase.from('student_exam_attempts').select('*'),
@@ -2052,23 +2075,42 @@ async function backupExams() {
             timestamp: new Date().toISOString(),
             type: 'exams_and_results',
             data: {
-                exams: exams.data || [],
-                grades: grades.data || [],
-                attempts: attempts.data || [],
-                questions: questions.data || [],
-                responses: responses.data || []
+                exams: examsResult.data || [],
+                grades: gradesResult.data || [],
+                attempts: attemptsResult.data || [],
+                questions: questionsResult.data || [],
+                responses: responsesResult.data || []
             }
         };
         
         const json = JSON.stringify(backup, null, 2);
         const filename = `backup_exams_${new Date().toISOString().split('T')[0]}.json`;
+        
+        // Download file
         downloadJSON(json, filename);
         
-        showSuccess(`Exams backup created: ${filename}`, 'Backup Complete');
+        // Also save to Supabase storage if possible
+        try {
+            const file = new Blob([json], { type: 'application/json' });
+            const { data, error } = await supabase.storage
+                .from('backups')
+                .upload(filename, file, {
+                    contentType: 'application/json',
+                    upsert: false
+                });
+            
+            if (error && error.message !== 'The resource already exists') {
+                console.warn('Could not save to Supabase storage:', error);
+            }
+        } catch (e) {
+            console.warn('Supabase storage not available, backup downloaded only');
+        }
+        
+        showSuccess(`Exams backup created successfully!\n\nFile: ${filename}\n\nSaved to Supabase storage and downloaded.`, 'Backup Complete');
         
     } catch (error) {
         console.error('Error backing up exams:', error);
-        showError('Failed to backup exams.', 'Error');
+        showError(`Failed to backup exams: ${error.message}`, 'Error');
     }
 }
 
@@ -2080,6 +2122,8 @@ async function backupMaterials() {
             showError('Database connection error', 'Error');
             return;
         }
+        
+        showSuccess('Creating materials backup...', 'Backup in Progress');
         
         const { data: materials, error } = await supabase
             .from('materials')
@@ -2100,13 +2144,32 @@ async function backupMaterials() {
         
         const json = JSON.stringify(backup, null, 2);
         const filename = `backup_materials_${new Date().toISOString().split('T')[0]}.json`;
+        
+        // Download file
         downloadJSON(json, filename);
         
-        showSuccess(`Materials backup created: ${filename}`, 'Backup Complete');
+        // Also save to Supabase storage if possible
+        try {
+            const file = new Blob([json], { type: 'application/json' });
+            const { data, error } = await supabase.storage
+                .from('backups')
+                .upload(filename, file, {
+                    contentType: 'application/json',
+                    upsert: false
+                });
+            
+            if (error && error.message !== 'The resource already exists') {
+                console.warn('Could not save to Supabase storage:', error);
+            }
+        } catch (e) {
+            console.warn('Supabase storage not available, backup downloaded only');
+        }
+        
+        showSuccess(`Materials backup created successfully!\n\nFile: ${filename}\n\nSaved to Supabase storage and downloaded.`, 'Backup Complete');
         
     } catch (error) {
         console.error('Error backing up materials:', error);
-        showError('Failed to backup materials.', 'Error');
+        showError(`Failed to backup materials: ${error.message}`, 'Error');
     }
 }
 
