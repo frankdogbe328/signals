@@ -45,10 +45,12 @@ async function getUserFromSupabase(username, password, role) {
         // Search by username OR fullname (name field)
         // Use .maybeSingle() instead of .single() to handle 0 or 1 records
         // .single() throws 406 error if no record found
+        // Build query - escape username to prevent injection
+        const escapedUsername = username.replace(/'/g, "''"); // Escape single quotes for SQL safety
         const { data, error } = await client
             .from('users')
             .select('*')
-            .or(`username.eq.${username},name.eq.${username}`)
+            .or(`username.eq.${escapedUsername},name.eq.${escapedUsername}`)
             .eq('role', role)
             .maybeSingle(); // Returns null if no record, single object if found
         

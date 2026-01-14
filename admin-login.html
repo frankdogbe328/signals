@@ -87,13 +87,18 @@
     </div>
     
     <!-- Scripts -->
+    <!-- Load Supabase first -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- CryptoJS for SHA256 password hashing -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <script src="js/security.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Load config before helpers -->
     <script src="js/supabase-config.js"></script>
+    <!-- Load helpers before admin-login -->
     <script src="js/supabase-helpers.js"></script>
+    <!-- Load other dependencies -->
+    <script src="js/security.js"></script>
     <script src="js/app.js"></script>
+    <!-- Load admin login last -->
     <script src="js/admin-login.js"></script>
     
     <script>
