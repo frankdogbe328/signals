@@ -621,10 +621,21 @@ async function loadFinalGrades() {
             // Calculate scaled score if not already calculated
             const examType = exam.exam_type || 'N/A';
             const examTypePercentage = getExamTypePercentage(examType);
-            const scaledScore = grade.scaled_score || (grade.percentage ? (grade.percentage * examTypePercentage / 100) : 0);
+            
+            // For final exams with written scores, use the combined score
+            // If written_score exists, total score = objective_score + written_score
+            let finalPercentage = grade.percentage;
+            if (grade.written_score !== null && grade.written_score !== undefined && 
+                grade.objective_score !== null && grade.objective_score !== undefined) {
+                // Recalculate percentage from combined scores
+                const totalScore = (grade.objective_score || 0) + (grade.written_score || 0);
+                finalPercentage = (totalScore / exam.total_marks) * 100;
+            }
+            
+            const scaledScore = grade.scaled_score || (finalPercentage ? (finalPercentage * examTypePercentage / 100) : 0);
             
             // Update scaled_score in grade object for display
-            if (!grade.scaled_score && grade.percentage) {
+            if (!grade.scaled_score && finalPercentage) {
                 grade.scaled_score = scaledScore;
             }
             
