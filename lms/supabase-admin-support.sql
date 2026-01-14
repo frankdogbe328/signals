@@ -1,19 +1,22 @@
 -- Admin Role Support for LMS
 -- Run this in Supabase SQL Editor to add admin role support
 
--- Add admin role to users table if it doesn't exist
--- Note: This assumes your users table already has a 'role' column
--- If not, you'll need to add it first
+-- STEP 1: Update the role constraint to include 'admin'
+-- Drop existing constraint if it exists
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check CASCADE;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check1 CASCADE;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_check_role CASCADE;
 
--- Update existing users to ensure role is set (optional - only if needed)
--- UPDATE users SET role = 'student' WHERE role IS NULL;
+-- Add new constraint that includes 'admin'
+ALTER TABLE users 
+ADD CONSTRAINT users_role_check 
+CHECK (role IN ('lecturer', 'student', 'admin'));
 
--- Create an admin user (change the credentials!)
+-- STEP 2: Create an admin user (change the credentials!)
 -- Password: Admin123! (change this!)
 -- Username: admin
 -- Email: admin@signalschool.mil.gh (change this!)
 
--- First, check if admin user exists
 DO $$
 DECLARE
     admin_exists BOOLEAN;
