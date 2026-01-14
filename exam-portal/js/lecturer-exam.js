@@ -2866,3 +2866,404 @@ function parseQuestionsFromExcel(data) {
     
     return questions;
 }
+
+// ============================================
+// WRITTEN SCORE INPUT FUNCTIONS (Final Exams)
+// ============================================
+
+// Load final exams for written score input dropdown
+async function loadFinalExamsForWrittenScores() {
+    try {
+        const client = getSupabaseClient();
+        if (!client) {
+            throw new Error('Supabase client not available');
+        }
+        
+        const currentUser = getCurrentUser();
+        if (!currentUser || currentUser.role !== 'lecturer') {
+            return;
+        }
+        
+        // Get only final exams
+        const { data: exams, error } = await client
+            .from('exams')
+            .select('id, title, subject, class_id, exam_type')
+            .eq('lecturer_id', currentUser.id)
+            .eq('exam_type', 'final_exam')
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        const selectEl = document.getElementById('writtenScoreExamSelect');
+        if (!selectEl) return;
+        
+        selectEl.innerHTML = '<option value="">Select a final exam...</option>';
+        
+        if (exams && exams.length > 0) {
+            exams.forEach(exam => {
+                const option = document.createElement('option');
+                option.value = exam.id;
+                option.textContent = `${exam.title} - ${exam.subject} (${formatClassName(exam.class_id)})`;
+                selectEl.appendChild(option);
+            });
+        } else {
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'No final exams found';
+            selectEl.appendChild(option);
+        }
+        
+    } catch (error) {
+        console.error('Error loading final exams:', error);
+        if (typeof showError === 'function') {
+            showError('Failed to load final exams. Please try again.', 'Error');
+        }
+    }
+}
+
+// Load students who took the selected final exam
+async function loadWrittenScoreStudents() {
+    const examId = document.getElementById('writtenScoreExamSelect').value;
+    const container = document.getElementById('writtenScoreContainer');
+    const examTitleEl = document.getElementById('writtenScoreExamTitle');
+    const studentsListEl = document.getElementById('writtenScoreStudentsList');
+    
+    if (!examId) {
+        container.style.display = 'none';
+        return;
+    }
+    
+    try {
+        const client = getSupabaseClient();
+        if (!client) {
+            throw new Error('Supabase client not available');
+        }
+        
+        // Get exam details
+        const { data: exam, error: examError } = await client
+            .from('exams')
+            .select('*')
+            .eq('id', examId)
+            .single();
+        
+        if (examError) throw examError;
+        
+        examTitleEl.textContent = `${exam.title} - ${exam.subject}`;
+        
+        // Get all students who attempted this exam
+        const { data: attempts, error: attemptsError } = await client
+            .from('student_exam_attempts')
+            .select(`
+                id,
+                student_id,
+                score,
+                total_marks,
+                percentage,
+                student:users!student_exam_attempts_student_id_fkey(id, name, username)
+            `)
+            .eq('exam_id', examId)
+            .eq('status', 'submitted');
+        
+        if (attemptsError) throw attemptsError;
+        
+        // Get existing grades to see written scores
+        const { data: grades, error: gradesError } = await client
+            .from('exam_grades')
+            .select('student_id, objective_score, written_score, score, percentage')
+            .eq('exam_id', examId);
+        
+        if (gradesError) throw gradesError;
+        
+        // Create a map of student_id to grade data
+        const gradesMap = {};
+        if (grades) {
+            grades.forEach(grade => {
+                gradesMap[grade.student_id] = grade;
+            });
+        }
+        
+        if (!attempts || attempts.length === 0) {
+            studentsListEl.innerHTML = `
+                <tr>
+                    <td colspan="5" style="padding: 20px; text-align: center; color: #666;">
+                        No students have taken this exam yet.
+                    </td>
+                </tr>
+            `;
+            container.style.display = 'block';
+            return;
+        }
+        
+        // Build table rows
+        let html = '';
+        attempts.forEach(attempt => {
+            const student = attempt.student;
+            const grade = gradesMap[student.id] || {};
+            
+            // For final exams: objective_score from auto-graded questions (max 40)
+            // If not set, use attempt score as estimate
+            const objectiveScore = grade.objective_score !== null && grade.objective_score !== undefined 
+                ? grade.objective_score 
+                : (attempt.score || 0);
+            const writtenScore = grade.written_score !== null && grade.written_score !== undefined ? grade.written_score : '';
+            const totalScore = objectiveScore + (writtenScore || 0);
+            
+            html += `
+                <tr>
+                    <td style="padding: 10px; border: 1px solid #ddd;">
+                        <strong>${escapeHtml(student.name || student.username)}</strong><br>
+                        <small style="color: #666;">${escapeHtml(student.username)}</small>
+                    </td>
+                    <td style="padding: 10px; text-align: center; border: 1px solid #ddd;">
+                        <strong>${objectiveScore.toFixed(2)}</strong> / 40
+                    </td>
+                    <td style="padding: 10px; text-align: center; border: 1px solid #ddd;">
+                        <input 
+                            type="number" 
+                            id="written_score_${student.id}" 
+                            min="0" 
+                            max="60" 
+                            step="0.01"
+                            value="${writtenScore || ''}"
+                            style="width: 80px; padding: 5px; text-align: center; border: 1px solid #ddd; border-radius: 4px;"
+                            placeholder="0-60"
+                            onchange="updateTotalScore('${student.id}', ${objectiveScore})"
+                        >
+                    </td>
+                    <td style="padding: 10px; text-align: center; border: 1px solid #ddd;">
+                        <strong id="total_score_${student.id}">${totalScore.toFixed(2)}</strong> / 100
+                    </td>
+                    <td style="padding: 10px; text-align: center; border: 1px solid #ddd;">
+                        <button onclick="saveWrittenScore('${student.id}', '${examId}')" class="btn btn-success" style="padding: 6px 12px; font-size: 12px;">
+                            Save
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        studentsListEl.innerHTML = html;
+        container.style.display = 'block';
+        
+    } catch (error) {
+        console.error('Error loading students:', error);
+        if (typeof showError === 'function') {
+            showError('Failed to load students. Please try again.', 'Error');
+        }
+        studentsListEl.innerHTML = `
+            <tr>
+                <td colspan="5" style="padding: 20px; text-align: center; color: red;">
+                    Error loading students. Please try again.
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// Update total score display when written score changes
+function updateTotalScore(studentId, objectiveScore = 0) {
+    const writtenInput = document.getElementById(`written_score_${studentId}`);
+    const totalDisplay = document.getElementById(`total_score_${studentId}`);
+    
+    if (!writtenInput || !totalDisplay) return;
+    
+    const writtenScore = parseFloat(writtenInput.value) || 0;
+    const totalScore = objectiveScore + writtenScore;
+    totalDisplay.textContent = `${totalScore.toFixed(2)} / 100`;
+}
+
+// Save individual written score
+async function saveWrittenScore(studentId, examId) {
+    const writtenInput = document.getElementById(`written_score_${studentId}`);
+    if (!writtenInput) return;
+    
+    const writtenScore = parseFloat(writtenInput.value);
+    
+    if (isNaN(writtenScore) || writtenScore < 0 || writtenScore > 60) {
+        if (typeof showError === 'function') {
+            showError('Written score must be between 0 and 60', 'Invalid Score');
+        } else {
+            alert('Written score must be between 0 and 60');
+        }
+        return;
+    }
+    
+    try {
+        const client = getSupabaseClient();
+        if (!client) {
+            throw new Error('Supabase client not available');
+        }
+        
+        // Get exam details
+        const { data: exam, error: examError } = await client
+            .from('exams')
+            .select('total_marks, exam_type')
+            .eq('id', examId)
+            .single();
+        
+        if (examError) throw examError;
+        
+        // Get student's attempt
+        const { data: attempt, error: attemptError } = await client
+            .from('student_exam_attempts')
+            .select('id, score, total_marks, percentage')
+            .eq('exam_id', examId)
+            .eq('student_id', studentId)
+            .eq('status', 'submitted')
+            .order('submitted_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        
+        if (attemptError) throw attemptError;
+        
+        if (!attempt) {
+            if (typeof showError === 'function') {
+                showError('Student has not submitted this exam yet', 'Error');
+            }
+            return;
+        }
+        
+        // For final exams: objective_score is from auto-graded questions (40 max)
+        // We'll use the attempt score as the objective portion
+        // In production, you'd separate objective questions from written questions
+        const objectiveScore = attempt.score || 0; // This should be calculated from objective questions only
+        
+        // Get existing grade
+        const { data: existingGrade, error: gradeError } = await client
+            .from('exam_grades')
+            .select('*')
+            .eq('exam_id', examId)
+            .eq('student_id', studentId)
+            .maybeSingle();
+        
+        // Calculate total score and percentage
+        const totalScore = objectiveScore + writtenScore;
+        const percentage = (totalScore / exam.total_marks) * 100;
+        const grade = calculateGrade(percentage);
+        
+        // Calculate scaled score based on exam type
+        const examTypePercentage = getExamTypePercentage(exam.exam_type || 'final_exam');
+        const scaledScore = percentage * examTypePercentage / 100;
+        
+        if (existingGrade) {
+            // Update existing grade
+            const { error: updateError } = await client
+                .from('exam_grades')
+                .update({
+                    written_score: writtenScore,
+                    objective_score: objectiveScore,
+                    score: totalScore,
+                    percentage: percentage,
+                    grade: grade,
+                    scaled_score: scaledScore
+                })
+                .eq('id', existingGrade.id);
+            
+            if (updateError) throw updateError;
+        } else {
+            // Create new grade
+            const { error: insertError } = await client
+                .from('exam_grades')
+                .insert({
+                    student_id: studentId,
+                    exam_id: examId,
+                    attempt_id: attempt.id,
+                    objective_score: objectiveScore,
+                    written_score: writtenScore,
+                    score: totalScore,
+                    percentage: percentage,
+                    grade: grade,
+                    scaling_percentage: examTypePercentage,
+                    scaled_score: scaledScore
+                });
+            
+            if (insertError) throw insertError;
+        }
+        
+        const studentName = document.getElementById(`written_score_${studentId}`).closest('tr').querySelector('td').textContent.trim().split('\n')[0];
+        if (typeof showSuccess === 'function') {
+            showSuccess(`Written score saved for ${studentName}`, 'Success');
+        }
+        
+        // Reload to update display
+        setTimeout(() => loadWrittenScoreStudents(), 500);
+        
+    } catch (error) {
+        console.error('Error saving written score:', error);
+        if (typeof showError === 'function') {
+            showError('Failed to save written score. Please try again.', 'Error');
+        }
+    }
+}
+
+// Save all written scores at once
+async function saveAllWrittenScores() {
+    const examId = document.getElementById('writtenScoreExamSelect').value;
+    if (!examId) {
+        if (typeof showError === 'function') {
+            showError('Please select an exam first', 'Error');
+        }
+        return;
+    }
+    
+    if (!confirm('Save written scores for all students? This will update all scores at once.')) {
+        return;
+    }
+    
+    const rows = document.querySelectorAll('#writtenScoreStudentsList tr');
+    let savedCount = 0;
+    let errorCount = 0;
+    
+    for (const row of rows) {
+        const writtenInput = row.querySelector('input[type="number"]');
+        if (!writtenInput) continue;
+        
+        const studentId = writtenInput.id.replace('written_score_', '');
+        const writtenScore = parseFloat(writtenInput.value);
+        
+        if (isNaN(writtenScore) || writtenScore < 0 || writtenScore > 60) {
+            if (writtenInput.value.trim() !== '') {
+                errorCount++;
+            }
+            continue;
+        }
+        
+        try {
+            await saveWrittenScore(studentId, examId);
+            savedCount++;
+            // Small delay to avoid overwhelming the database
+            await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+            errorCount++;
+            console.error(`Error saving score for student ${studentId}:`, error);
+        }
+    }
+    
+    if (savedCount > 0) {
+        if (typeof showSuccess === 'function') {
+            showSuccess(`Saved ${savedCount} written score(s)${errorCount > 0 ? `. ${errorCount} error(s).` : '.'}`, 'Success');
+        }
+        // Reload to refresh display
+        setTimeout(() => loadWrittenScoreStudents(), 500);
+    } else if (errorCount > 0) {
+        if (typeof showError === 'function') {
+            showError(`Failed to save ${errorCount} score(s). Please check the values and try again.`, 'Error');
+        }
+    } else {
+        if (typeof showError === 'function') {
+            showError('No scores to save. Please enter written scores first.', 'No Data');
+        }
+    }
+}
+
+// Initialize written score section on page load
+if (typeof document !== 'undefined') {
+    document.addEventListener('DOMContentLoaded', function() {
+        // Load final exams dropdown after a short delay to ensure Supabase is initialized
+        setTimeout(() => {
+            if (typeof loadFinalExamsForWrittenScores === 'function') {
+                loadFinalExamsForWrittenScores();
+            }
+        }, 1000);
+    });
+}

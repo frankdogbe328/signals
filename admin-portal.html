@@ -189,9 +189,14 @@
                     <h3>All Students & Exam Results <small style="font-size: 14px; color: #666; font-weight: normal;">(Grouped by Class)</small></h3>
                     <small style="color: #666; font-size: 12px;">🔄 Auto-refreshes every 30 seconds</small>
                 </div>
-                <button onclick="releaseAllResults()" class="btn btn-success" id="releaseAllBtn" style="display: none;">
-                    Release All Final Results
-                </button>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="releaseAllResults()" class="btn btn-success" id="releaseAllBtn" style="display: none;">
+                        Release All Individual Exam Results
+                    </button>
+                    <button onclick="releaseFinalSemesterResults()" class="btn btn-primary" id="releaseSemesterBtn" style="display: none;">
+                        🎓 Release Final Semester Results
+                    </button>
+                </div>
             </div>
             <div id="resultsContainer">
                 <p class="empty-state">Loading results...</p>

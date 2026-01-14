@@ -463,6 +463,47 @@
                 </form>
             </div>
             
+            <!-- Enter Written Scores Section (Final Exams Only) -->
+            <div class="card" style="background: #fff3cd; border-left: 4px solid #ffc107;">
+                <h3>✍️ Enter Written Scores (Final Exams)</h3>
+                <p style="color: #856404; margin-bottom: 15px;">
+                    For final exams with 40 objective + 60 written questions. Enter written portion scores (0-60) for each student.
+                </p>
+                <div class="form-group">
+                    <label for="writtenScoreExamSelect">Select Final Exam</label>
+                    <select id="writtenScoreExamSelect" onchange="loadWrittenScoreStudents()">
+                        <option value="">Select a final exam...</option>
+                    </select>
+                    <small style="color: #666; display: block; margin-top: 5px;">Only final exams (exam_type = 'final_exam') are shown</small>
+                </div>
+                <div id="writtenScoreContainer" style="display: none; margin-top: 20px;">
+                    <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                        <h4 id="writtenScoreExamTitle" style="margin-bottom: 15px;"></h4>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr style="background: #f8f9fa;">
+                                        <th style="padding: 10px; text-align: left; border: 1px solid #ddd;">Student</th>
+                                        <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Objective Score<br><small>(Auto-graded)</small></th>
+                                        <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Written Score<br><small>(0-60)</small></th>
+                                        <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Total Score</th>
+                                        <th style="padding: 10px; text-align: center; border: 1px solid #ddd;">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="writtenScoreStudentsList">
+                                    <tr>
+                                        <td colspan="5" style="padding: 20px; text-align: center; color: #666;">Loading students...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="margin-top: 15px;">
+                            <button onclick="saveAllWrittenScores()" class="btn btn-success">Save All Written Scores</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <!-- My Exams Section -->
             <div class="card">
                 <h3>📋 My Exams</h3>

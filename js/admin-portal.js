@@ -223,7 +223,17 @@ function displayResultsGroupedByClass(results) {
     
     // Check if there are unreleased results
     const hasUnreleased = results.some(r => !r.exam?.results_released);
-    document.getElementById('releaseAllBtn').style.display = hasUnreleased ? 'block' : 'none';
+    const releaseAllBtn = document.getElementById('releaseAllBtn');
+    if (releaseAllBtn) {
+        releaseAllBtn.style.display = hasUnreleased ? 'block' : 'none';
+    }
+    
+    // Check if there are unreleased semester results
+    const hasUnreleasedSemester = results.some(r => !r.exam?.semester_results_released);
+    const releaseSemesterBtn = document.getElementById('releaseSemesterBtn');
+    if (releaseSemesterBtn) {
+        releaseSemesterBtn.style.display = hasUnreleasedSemester ? 'block' : 'none';
+    }
     
     // Get filter values
     const classFilter = document.getElementById('filterClass').value;
@@ -486,9 +496,9 @@ async function releaseExamResults(examId) {
     }
 }
 
-// Release all final results
+// Release all final results (individual exam results - lecturers control this)
 async function releaseAllResults() {
-    if (!confirm('⚠️ WARNING: This will release ALL pending exam results to students. Are you sure you want to proceed?')) {
+    if (!confirm('⚠️ WARNING: This will release ALL pending individual exam results to students. Lecturers can also release their own exam results. Are you sure you want to proceed?')) {
         return;
     }
     
@@ -510,13 +520,49 @@ async function releaseAllResults() {
             return;
         }
         
-        showSuccess('All results released successfully! Students can now view their scores.', 'Success');
+        showSuccess('All individual exam results released successfully! Students can now view their scores.', 'Success');
         loadResults();
         loadStatistics();
         
     } catch (error) {
         console.error('Error releasing all results:', error);
         showError('Failed to release results. Please try again.', 'Error');
+    }
+}
+
+// Release Final Semester Results (Admin-only control)
+async function releaseFinalSemesterResults() {
+    if (!confirm('⚠️ FINAL SEMESTER RESULTS RELEASE\n\nThis will release final semester grades to all students.\n\nStudents will be able to see their:\n- Final semester grade\n- Complete grade breakdown\n\nAre you sure you want to proceed?')) {
+        return;
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error. Please try again.', 'Error');
+            return;
+        }
+        
+        // Release semester results for all exams
+        const { error } = await supabase
+            .from('exams')
+            .update({ semester_results_released: true })
+            .eq('semester_results_released', false);
+        
+        if (error) {
+            console.error('Error releasing final semester results:', error);
+            showError('Failed to release final semester results. Please try again.', 'Error');
+            return;
+        }
+        
+        showSuccess('✅ Final semester results released successfully!\n\nStudents can now view their final semester grades.', 'Success');
+        loadResults();
+        loadFinalGrades();
+        loadStatistics();
+        
+    } catch (error) {
+        console.error('Error releasing final semester results:', error);
+        showError('Failed to release final semester results. Please try again.', 'Error');
     }
 }
 
@@ -657,6 +703,7 @@ function displayFinalGrades(classGroups) {
             const finalGrade = calculateFinalGrade(finalScore);
             const gradeClass = `grade-${finalGrade}`;
             const allReleased = studentData.exams.every(e => e.exam?.results_released);
+            const semesterReleased = studentData.exams.some(e => e.exam?.semester_results_released);
             
             // Display both name and username if available
             const studentDisplay = student.name 
@@ -687,7 +734,10 @@ function displayFinalGrades(classGroups) {
                     <td><strong style="color: var(--primary-color); font-size: 16px;">${finalScore.toFixed(2)}%</strong></td>
                     <td><span class="grade-badge ${gradeClass}">${finalGrade}</span></td>
                     <td style="max-width: 300px;">${breakdownHtml}</td>
-                    <td>${allReleased ? '<span style="color: #28a745;">Complete</span>' : '<span style="color: #ffc107;">Pending</span>'}</td>
+                    <td>
+                        ${allReleased ? '<span style="color: #28a745;">✓ Individual Results Released</span><br>' : '<span style="color: #ffc107;">Individual Results Pending</span><br>'}
+                        ${semesterReleased ? '<span style="color: #28a745; font-weight: bold;">✓ Final Semester Released</span>' : '<span style="color: #dc3545;">Final Semester Pending</span>'}
+                    </td>
                 </tr>
             `;
         });
