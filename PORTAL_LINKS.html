@@ -237,23 +237,51 @@
     
     <script>
         // Display current base URL
-        const baseUrl = window.location.origin;
-        document.getElementById('baseUrl').textContent = baseUrl;
+        let baseUrl = window.location.origin;
+        
+        // Handle local file access (file:// protocol)
+        if (window.location.protocol === 'file:') {
+            baseUrl = 'http://localhost:5500'; // Default for VS Code Live Server
+            document.getElementById('baseUrl').textContent = 'Local Development (file://) - Use relative paths below';
+            
+            // Show warning for local access
+            const warning = document.createElement('div');
+            warning.style.cssText = 'background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;';
+            warning.innerHTML = '<strong>⚠️ Local File Access Detected</strong><br>If using VS Code Live Server, links will work. Otherwise, deploy to Vercel or use a local server.';
+            document.querySelector('.links-container').insertBefore(warning, document.querySelector('.current-url'));
+        } else {
+            document.getElementById('baseUrl').textContent = baseUrl;
+        }
         
         // Copy base URL to clipboard
         function copyBaseUrl() {
-            navigator.clipboard.writeText(baseUrl).then(() => {
-                alert('Base URL copied to clipboard!');
+            const urlToCopy = window.location.protocol === 'file:' ? 'Deploy to Vercel for production URLs' : baseUrl;
+            navigator.clipboard.writeText(urlToCopy).then(() => {
+                alert('URL copied to clipboard!');
             });
         }
         
-        // Update all links to use current base URL
+        // Update all links to use current base URL or relative paths
         document.querySelectorAll('.portal-link').forEach(link => {
             const href = link.getAttribute('href');
             if (href && !href.startsWith('http')) {
-                link.href = baseUrl + '/' + href;
+                if (window.location.protocol === 'file:') {
+                    // For local file access, use relative paths
+                    link.href = href;
+                    link.target = '_self'; // Open in same window for local files
+                } else {
+                    // For web access, use absolute URLs
+                    link.href = baseUrl + '/' + href;
+                }
             }
         });
+        
+        // Add click handler to show full URL on hover for local files
+        if (window.location.protocol === 'file:') {
+            document.querySelectorAll('.portal-link').forEach(link => {
+                link.title = 'Local file: ' + link.getAttribute('href') + '\nFor production, deploy to Vercel';
+            });
+        }
     </script>
 </body>
 </html>
