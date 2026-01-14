@@ -66,8 +66,11 @@ async function handleAdminLogin(e) {
     // Check if Supabase is available
     if (typeof getUserFromSupabase === 'function') {
         try {
+            console.log('Attempting admin login for:', username);
             // Force admin role check
             user = await getUserFromSupabase(username, password, 'admin');
+            
+            console.log('User lookup result:', user ? 'Found user' : 'No user found');
             
             // Verify the user is actually an admin
             if (user && user.role !== 'admin') {
@@ -79,14 +82,29 @@ async function handleAdminLogin(e) {
                 }
                 return;
             }
+            
+            if (!user) {
+                console.log('Admin user not found. Please verify:');
+                console.log('1. SQL script has been run in Supabase');
+                console.log('2. Username is exactly: admin');
+                console.log('3. Password is exactly: Admin123!');
+                console.log('4. Role is set to: admin');
+            }
         } catch (err) {
             console.error('Supabase login error:', err);
             if (errorMessage) {
-                errorMessage.textContent = 'Login failed. Please try again.';
+                errorMessage.textContent = 'Login failed: ' + (err.message || 'Database connection error');
                 errorMessage.classList.add('show');
             }
             return;
         }
+    } else {
+        console.error('getUserFromSupabase function not available');
+        if (errorMessage) {
+            errorMessage.textContent = 'Database connection not available. Please check your configuration.';
+            errorMessage.classList.add('show');
+        }
+        return;
     }
     
     // Fallback to localStorage if Supabase fails or not available (for migration)
