@@ -108,25 +108,35 @@ async function getUserFromSupabase(username, password, role) {
         console.log('Password format check:', data.password && data.password.length === 64 && /^[a-f0-9]{64}$/i.test(data.password));
         
         if (data.password && data.password.length === 64 && /^[a-f0-9]{64}$/i.test(data.password)) {
-            // Password is hashed, verify using hash
-            console.log('Password is hashed (64 chars). Verifying...');
-            if (typeof SecurityUtils !== 'undefined' && SecurityUtils.verifyPassword) {
-                console.log('Using SecurityUtils.verifyPassword');
-                passwordMatch = await SecurityUtils.verifyPassword(password, data.password);
-                console.log('SecurityUtils verification result:', passwordMatch);
+            // Password is hashed (SHA256 format - 64 hex chars)
+            console.log('Password is hashed (64 chars SHA256 format). Verifying...');
+            
+            // For SHA256 hashes, use CryptoJS directly (SecurityUtils might expect bcrypt)
+            const CryptoJS = window.CryptoJS;
+            if (CryptoJS) {
+                console.log('Using CryptoJS.SHA256 for verification');
+                const inputHash = CryptoJS.SHA256(password).toString();
+                console.log('Input password hash (SHA256):', inputHash);
+                console.log('Database password hash:', data.password);
+                passwordMatch = inputHash.toLowerCase() === data.password.toLowerCase();
+                console.log('Password match (CryptoJS SHA256):', passwordMatch);
+                
+                if (!passwordMatch) {
+                    console.warn('Hashes do not match. Checking SecurityUtils as fallback...');
+                    // Try SecurityUtils as fallback
+                    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.verifyPassword) {
+                        passwordMatch = await SecurityUtils.verifyPassword(password, data.password);
+                        console.log('SecurityUtils verification result (fallback):', passwordMatch);
+                    }
+                }
             } else {
-                // Fallback: hash the input and compare (for migration period)
-                console.log('SecurityUtils not available, using CryptoJS fallback');
-                const CryptoJS = window.CryptoJS;
-                if (CryptoJS) {
-                    const inputHash = CryptoJS.SHA256(password).toString();
-                    console.log('Input password hash:', inputHash);
-                    console.log('Database password hash:', data.password);
-                    passwordMatch = inputHash === data.password;
-                    console.log('Password match (CryptoJS):', passwordMatch);
+                console.warn('CryptoJS not available, trying SecurityUtils');
+                if (typeof SecurityUtils !== 'undefined' && SecurityUtils.verifyPassword) {
+                    console.log('Using SecurityUtils.verifyPassword');
+                    passwordMatch = await SecurityUtils.verifyPassword(password, data.password);
+                    console.log('SecurityUtils verification result:', passwordMatch);
                 } else {
-                    console.warn('CryptoJS not available, trying plaintext comparison');
-                    // Temporary fallback for plaintext during migration
+                    console.warn('Neither CryptoJS nor SecurityUtils available, trying plaintext comparison');
                     passwordMatch = data.password === password;
                     console.log('Password match (plaintext):', passwordMatch);
                 }
