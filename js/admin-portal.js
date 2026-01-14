@@ -37,11 +37,20 @@ document.addEventListener('DOMContentLoaded', function() {
     loadStatistics();
     loadResults();
     loadFinalGrades();
+    loadAllUsers();
+    loadAnalytics();
+    loadGradeThresholds();
     
     // Populate subject dropdown based on class
     document.getElementById('filterClass').addEventListener('change', function() {
         updateSubjectDropdown(this.value);
     });
+    
+    // Auto-refresh analytics every 60 seconds
+    setInterval(() => {
+        loadAnalytics();
+        loadStatistics();
+    }, 60000);
 });
 
 // Load all students (even without exam results)
@@ -764,21 +773,36 @@ function displayFinalGrades(classGroups) {
     container.innerHTML = html;
 }
 
+// Get grade thresholds (from settings or default)
+function getGradeThresholds() {
+    const saved = localStorage.getItem('gradeThresholds');
+    if (saved) {
+        try {
+            return JSON.parse(saved);
+        } catch (e) {
+            console.error('Error parsing grade thresholds:', e);
+        }
+    }
+    return { A: 80, B: 70, C: 60, D: 50 };
+}
+
 // Calculate grade from percentage
 function calculateGrade(percentage) {
-    if (percentage >= 80) return 'A';
-    if (percentage >= 70) return 'B';
-    if (percentage >= 60) return 'C';
-    if (percentage >= 50) return 'D';
+    const thresholds = getGradeThresholds();
+    if (percentage >= thresholds.A) return 'A';
+    if (percentage >= thresholds.B) return 'B';
+    if (percentage >= thresholds.C) return 'C';
+    if (percentage >= thresholds.D) return 'D';
     return 'F';
 }
 
 // Calculate final grade from scaled score
 function calculateFinalGrade(scaledScore) {
-    if (scaledScore >= 80) return 'A';
-    if (scaledScore >= 70) return 'B';
-    if (scaledScore >= 60) return 'C';
-    if (scaledScore >= 50) return 'D';
+    const thresholds = getGradeThresholds();
+    if (scaledScore >= thresholds.A) return 'A';
+    if (scaledScore >= thresholds.B) return 'B';
+    if (scaledScore >= thresholds.C) return 'C';
+    if (scaledScore >= thresholds.D) return 'D';
     return 'F';
 }
 
@@ -1209,5 +1233,569 @@ async function saveAllBFTScores(bftNumber) {
     } catch (error) {
         console.error('Error saving all BFT scores:', error);
         showError('Failed to save scores. Please try again.', 'Error');
+    }
+}
+
+// ==================== USER MANAGEMENT ====================
+
+// Load all users with filters
+async function loadAllUsers() {
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            console.error('Supabase client not available');
+            return;
+        }
+        
+        const roleFilter = document.getElementById('userRoleFilter').value;
+        const classFilter = document.getElementById('userClassFilter').value;
+        const searchFilter = document.getElementById('userSearchFilter').value.toLowerCase().trim();
+        
+        let query = supabase
+            .from('users')
+            .select('id, username, name, email, role, class, created_at')
+            .order('created_at', { ascending: false });
+        
+        if (roleFilter !== 'all') {
+            query = query.eq('role', roleFilter);
+        }
+        
+        if (classFilter !== 'all') {
+            query = query.eq('class', classFilter);
+        }
+        
+        const { data: users, error } = await query;
+        
+        if (error) {
+            console.error('Error loading users:', error);
+            showError('Failed to load users. Please try again.', 'Error');
+            return;
+        }
+        
+        // Apply search filter client-side
+        let filteredUsers = users || [];
+        if (searchFilter) {
+            filteredUsers = filteredUsers.filter(user => {
+                const name = (user.name || '').toLowerCase();
+                const username = (user.username || '').toLowerCase();
+                const email = (user.email || '').toLowerCase();
+                return name.includes(searchFilter) || 
+                       username.includes(searchFilter) || 
+                       email.includes(searchFilter);
+            });
+        }
+        
+        displayUsers(filteredUsers);
+        
+    } catch (error) {
+        console.error('Error loading users:', error);
+        showError('Failed to load users. Please try again.', 'Error');
+    }
+}
+
+// Display users in table
+function displayUsers(users) {
+    const container = document.getElementById('usersContainer');
+    if (!container) return;
+    
+    if (users.length === 0) {
+        container.innerHTML = '<p class="empty-state">No users found matching your filters.</p>';
+        return;
+    }
+    
+    let html = `
+        <div style="overflow-x: auto;">
+            <table class="results-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Class</th>
+                        <th>Registered</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+    `;
+    
+    users.forEach(user => {
+        const roleBadge = {
+            'admin': '<span style="background: #dc3545; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Admin</span>',
+            'lecturer': '<span style="background: #17a2b8; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Lecturer</span>',
+            'student': '<span style="background: #28a745; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">Student</span>'
+        }[user.role] || '<span style="color: #666;">Unknown</span>';
+        
+        const className = user.class ? formatClassName(user.class) : '-';
+        const registeredDate = user.created_at ? new Date(user.created_at).toLocaleDateString() : '-';
+        const nameDisplay = user.name || user.username || 'Unknown';
+        
+        html += `
+            <tr>
+                <td>${escapeHtml(nameDisplay)}</td>
+                <td>${escapeHtml(user.username || 'N/A')}</td>
+                <td>${escapeHtml(user.email || 'N/A')}</td>
+                <td>${roleBadge}</td>
+                <td>${className}</td>
+                <td>${registeredDate}</td>
+                <td>
+                    <button onclick="editUser('${user.id}')" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">Edit</button>
+                    <button onclick="resetUserPassword('${user.id}', '${escapeHtml(nameDisplay)}')" class="btn btn-warning" style="padding: 6px 12px; font-size: 12px;">Reset Password</button>
+                </td>
+            </tr>
+        `;
+    });
+    
+    html += `
+                </tbody>
+            </table>
+        </div>
+    `;
+    
+    container.innerHTML = html;
+}
+
+// Edit user information
+async function editUser(userId) {
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('*')
+            .eq('id', userId)
+            .single();
+        
+        if (error || !user) {
+            showError('User not found', 'Error');
+            return;
+        }
+        
+        const newName = prompt('Enter new name:', user.name || '');
+        if (newName === null) return;
+        
+        const newEmail = prompt('Enter new email:', user.email || '');
+        if (newEmail === null) return;
+        
+        const { error: updateError } = await supabase
+            .from('users')
+            .update({
+                name: newName.trim() || null,
+                email: newEmail.trim() || null
+            })
+            .eq('id', userId);
+        
+        if (updateError) {
+            console.error('Error updating user:', updateError);
+            showError('Failed to update user. Please try again.', 'Error');
+            return;
+        }
+        
+        showSuccess('User information updated successfully!', 'Success');
+        loadAllUsers();
+        
+    } catch (error) {
+        console.error('Error editing user:', error);
+        showError('Failed to update user. Please try again.', 'Error');
+    }
+}
+
+// Reset user password
+async function resetUserPassword(userId, userName) {
+    if (!confirm(`Are you sure you want to reset the password for ${userName}?\n\n⚠️ Note: Password reset requires Supabase Admin API access.\n\nFor now, please use the Supabase Dashboard to reset passwords.\n\nWould you like to see instructions?`)) {
+        return;
+    }
+    
+    // Show instructions for password reset
+    const instructions = `
+Password Reset Instructions:
+
+1. Go to your Supabase Dashboard
+2. Navigate to Authentication > Users
+3. Find the user: ${userName}
+4. Click on the user to edit
+5. Click "Reset Password" or "Send Password Reset Email"
+
+Alternatively, you can use the Supabase Admin API in your backend:
+- supabase.auth.admin.updateUserById(userId, { password: newPassword })
+
+For security reasons, password reset from the admin portal requires backend API access.
+    `;
+    
+    showError(instructions, 'Password Reset Instructions');
+}
+
+// Generate temporary password
+function generateTempPassword() {
+    const length = 12;
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+        password += charset.charAt(Math.floor(Math.random() * charset.length));
+    }
+    return password;
+}
+
+// Export users to CSV
+function exportUsersToCSV() {
+    // This will use the current filtered users
+    const container = document.getElementById('usersContainer');
+    const table = container?.querySelector('table');
+    if (!table) {
+        showError('No users to export. Please load users first.', 'Error');
+        return;
+    }
+    
+    let csv = 'Name,Username,Email,Role,Class,Registered\n';
+    const rows = table.querySelectorAll('tbody tr');
+    
+    rows.forEach(row => {
+        const cells = row.querySelectorAll('td');
+        if (cells.length >= 6) {
+            const name = cells[0].textContent.trim().replace(/,/g, ';');
+            const username = cells[1].textContent.trim().replace(/,/g, ';');
+            const email = cells[2].textContent.trim().replace(/,/g, ';');
+            const role = cells[3].textContent.trim().replace(/,/g, ';');
+            const className = cells[4].textContent.trim().replace(/,/g, ';');
+            const registered = cells[5].textContent.trim().replace(/,/g, ';');
+            csv += `${name},${username},${email},${role},${className},${registered}\n`;
+        }
+    });
+    
+    downloadCSV(csv, 'users_export.csv');
+}
+
+// ==================== ANALYTICS & REPORTS ====================
+
+// Load analytics data
+async function loadAnalytics() {
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            console.error('Supabase client not available');
+            return;
+        }
+        
+        // Get all grades
+        const { data: grades, error } = await supabase
+            .from('exam_grades')
+            .select('percentage, grade');
+        
+        if (error) {
+            console.error('Error loading analytics:', error);
+            return;
+        }
+        
+        if (!grades || grades.length === 0) {
+            document.getElementById('passRate').textContent = '0%';
+            document.getElementById('failRate').textContent = '0%';
+            document.getElementById('averageScore').textContent = '0%';
+            return;
+        }
+        
+        // Calculate statistics
+        const totalGrades = grades.length;
+        const passed = grades.filter(g => g.grade && g.grade !== 'F').length;
+        const failed = grades.filter(g => g.grade === 'F').length;
+        const totalPercentage = grades.reduce((sum, g) => sum + (g.percentage || 0), 0);
+        const averagePercentage = totalPercentage / totalGrades;
+        
+        const passRate = (passed / totalGrades) * 100;
+        const failRate = (failed / totalGrades) * 100;
+        
+        document.getElementById('passRate').textContent = passRate.toFixed(1) + '%';
+        document.getElementById('failRate').textContent = failRate.toFixed(1) + '%';
+        document.getElementById('averageScore').textContent = averagePercentage.toFixed(1) + '%';
+        
+        // Get total classes
+        const { data: classes } = await supabase
+            .from('users')
+            .select('class')
+            .eq('role', 'student')
+            .not('class', 'is', null);
+        
+        const uniqueClasses = new Set((classes || []).map(c => c.class).filter(Boolean));
+        document.getElementById('totalClasses').textContent = uniqueClasses.size;
+        
+        // Display grade distribution
+        displayGradeDistribution(grades);
+        
+    } catch (error) {
+        console.error('Error loading analytics:', error);
+    }
+}
+
+// Display grade distribution
+function displayGradeDistribution(grades) {
+    const container = document.getElementById('analyticsContainer');
+    if (!container) return;
+    
+    const distribution = {
+        'A': 0,
+        'B': 0,
+        'C': 0,
+        'D': 0,
+        'F': 0
+    };
+    
+    grades.forEach(grade => {
+        const g = grade.grade;
+        if (distribution.hasOwnProperty(g)) {
+            distribution[g]++;
+        }
+    });
+    
+    const total = grades.length;
+    const maxCount = Math.max(...Object.values(distribution));
+    
+    let html = `
+        <h4 style="margin-bottom: 15px; color: var(--primary-color);">Grade Distribution</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+    `;
+    
+    Object.keys(distribution).forEach(grade => {
+        const count = distribution[grade];
+        const percentage = total > 0 ? (count / total) * 100 : 0;
+        const barWidth = maxCount > 0 ? (count / maxCount) * 100 : 0;
+        const gradeClass = `grade-${grade}`;
+        
+        html += `
+            <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                    <span class="grade-badge ${gradeClass}" style="font-size: 18px;">Grade ${grade}</span>
+                    <strong>${count} (${percentage.toFixed(1)}%)</strong>
+                </div>
+                <div style="background: #e0e0e0; height: 20px; border-radius: 10px; overflow: hidden;">
+                    <div style="background: var(--primary-color); height: 100%; width: ${barWidth}%; transition: width 0.3s;"></div>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+// ==================== EXPORT FEATURES ====================
+
+// Export results to CSV
+async function exportResults() {
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        const exportClass = document.getElementById('exportClass').value;
+        const exportType = document.getElementById('exportType').value;
+        
+        let csv = '';
+        
+        if (exportType === 'final_grades') {
+            // Export final grades
+            csv = await exportFinalGrades(exportClass);
+        } else if (exportType === 'all_results') {
+            // Export all exam results
+            csv = await exportAllResults(exportClass);
+        } else if (exportType === 'by_subject') {
+            // Export by subject
+            csv = await exportBySubject(exportClass);
+        }
+        
+        if (csv) {
+            const filename = `results_export_${new Date().toISOString().split('T')[0]}.csv`;
+            downloadCSV(csv, filename);
+            showSuccess('Results exported successfully!', 'Success');
+        } else {
+            showError('No data to export', 'Error');
+        }
+        
+    } catch (error) {
+        console.error('Error exporting results:', error);
+        showError('Failed to export results. Please try again.', 'Error');
+    }
+}
+
+// Export final grades
+async function exportFinalGrades(classFilter) {
+    const supabase = getSupabaseClient();
+    
+    let query = supabase
+        .from('exam_grades')
+        .select(`
+            *,
+            student:users!exam_grades_student_id_fkey(id, name, username, class),
+            exam:exams!exam_grades_exam_id_fkey(id, subject, class_id, exam_type)
+        `);
+    
+    if (classFilter !== 'all') {
+        const { data: students } = await supabase
+            .from('users')
+            .select('id')
+            .eq('role', 'student')
+            .eq('class', classFilter);
+        
+        const studentIds = students?.map(s => s.id) || [];
+        if (studentIds.length > 0) {
+            query = query.in('student_id', studentIds);
+        }
+    }
+    
+    const { data: grades } = await query;
+    
+    if (!grades || grades.length === 0) return null;
+    
+    // Group by student and calculate final grades
+    const studentGrades = {};
+    grades.forEach(grade => {
+        const studentId = grade.student?.id;
+        if (!studentId) return;
+        
+        if (!studentGrades[studentId]) {
+            studentGrades[studentId] = {
+                student: grade.student,
+                totalScaled: 0,
+                exams: []
+            };
+        }
+        
+        const examType = grade.exam?.exam_type || 'N/A';
+        const examTypePercentage = getExamTypePercentage(examType);
+        const scaledScore = grade.scaled_score || (grade.percentage ? (grade.percentage * examTypePercentage / 100) : 0);
+        
+        studentGrades[studentId].totalScaled += scaledScore;
+        studentGrades[studentId].exams.push(grade);
+    });
+    
+    let csv = 'Student Name,Username,Class,Final Score,Final Grade,Total Exams\n';
+    
+    Object.values(studentGrades).forEach(data => {
+        const student = data.student || {};
+        const finalGrade = calculateFinalGrade(data.totalScaled);
+        csv += `${student.name || student.username || 'Unknown'},${student.username || 'N/A'},${formatClassName(student.class || 'unknown')},${data.totalScaled.toFixed(2)}%,${finalGrade},${data.exams.length}\n`;
+    });
+    
+    return csv;
+}
+
+// Export all results
+async function exportAllResults(classFilter) {
+    const supabase = getSupabaseClient();
+    
+    let query = supabase
+        .from('exam_grades')
+        .select(`
+            *,
+            student:users!exam_grades_student_id_fkey(id, name, username, class),
+            exam:exams!exam_grades_exam_id_fkey(id, title, subject, class_id, exam_type, total_marks)
+        `);
+    
+    if (classFilter !== 'all') {
+        const { data: students } = await supabase
+            .from('users')
+            .select('id')
+            .eq('role', 'student')
+            .eq('class', classFilter);
+        
+        const studentIds = students?.map(s => s.id) || [];
+        if (studentIds.length > 0) {
+            query = query.in('student_id', studentIds);
+        }
+    }
+    
+    const { data: grades } = await query;
+    
+    if (!grades || grades.length === 0) return null;
+    
+    let csv = 'Student Name,Username,Class,Exam Title,Subject,Exam Type,Score,Percentage,Grade\n';
+    
+    grades.forEach(grade => {
+        const student = grade.student || {};
+        const exam = grade.exam || {};
+        csv += `${student.name || student.username || 'Unknown'},${student.username || 'N/A'},${formatClassName(student.class || 'unknown')},${exam.title || 'N/A'},${exam.subject || 'N/A'},${formatExamType(exam.exam_type || 'N/A')},${grade.score || 0}/${exam.total_marks || 0},${(grade.percentage || 0).toFixed(1)}%,${grade.grade || 'N/A'}\n`;
+    });
+    
+    return csv;
+}
+
+// Export by subject
+async function exportBySubject(classFilter) {
+    // Similar to all results but grouped by subject
+    return await exportAllResults(classFilter);
+}
+
+// Download CSV file
+function downloadCSV(csv, filename) {
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// ==================== SYSTEM SETTINGS ====================
+
+// Save grade thresholds
+async function saveGradeThresholds() {
+    const gradeA = parseInt(document.getElementById('gradeA').value);
+    const gradeB = parseInt(document.getElementById('gradeB').value);
+    const gradeC = parseInt(document.getElementById('gradeC').value);
+    const gradeD = parseInt(document.getElementById('gradeD').value);
+    
+    // Validate thresholds
+    if (gradeA < gradeB || gradeB < gradeC || gradeC < gradeD || gradeD < 0) {
+        showError('Invalid grade thresholds. Grade A must be highest, followed by B, C, and D.', 'Error');
+        return;
+    }
+    
+    // Store in localStorage (in production, store in database)
+    localStorage.setItem('gradeThresholds', JSON.stringify({
+        A: gradeA,
+        B: gradeB,
+        C: gradeC,
+        D: gradeD
+    }));
+    
+    showSuccess('Grade thresholds saved successfully!', 'Success');
+}
+
+// Reset grade thresholds
+function resetGradeThresholds() {
+    if (!confirm('Reset grade thresholds to default values?')) {
+        return;
+    }
+    
+    document.getElementById('gradeA').value = 80;
+    document.getElementById('gradeB').value = 70;
+    document.getElementById('gradeC').value = 60;
+    document.getElementById('gradeD').value = 50;
+    
+    localStorage.removeItem('gradeThresholds');
+    showSuccess('Grade thresholds reset to default values.', 'Success');
+}
+
+// Load grade thresholds
+function loadGradeThresholds() {
+    const saved = localStorage.getItem('gradeThresholds');
+    if (saved) {
+        try {
+            const thresholds = JSON.parse(saved);
+            document.getElementById('gradeA').value = thresholds.A || 80;
+            document.getElementById('gradeB').value = thresholds.B || 70;
+            document.getElementById('gradeC').value = thresholds.C || 60;
+            document.getElementById('gradeD').value = thresholds.D || 50;
+        } catch (e) {
+            console.error('Error loading grade thresholds:', e);
+        }
     }
 }

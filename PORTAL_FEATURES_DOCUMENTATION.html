@@ -279,7 +279,7 @@
             <h1>🇬🇭 Signal Training School</h1>
             <h2>Learning Management System & Exam Portal</h2>
             <h2 style="font-size: 1.1em; margin-top: 10px;">Complete Portal Features Documentation</h2>
-            <div class="date">January 2026</div>
+            <div class="date">January 2026 - Updated with New Admin Features</div>
         </div>
         
         <div class="toc">
@@ -602,6 +602,83 @@
                         <li>Color-coded grade badges</li>
                         <li>Exam breakdown by lecturer</li>
                         <li>Status indicators (Individual Results Released / Final Semester Released)</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3>👥 User Management <span class="badge badge-success">NEW</span></h3>
+                <div class="portal-card">
+                    <h4>User Administration</h4>
+                    <ul class="feature-list">
+                        <li>View all users (Students, Lecturers, Admins)</li>
+                        <li>Filter users by role (Student/Lecturer/Admin)</li>
+                        <li>Filter users by class</li>
+                        <li>Search users by name, username, or email</li>
+                        <li>Edit user information (name, email)</li>
+                        <li>Password reset instructions (requires Supabase Admin API)</li>
+                        <li>Export user list to CSV format</li>
+                        <li>View user registration dates</li>
+                        <li>Color-coded role badges</li>
+                        <li>Real-time search and filtering</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3>📤 Export Features <span class="badge badge-success">NEW</span></h3>
+                <div class="portal-card">
+                    <h4>Data Export</h4>
+                    <ul class="feature-list">
+                        <li>Export all exam results to CSV</li>
+                        <li>Export final grades only (summary)</li>
+                        <li>Export results by subject</li>
+                        <li>Filter by class before export</li>
+                        <li>Excel-compatible CSV format</li>
+                        <li>Automatic file download</li>
+                        <li>Includes all relevant data (student info, scores, grades, percentages)</li>
+                        <li>UTF-8 encoding for proper character display</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3>📊 Analytics & Reports <span class="badge badge-success">NEW</span></h3>
+                <div class="portal-card">
+                    <h4>Performance Statistics</h4>
+                    <ul class="feature-list">
+                        <li>Pass Rate: Percentage of students passing (grades A-D)</li>
+                        <li>Fail Rate: Percentage of students failing (grade F)</li>
+                        <li>Average Score: Overall average percentage across all exams</li>
+                        <li>Total Classes: Number of unique classes with students</li>
+                        <li>Grade Distribution: Visual breakdown of grades (A, B, C, D, F)</li>
+                        <li>Real-time statistics calculation</li>
+                        <li>Auto-refresh every 60 seconds</li>
+                        <li>Visual charts and progress bars</li>
+                        <li>Color-coded statistics cards</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="subsection">
+                <h3>⚙️ System Settings <span class="badge badge-success">NEW</span></h3>
+                <div class="portal-card">
+                    <h4>Grade Configuration</h4>
+                    <ul class="feature-list">
+                        <li>Configurable grade thresholds:
+                            <ul style="margin-left: 30px; margin-top: 10px;">
+                                <li>Grade A minimum percentage (default: 80%)</li>
+                                <li>Grade B minimum percentage (default: 70%)</li>
+                                <li>Grade C minimum percentage (default: 60%)</li>
+                                <li>Grade D minimum percentage (default: 50%)</li>
+                                <li>Grade F: Below 50% (automatic)</li>
+                            </ul>
+                        </li>
+                        <li>Save grade thresholds to browser storage</li>
+                        <li>Reset to default values</li>
+                        <li>Automatic application to all grade calculations</li>
+                        <li>Validation to ensure proper threshold order</li>
+                        <li>Settings persist across sessions</li>
                     </ul>
                 </div>
             </div>

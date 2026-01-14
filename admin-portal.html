@@ -258,6 +258,169 @@
                 <p class="empty-state">Loading final grades...</p>
             </div>
         </div>
+        
+        <!-- User Management Section -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <h3>User Management</h3>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="loadAllUsers()" class="btn btn-primary">Refresh Users</button>
+                    <button onclick="exportUsersToCSV()" class="btn btn-success">Export Users</button>
+                </div>
+            </div>
+            <div class="filter-section">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="userRoleFilter">Filter by Role</label>
+                        <select id="userRoleFilter" class="form-control" onchange="loadAllUsers()">
+                            <option value="all">All Roles</option>
+                            <option value="student">Students</option>
+                            <option value="lecturer">Lecturers</option>
+                            <option value="admin">Admins</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="userClassFilter">Filter by Class</label>
+                        <select id="userClassFilter" class="form-control" onchange="loadAllUsers()">
+                            <option value="all">All Classes</option>
+                            <optgroup label="Signals">
+                                <option value="signals-basic">SIGNALS BASIC</option>
+                                <option value="signals-b-iii-b-ii">SIGNALS B III – B II</option>
+                                <option value="signals-b-ii-b-i">SIGNALS B II – B I</option>
+                            </optgroup>
+                            <optgroup label="Advanced Courses">
+                                <option value="superintendent">SUPERINTENDENT</option>
+                                <option value="pre-qualifying">PRE-QUALIFYING</option>
+                            </optgroup>
+                            <optgroup label="Regimental">
+                                <option value="regimental-basic">REGIMENTAL BASIC</option>
+                                <option value="regimental-b-iii-b-ii">REGIMENTAL B III – B II</option>
+                                <option value="regimental-b-ii-b-i">REGIMENTAL B II – B I</option>
+                            </optgroup>
+                            <optgroup label="Specialized">
+                                <option value="rso-rsi">RSO / RSI</option>
+                                <option value="electronic-warfare-course">ELECTRONIC WARFARE COURSE</option>
+                                <option value="tactical-drone-course">TACTICAL DRONE COURSE</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="userSearchFilter">Search Users</label>
+                        <input type="text" id="userSearchFilter" class="form-control" placeholder="Search by name, username, or email..." oninput="loadAllUsers()" autocomplete="off">
+                    </div>
+                </div>
+            </div>
+            <div id="usersContainer" style="margin-top: 20px;">
+                <p class="empty-state">Loading users...</p>
+            </div>
+        </div>
+        
+        <!-- Analytics & Reports Section -->
+        <div class="card">
+            <h3>Analytics & Reports</h3>
+            <div class="admin-stats" style="margin-bottom: 30px;">
+                <div class="stat-card" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                    <h3>Pass Rate</h3>
+                    <div class="value" id="passRate">0%</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);">
+                    <h3>Fail Rate</h3>
+                    <div class="value" id="failRate">0%</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);">
+                    <h3>Average Score</h3>
+                    <div class="value" id="averageScore">0%</div>
+                </div>
+                <div class="stat-card" style="background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);">
+                    <h3>Total Classes</h3>
+                    <div class="value" id="totalClasses">0</div>
+                </div>
+            </div>
+            <div id="analyticsContainer">
+                <p class="empty-state">Loading analytics...</p>
+            </div>
+        </div>
+        
+        <!-- Export Features Section -->
+        <div class="card">
+            <h3>Export Results</h3>
+            <p style="color: #666; margin-bottom: 20px;">
+                Export exam results and final grades to CSV/Excel format for external analysis.
+            </p>
+            <div class="filter-section">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="exportClass">Class</label>
+                        <select id="exportClass" class="form-control">
+                            <option value="all">All Classes</option>
+                            <optgroup label="Signals">
+                                <option value="signals-basic">SIGNALS BASIC</option>
+                                <option value="signals-b-iii-b-ii">SIGNALS B III – B II</option>
+                                <option value="signals-b-ii-b-i">SIGNALS B II – B I</option>
+                            </optgroup>
+                            <optgroup label="Advanced Courses">
+                                <option value="superintendent">SUPERINTENDENT</option>
+                                <option value="pre-qualifying">PRE-QUALIFYING</option>
+                            </optgroup>
+                            <optgroup label="Regimental">
+                                <option value="regimental-basic">REGIMENTAL BASIC</option>
+                                <option value="regimental-b-iii-b-ii">REGIMENTAL B III – B II</option>
+                                <option value="regimental-b-ii-b-i">REGIMENTAL B II – B I</option>
+                            </optgroup>
+                            <optgroup label="Specialized">
+                                <option value="rso-rsi">RSO / RSI</option>
+                                <option value="electronic-warfare-course">ELECTRONIC WARFARE COURSE</option>
+                                <option value="tactical-drone-course">TACTICAL DRONE COURSE</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="exportType">Export Type</label>
+                        <select id="exportType" class="form-control">
+                            <option value="all_results">All Exam Results</option>
+                            <option value="final_grades">Final Grades Only</option>
+                            <option value="by_subject">Results by Subject</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <button onclick="exportResults()" class="btn btn-success" style="min-width: 150px;">Export to CSV</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Settings Section -->
+        <div class="card">
+            <h3>System Settings</h3>
+            <p style="color: #666; margin-bottom: 20px;">
+                Configure grade thresholds and exam type percentages. Changes affect how final grades are calculated.
+            </p>
+            <div class="filter-section">
+                <h4 style="margin-bottom: 15px; color: var(--primary-color);">Grade Thresholds</h4>
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="gradeA">Grade A (Minimum %)</label>
+                        <input type="number" id="gradeA" class="form-control" value="80" min="0" max="100">
+                    </div>
+                    <div class="filter-group">
+                        <label for="gradeB">Grade B (Minimum %)</label>
+                        <input type="number" id="gradeB" class="form-control" value="70" min="0" max="100">
+                    </div>
+                    <div class="filter-group">
+                        <label for="gradeC">Grade C (Minimum %)</label>
+                        <input type="number" id="gradeC" class="form-control" value="60" min="0" max="100">
+                    </div>
+                    <div class="filter-group">
+                        <label for="gradeD">Grade D (Minimum %)</label>
+                        <input type="number" id="gradeD" class="form-control" value="50" min="0" max="100">
+                    </div>
+                </div>
+                <div style="margin-top: 20px;">
+                    <button onclick="saveGradeThresholds()" class="btn btn-primary">Save Grade Thresholds</button>
+                    <button onclick="resetGradeThresholds()" class="btn btn-secondary">Reset to Default</button>
+                </div>
+            </div>
+        </div>
     </div>
     
     <!-- Scripts -->
