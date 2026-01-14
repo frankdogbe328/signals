@@ -2,6 +2,44 @@
   "buildCommand": null,
   "outputDirectory": ".",
   "installCommand": null,
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/student-dashboard",
+      "destination": "/student-dashboard.html"
+    },
+    {
+      "source": "/lecturer-dashboard",
+      "destination": "/lecturer-dashboard.html"
+    },
+    {
+      "source": "/admin-portal",
+      "destination": "/admin-portal.html"
+    },
+    {
+      "source": "/admin-login",
+      "destination": "/admin-login.html"
+    },
+    {
+      "source": "/lecturer-login",
+      "destination": "/lecturer-login.html"
+    },
+    {
+      "source": "/lecturer-register",
+      "destination": "/lecturer-register.html"
+    },
+    {
+      "source": "/exam-portal/student-exam-portal",
+      "destination": "/exam-portal/student-exam-portal.html"
+    },
+    {
+      "source": "/exam-portal/lecturer-exam-dashboard",
+      "destination": "/exam-portal/lecturer-exam-dashboard.html"
+    }
+  ],
   "headers": [
     {
       "source": "/(.*)",
