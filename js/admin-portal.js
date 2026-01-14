@@ -46,10 +46,16 @@ document.addEventListener('DOMContentLoaded', function() {
         updateSubjectDropdown(this.value);
     });
     
+    // Auto-refresh data every 30 seconds
+    setInterval(() => {
+        loadResults();
+        loadFinalGrades();
+        loadStatistics();
+    }, 30000); // 30 seconds
+    
     // Auto-refresh analytics every 60 seconds
     setInterval(() => {
         loadAnalytics();
-        loadStatistics();
     }, 60000);
 });
 
@@ -364,7 +370,7 @@ function displayResultsGroupedByClass(results) {
                         (${displayStudents.length} student${displayStudents.length !== 1 ? 's' : ''}${classData.results.length > 0 ? `, ${classData.results.length} result${classData.results.length !== 1 ? 's' : ''}` : ''})
                     </span>
                 </h4>
-                <div style="overflow-x: auto;">
+                <div class="table-wrapper">
                     <table class="results-table">
                         <thead>
                             <tr>
@@ -434,12 +440,12 @@ function displayResultsGroupedByClass(results) {
                     html += `
                         <tr>
                             <td>${studentDisplay}</td>
-                            <td>${escapeHtml(exam.title || 'Unknown')}</td>
+                            <td class="exam-cell">${escapeHtml(exam.title || 'Unknown')}</td>
                             <td>
                                 <span style="font-weight: 600; color: var(--primary-color);">${examTypeDisplay}</span>
                                 <br><small style="color: #666;">${examTypePercentage}%</small>
                             </td>
-                            <td>${escapeHtml(exam.subject || 'Unknown')}</td>
+                            <td class="subject-cell">${escapeHtml(exam.subject || 'Unknown')}</td>
                             <td>${escapeHtml(lecturer.name || lecturer.username || 'Unknown')}</td>
                             <td>${result.score || 0} / ${exam.total_marks || 0}</td>
                             <td>${(result.percentage || 0).toFixed(1)}%</td>
@@ -695,7 +701,7 @@ function displayFinalGrades(classGroups) {
         html += `
             <div class="card" style="margin-bottom: 20px;">
                 <h4 style="color: var(--primary-color); margin-bottom: 15px;">${className}</h4>
-                <div style="overflow-x: auto;">
+                <div class="table-wrapper">
                     <table class="results-table">
                         <thead>
                             <tr>
@@ -920,7 +926,7 @@ async function loadBFTStudents() {
         }
         
         let html = `
-            <div style="overflow-x: auto;">
+            <div class="table-wrapper">
                 <table class="results-table">
                     <thead>
                         <tr>
@@ -1355,7 +1361,7 @@ function displayUsers(users) {
                         (${roleUsers.length} ${roleUsers.length === 1 ? 'user' : 'users'})
                     </span>
                 </h4>
-                <div style="overflow-x: auto;">
+                <div class="table-wrapper">
                     <table class="results-table">
                         <thead>
                             <tr>

@@ -36,20 +36,74 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
+            font-size: 14px;
         }
         .results-table th,
         .results-table td {
-            padding: 12px;
+            padding: 10px 8px;
             text-align: left;
             border-bottom: 1px solid #e0e0e0;
+            white-space: nowrap;
+            min-width: 100px;
         }
         .results-table th {
             background: #f8f9fa;
             font-weight: 600;
             color: var(--primary-color);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            box-shadow: 0 2px 2px -1px rgba(0, 0, 0, 0.1);
         }
         .results-table tr:hover {
             background: #f8f9fa;
+        }
+        /* Responsive table wrapper */
+        .table-wrapper {
+            overflow-x: auto;
+            overflow-y: visible;
+            -webkit-overflow-scrolling: touch;
+            max-width: 100%;
+            position: relative;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+        }
+        .table-wrapper::-webkit-scrollbar {
+            height: 8px;
+        }
+        .table-wrapper::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        .table-wrapper::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        .table-wrapper::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Responsive columns - allow wrapping for long content */
+        .results-table td.subject-cell,
+        .results-table td.exam-cell {
+            white-space: normal;
+            word-wrap: break-word;
+            max-width: 200px;
+        }
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            .results-table {
+                font-size: 12px;
+            }
+            .results-table th,
+            .results-table td {
+                padding: 8px 6px;
+                min-width: 80px;
+            }
+            .results-table td.subject-cell,
+            .results-table td.exam-cell {
+                max-width: 150px;
+            }
         }
         .grade-badge {
             padding: 4px 12px;
@@ -187,7 +241,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                 <div>
                     <h3>All Students & Exam Results <small style="font-size: 14px; color: #666; font-weight: normal;">(Grouped by Class)</small></h3>
-                    <small style="color: #666; font-size: 12px;">🔄 Auto-refreshes every 30 seconds</small>
+                    <small style="color: #666; font-size: 12px;">🔄 Auto-refreshes every 30 seconds | 📊 Tables scroll horizontally when content is wide</small>
                 </div>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button onclick="releaseAllResults()" class="btn btn-success" id="releaseAllBtn" style="display: none;">
