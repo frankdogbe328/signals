@@ -69,7 +69,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.location.href = redirectTo;
                 } else {
                     // Default redirect based on role
-                    if (currentUser.role === 'lecturer') {
+                    if (currentUser.role === 'admin') {
+                        window.location.href = 'admin-portal.html';
+                    } else if (currentUser.role === 'lecturer') {
                         window.location.href = 'lecturer-dashboard.html';
                     } else if (currentUser.role === 'student') {
                         window.location.href = 'student-dashboard.html';

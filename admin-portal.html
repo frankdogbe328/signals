@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - Signal Training School LMS</title>
+    <link rel="icon" type="image/png" href="images/led.jpg">
+    <link rel="shortcut icon" type="image/png" href="images/led.jpg">
+    <link rel="apple-touch-icon" href="images/led.jpg">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #0052a3 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+        }
+        .stat-card h3 {
+            margin: 0 0 10px 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .results-table th,
+        .results-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .results-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        .results-table tr:hover {
+            background: #f8f9fa;
+        }
+        .grade-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        .grade-A { background: #28a745; color: white; }
+        .grade-B { background: #17a2b8; color: white; }
+        .grade-C { background: #ffc107; color: #000; }
+        .grade-D { background: #fd7e14; color: white; }
+        .grade-F { background: #dc3545; color: white; }
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+        .filter-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: end;
+        }
+        .filter-group {
+            flex: 1;
+            min-width: 200px;
+        }
+        .final-grade-card {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .final-grade-card h3 {
+            margin: 0 0 15px 0;
+        }
+        .final-grade-value {
+            font-size: 48px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <img src="images/led.jpg" alt="Signal Training School Logo" class="nav-logo" onclick="window.location.href='index.html'" style="cursor: pointer;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <h1 style="display: none;">🇬🇭 Signal Training School LMS</h1>
+            </div>
+            <div class="nav-user">
+                <span id="adminName"></span>
+                <button onclick="logout()" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="dashboard-header">
+            <h2>Admin Portal - Result Management</h2>
+            <p>Centralized management of all exam results and final grades</p>
+        </div>
+        
+        <!-- Statistics -->
+        <div class="admin-stats">
+            <div class="stat-card">
+                <h3>Total Students</h3>
+                <div class="value" id="totalStudents">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Total Exams</h3>
+                <div class="value" id="totalExams">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Completed Exams</h3>
+                <div class="value" id="completedExams">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Results Released</h3>
+                <div class="value" id="resultsReleased">0</div>
+            </div>
+        </div>
+        
+        <!-- Filters -->
+        <div class="filter-section">
+            <h3 style="margin-bottom: 15px;">Filter Results</h3>
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="filterClass">Class</label>
+                    <select id="filterClass" class="form-control" onchange="loadResults()">
+                        <option value="all">All Classes</option>
+                        <optgroup label="Signals">
+                            <option value="signals-basic">SIGNALS BASIC</option>
+                            <option value="signals-b-iii-b-ii">SIGNALS B III – B II</option>
+                            <option value="signals-b-ii-b-i">SIGNALS B II – B I</option>
+                        </optgroup>
+                        <optgroup label="Advanced Courses">
+                            <option value="superintendent">SUPERINTENDENT</option>
+                            <option value="pre-qualifying">PRE-QUALIFYING</option>
+                        </optgroup>
+                        <optgroup label="Regimental">
+                            <option value="regimental-basic">REGIMENTAL BASIC</option>
+                            <option value="regimental-b-iii-b-ii">REGIMENTAL B III – B II</option>
+                            <option value="regimental-b-ii-b-i">REGIMENTAL B II – B I</option>
+                        </optgroup>
+                        <optgroup label="Specialized">
+                            <option value="rso-rsi">RSO / RSI</option>
+                            <option value="electronic-warfare-course">ELECTRONIC WARFARE COURSE</option>
+                            <option value="tactical-drone-course">TACTICAL DRONE COURSE</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterSubject">Subject</label>
+                    <select id="filterSubject" class="form-control" onchange="loadResults()">
+                        <option value="all">All Subjects</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="filterStudent">Student</label>
+                    <input type="text" id="filterStudent" class="form-control" placeholder="Search by name..." oninput="loadResults()">
+                </div>
+                <div class="filter-group">
+                    <button onclick="loadResults()" class="btn btn-primary" style="min-width: 120px;">Refresh</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Results Table -->
+        <div class="card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3>All Exam Results</h3>
+                <button onclick="releaseAllResults()" class="btn btn-success" id="releaseAllBtn" style="display: none;">
+                    Release All Final Results
+                </button>
+            </div>
+            <div id="resultsContainer">
+                <p class="empty-state">Loading results...</p>
+            </div>
+        </div>
+        
+        <!-- Final Grades Summary -->
+        <div class="card">
+            <h3>Final Grades Summary by Class</h3>
+            <div id="finalGradesContainer">
+                <p class="empty-state">Loading final grades...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="js/security.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-helpers.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/admin-portal.js"></script>
+    <script src="js/modal.js"></script>
+    
+    <!-- Modal for Messages -->
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close">&times;</span>
+            <div class="modal-icon" id="modalIcon"></div>
+            <h3 id="modalTitle"></h3>
+            <p id="modalMessage"></p>
+            <button id="modalButton" class="btn btn-primary">OK</button>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="footer">
+        <p>&copy; 2026 Ghana Armed Forces Signals Training School. All rights reserved.</p>
+        <p style="font-size: 16px; font-weight: 600; margin: 10px 0; opacity: 1 !important;">
+            Developed and Powered by <strong style="color: #ffffff; font-size: 1.2em; font-weight: 700; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">Frank Kojo Dogbe</strong> | Co-developed by Solomon A. Nortey
+        </p>
+    </footer>
+</body>
+</html>

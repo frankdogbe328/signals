@@ -18,39 +18,36 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function showRegisterForm(role) {
+    // Only allow student registration from main page
+    // Lecturer registration is now restricted to lecturer-register.html
+    if (role !== 'student') {
+        window.location.href = 'lecturer-register.html';
+        return;
+    }
+    
     document.getElementById('loginForm').style.display = 'none';
     document.getElementById('registerForm').style.display = 'block';
     document.querySelector('.register-section').style.display = 'none';
     
-    // Store registration role
-    document.getElementById('registerForm').dataset.role = role;
+    // Store registration role (always student)
+    document.getElementById('registerForm').dataset.role = 'student';
     
     // Update form title
-    const title = role === 'lecturer' ? 'Lecturer Registration' : 'Student Registration';
-    document.getElementById('registerTitle').textContent = title;
+    document.getElementById('registerTitle').textContent = 'Student Registration';
     
-    // Show/hide fields based on role
+    // Show class and course fields for students
     const classGroup = document.getElementById('regClassGroup');
     const courseGroup = document.getElementById('regCourseGroup');
     const regClass = document.getElementById('regClass');
     
-    if (role === 'lecturer') {
-        // Lecturers don't need class or course
-        classGroup.style.display = 'none';
-        courseGroup.style.display = 'none';
-        regClass.removeAttribute('required');
-    } else {
-        // Students need class
-        classGroup.style.display = 'block';
-        courseGroup.style.display = 'block';
-        regClass.setAttribute('required', 'required');
-        
-        // Ensure event listener is attached (it should already be from DOMContentLoaded, but ensure it's there)
-        // The event listener is already attached in DOMContentLoaded, so this is just a safety check
-        if (!regClass.hasAttribute('data-listener-attached')) {
-            regClass.addEventListener('change', updateCoursesForClass);
-            regClass.setAttribute('data-listener-attached', 'true');
-        }
+    classGroup.style.display = 'block';
+    courseGroup.style.display = 'block';
+    regClass.setAttribute('required', 'required');
+    
+    // Ensure event listener is attached
+    if (!regClass.hasAttribute('data-listener-attached')) {
+        regClass.addEventListener('change', updateCoursesForClass);
+        regClass.setAttribute('data-listener-attached', 'true');
     }
     
     // Reset form

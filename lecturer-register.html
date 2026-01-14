@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecturer Registration - Signal Training School LMS</title>
+    <link rel="icon" type="image/png" href="images/led.jpg">
+    <link rel="shortcut icon" type="image/png" href="images/led.jpg">
+    <link rel="apple-touch-icon" href="images/led.jpg">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .registration-code-section {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .registration-code-section h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        .registration-code-section p {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+        .code-input {
+            font-size: 18px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            text-align: center;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <video autoplay muted loop playsinline id="backgroundVideo" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
+            <source src="giff.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="login-box">
+            <div class="logo-section">
+                <h1 class="welcome-title">Lecturer Registration</h1>
+                <img src="images/led.jpg" alt="Signal Training School Logo" class="logo-img" onclick="window.location.href='index.html'" style="cursor: pointer;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div class="logo-text" style="display: none;">
+                    <h1>🇬🇭 Signal Training School</h1>
+                    <h2>Lecturer Portal</h2>
+                </div>
+            </div>
+            
+            <!-- Registration Code Section -->
+            <div class="registration-code-section">
+                <h3>🔒 Restricted Access</h3>
+                <p>This registration is restricted to authorized lecturers only. Please enter the registration code provided by the administration.</p>
+                <div class="form-group">
+                    <label for="registrationCode">Registration Code</label>
+                    <input type="text" id="registrationCode" class="form-control code-input" placeholder="Enter registration code" required autocomplete="off" maxlength="20">
+                    <small style="color: #856404; font-size: 12px;">Contact administration for the registration code</small>
+                </div>
+            </div>
+            
+            <form id="lecturerRegisterForm" class="login-form">
+                <h3 id="registerTitle" style="text-align: center; color: var(--primary-color); margin-bottom: 20px;">Lecturer Registration</h3>
+                
+                <div class="form-group">
+                    <label for="regName">Full Name</label>
+                    <input type="text" id="regName" name="name" placeholder="e.g., Capt. John Doe" required autocomplete="name" inputmode="text">
+                </div>
+                
+                <div class="form-group">
+                    <label for="regUsername">Username</label>
+                    <input type="text" id="regUsername" name="username" placeholder="Choose a username" required autocomplete="username" inputmode="text">
+                    <small style="color: #666; font-size: 12px;">Username must be unique</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regEmail">Email Address</label>
+                    <input type="email" id="regEmail" name="email" placeholder="your.email@example.com" required autocomplete="email" inputmode="email">
+                    <small style="color: #666; font-size: 12px;">Used for password reset and notifications</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regPassword">Password</label>
+                    <div style="position: relative;">
+                        <input type="password" id="regPassword" name="password" placeholder="Choose a password" required autocomplete="new-password" style="padding-right: 45px;">
+                        <span class="password-toggle" onclick="togglePassword('regPassword')" style="position: absolute; right: 15px; top: 12px; cursor: pointer; font-size: 18px; color: #666; user-select: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;">👁️</span>
+                    </div>
+                    <small style="color: #666; font-size: 12px;">Minimum 6 characters</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regConfirmPassword">Confirm Password</label>
+                    <div style="position: relative;">
+                        <input type="password" id="regConfirmPassword" name="confirmPassword" placeholder="Re-enter password" required autocomplete="new-password" style="padding-right: 45px;">
+                        <span class="password-toggle" onclick="togglePassword('regConfirmPassword')" style="position: absolute; right: 15px; top: 12px; cursor: pointer; font-size: 18px; color: #666; user-select: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;">👁️</span>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-success">Register as Lecturer</button>
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='index.html'" style="margin-top: 10px;">Back to Login</button>
+                
+                <div id="registerErrorMessage" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="js/security.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-helpers.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/lecturer-register.js"></script>
+    
+    <script>
+        // Toggle password visibility
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const toggle = input.nextElementSibling;
+            if (input.type === 'password') {
+                input.type = 'text';
+                toggle.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                toggle.textContent = '👁️';
+            }
+        }
+        
+        // Handle video loading error gracefully
+        function handleVideoError() {
+            const video = document.getElementById('backgroundVideo');
+            const container = document.querySelector('.login-container');
+            if (video) {
+                video.style.display = 'none';
+            }
+            if (container) {
+                container.style.background = 'linear-gradient(135deg, #0066cc 0%, #0052a3 100%)';
+            }
+        }
+        
+        const video = document.getElementById('backgroundVideo');
+        if (video) {
+            video.addEventListener('error', handleVideoError);
+        }
+    </script>
+</body>
+</html>
