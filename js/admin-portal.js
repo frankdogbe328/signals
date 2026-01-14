@@ -44,6 +44,34 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Load all students (even without exam results)
+async function loadAllStudents() {
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            console.error('Supabase client not available');
+            return;
+        }
+        
+        const { data: students, error } = await supabase
+            .from('users')
+            .select('id, username, name, class, email, created_at')
+            .eq('role', 'student')
+            .order('created_at', { ascending: false });
+        
+        if (error) {
+            console.error('Error loading students:', error);
+            return;
+        }
+        
+        allStudents = students || [];
+        console.log(`Loaded ${allStudents.length} students`);
+        
+    } catch (error) {
+        console.error('Error loading all students:', error);
+    }
+}
+
 // Load statistics
 async function loadStatistics() {
     try {
@@ -112,6 +140,9 @@ async function loadResults() {
             return;
         }
         
+        // Reload students to get latest
+        await loadAllStudents();
+        
         const classFilter = document.getElementById('filterClass').value;
         const subjectFilter = document.getElementById('filterSubject').value;
         const studentFilter = document.getElementById('filterStudent').value.toLowerCase();
@@ -148,8 +179,9 @@ async function loadResults() {
             if (studentIds.length > 0) {
                 query = query.in('student_id', studentIds);
             } else {
-                // No students in this class
-                document.getElementById('resultsContainer').innerHTML = '<p class="empty-state">No results found for this class.</p>';
+                // No students in this class, but still show students without results
+                allResults = [];
+                displayResultsGroupedByClass([]);
                 return;
             }
         }
@@ -171,22 +203,10 @@ async function loadResults() {
             filteredResults = filteredResults.filter(r => r.exam?.subject === subjectFilter);
         }
         
-        if (studentFilter) {
-            // Enhanced search: search by username OR full name (case-insensitive)
-            const searchLower = studentFilter.toLowerCase().trim();
-            filteredResults = filteredResults.filter(r => {
-                const studentName = (r.student?.name || '').toLowerCase();
-                const studentUsername = (r.student?.username || '').toLowerCase();
-                // Search in both name and username
-                return studentName.includes(searchLower) || 
-                       studentUsername.includes(searchLower) ||
-                       // Also search partial matches (e.g., "John" matches "John Doe")
-                       studentName.split(' ').some(part => part.startsWith(searchLower)) ||
-                       studentUsername.split(' ').some(part => part.startsWith(searchLower));
-            });
-        }
+        // Note: Student filter is now handled in displayResultsGroupedByClass
+        // to include students without results
         
-        // Group results by class for better organization
+        // Group results by class for better organization (includes all students)
         displayResultsGroupedByClass(filteredResults);
         
     } catch (error) {
@@ -195,30 +215,91 @@ async function loadResults() {
     }
 }
 
-// Display results grouped by class
+// Display results grouped by class (including students without results)
 function displayResultsGroupedByClass(results) {
     const container = document.getElementById('resultsContainer');
     if (!container) return;
-    
-    if (results.length === 0) {
-        container.innerHTML = '<p class="empty-state">No results found matching your filters.</p>';
-        return;
-    }
     
     // Check if there are unreleased results
     const hasUnreleased = results.some(r => !r.exam?.results_released);
     document.getElementById('releaseAllBtn').style.display = hasUnreleased ? 'block' : 'none';
     
-    // Group results by class
+    // Get filter values
+    const classFilter = document.getElementById('filterClass').value;
+    const subjectFilter = document.getElementById('filterSubject').value;
+    const studentFilter = document.getElementById('filterStudent').value.toLowerCase().trim();
+    
+    // Group all students by class (including those without exam results)
     const classGroups = {};
+    
+    // First, add all students (even without results)
+    allStudents.forEach(student => {
+        const classId = student.class || 'unknown';
+        
+        // Apply class filter
+        if (classFilter !== 'all' && classId !== classFilter) {
+            return;
+        }
+        
+        // Apply student name filter
+        if (studentFilter) {
+            const studentName = (student.name || '').toLowerCase();
+            const studentUsername = (student.username || '').toLowerCase();
+            const matches = studentName.includes(studentFilter) || 
+                          studentUsername.includes(studentFilter) ||
+                          studentName.split(' ').some(part => part.startsWith(studentFilter)) ||
+                          studentUsername.split(' ').some(part => part.startsWith(studentFilter));
+            if (!matches) return;
+        }
+        
+        if (!classGroups[classId]) {
+            classGroups[classId] = {
+                students: {},
+                results: []
+            };
+        }
+        
+        // Initialize student entry
+        if (!classGroups[classId].students[student.id]) {
+            classGroups[classId].students[student.id] = {
+                student: student,
+                results: []
+            };
+        }
+    });
+    
+    // Then, add exam results
     results.forEach(result => {
         const student = result.student || {};
         const classId = student.class || 'unknown';
         
-        if (!classGroups[classId]) {
-            classGroups[classId] = [];
+        // Apply filters
+        if (classFilter !== 'all' && classId !== classFilter) {
+            return;
         }
-        classGroups[classId].push(result);
+        
+        if (subjectFilter !== 'all' && result.exam?.subject !== subjectFilter) {
+            return;
+        }
+        
+        if (!classGroups[classId]) {
+            classGroups[classId] = {
+                students: {},
+                results: []
+            };
+        }
+        
+        // Ensure student exists in group
+        if (!classGroups[classId].students[student.id]) {
+            classGroups[classId].students[student.id] = {
+                student: student,
+                results: []
+            };
+        }
+        
+        // Add result to student
+        classGroups[classId].students[student.id].results.push(result);
+        classGroups[classId].results.push(result);
     });
     
     // Sort classes alphabetically
@@ -228,24 +309,41 @@ function displayResultsGroupedByClass(results) {
         return nameA.localeCompare(nameB);
     });
     
+    if (sortedClasses.length === 0) {
+        container.innerHTML = '<p class="empty-state">No students or results found matching your filters.</p>';
+        return;
+    }
+    
     let html = '';
     
     sortedClasses.forEach(classId => {
         const className = formatClassName(classId);
-        const classResults = classGroups[classId];
+        const classData = classGroups[classId];
+        const students = Object.values(classData.students);
         
-        // Sort students within class alphabetically by name
-        classResults.sort((a, b) => {
+        // Sort students alphabetically
+        students.sort((a, b) => {
             const nameA = (a.student?.name || a.student?.username || '').toLowerCase();
             const nameB = (b.student?.name || b.student?.username || '').toLowerCase();
             return nameA.localeCompare(nameB);
         });
         
+        // Filter out students with no results if we're filtering by subject
+        const displayStudents = subjectFilter === 'all' 
+            ? students 
+            : students.filter(s => s.results.length > 0);
+        
+        if (displayStudents.length === 0) {
+            return; // Skip this class if no students to display
+        }
+        
         html += `
             <div class="card" style="margin-bottom: 25px;">
                 <h4 style="color: var(--primary-color); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-color);">
                     📚 ${className} 
-                    <span style="font-size: 14px; font-weight: normal; color: #666;">(${classResults.length} result${classResults.length !== 1 ? 's' : ''})</span>
+                    <span style="font-size: 14px; font-weight: normal; color: #666;">
+                        (${displayStudents.length} student${displayStudents.length !== 1 ? 's' : ''}${classData.results.length > 0 ? `, ${classData.results.length} result${classData.results.length !== 1 ? 's' : ''}` : ''})
+                    </span>
                 </h4>
                 <div style="overflow-x: auto;">
                     <table class="results-table">
@@ -265,36 +363,51 @@ function displayResultsGroupedByClass(results) {
                         <tbody>
         `;
         
-        classResults.forEach(result => {
-            const student = result.student || {};
-            const exam = result.exam || {};
-            const lecturer = exam.lecturer || {};
-            const grade = result.grade || calculateGrade(result.percentage);
-            const gradeClass = `grade-${grade}`;
-            const statusBadge = exam.results_released 
-                ? '<span style="color: #28a745; font-weight: bold;">Released</span>'
-                : '<span style="color: #ffc107; font-weight: bold;">Pending</span>';
+        displayStudents.forEach(studentData => {
+            const student = studentData.student;
+            const studentResults = studentData.results;
             
             // Display both name and username if available
             const studentDisplay = student.name 
                 ? `${escapeHtml(student.name)} <small style="color: #666;">(${escapeHtml(student.username || 'N/A')})</small>`
                 : escapeHtml(student.username || 'Unknown');
             
-            html += `
-                <tr>
-                    <td>${studentDisplay}</td>
-                    <td>${escapeHtml(exam.title || 'Unknown')}</td>
-                    <td>${escapeHtml(exam.subject || 'Unknown')}</td>
-                    <td>${escapeHtml(lecturer.name || lecturer.username || 'Unknown')}</td>
-                    <td>${result.score || 0} / ${exam.total_marks || 0}</td>
-                    <td>${(result.percentage || 0).toFixed(1)}%</td>
-                    <td><span class="grade-badge ${gradeClass}">${grade}</span></td>
-                    <td>${statusBadge}</td>
-                    <td>
-                        ${!exam.results_released ? `<button onclick="releaseExamResults('${exam.id}')" class="btn btn-success" style="padding: 6px 12px; font-size: 12px;">Release</button>` : ''}
-                    </td>
-                </tr>
-            `;
+            if (studentResults.length === 0) {
+                // Student with no exam results yet
+                html += `
+                    <tr style="opacity: 0.7;">
+                        <td>${studentDisplay}</td>
+                        <td colspan="8" style="color: #999; font-style: italic;">No exam results yet</td>
+                    </tr>
+                `;
+            } else {
+                // Student with exam results
+                studentResults.forEach(result => {
+                    const exam = result.exam || {};
+                    const lecturer = exam.lecturer || {};
+                    const grade = result.grade || calculateGrade(result.percentage);
+                    const gradeClass = `grade-${grade}`;
+                    const statusBadge = exam.results_released 
+                        ? '<span style="color: #28a745; font-weight: bold;">Released</span>'
+                        : '<span style="color: #ffc107; font-weight: bold;">Pending</span>';
+                    
+                    html += `
+                        <tr>
+                            <td>${studentDisplay}</td>
+                            <td>${escapeHtml(exam.title || 'Unknown')}</td>
+                            <td>${escapeHtml(exam.subject || 'Unknown')}</td>
+                            <td>${escapeHtml(lecturer.name || lecturer.username || 'Unknown')}</td>
+                            <td>${result.score || 0} / ${exam.total_marks || 0}</td>
+                            <td>${(result.percentage || 0).toFixed(1)}%</td>
+                            <td><span class="grade-badge ${gradeClass}">${grade}</span></td>
+                            <td>${statusBadge}</td>
+                            <td>
+                                ${!exam.results_released ? `<button onclick="releaseExamResults('${exam.id}')" class="btn btn-success" style="padding: 6px 12px; font-size: 12px;">Release</button>` : ''}
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
         });
         
         html += `
