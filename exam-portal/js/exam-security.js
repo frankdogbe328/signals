@@ -682,7 +682,14 @@ function monitorTabSwitching() {
     window.addEventListener('pagehide', function(e) {
         if (securityEnabled) {
             handleWindowBlur();
-            logSecurityEvent('mobile_app_switch', 'User switched to another app or pressed home button');
+            // Log security event
+            const timestamp = new Date().toISOString();
+            securityWarnings.push({
+                timestamp,
+                type: 'mobile_app_switch',
+                details: 'User switched to another app or pressed home button'
+            });
+            console.log('Security Event: Mobile app switch detected');
         }
     });
     
