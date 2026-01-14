@@ -228,9 +228,17 @@
         <div class="portal-section" style="background: #fff3cd; border-left-color: #ffc107;">
             <h2>📋 Quick Access Instructions</h2>
             <p style="margin: 0; color: #856404;">
+                <strong>⚠️ "Site Can't Be Reached" Error?</strong><br>
+                You need to use a web server, not open files directly!<br><br>
+                <strong>For Local Development:</strong><br>
+                • Use VS Code Live Server extension (Right-click → Open with Live Server)<br>
+                • Or use Python: <code>python -m http.server 8000</code><br>
+                • Then access: <code>http://localhost:8000/PORTAL_LINKS.html</code><br><br>
                 <strong>For Vercel Deployment:</strong><br>
-                Replace <code>your-project.vercel.app</code> with your actual Vercel domain in the URLs above.<br>
-                Example: <code>https://your-project.vercel.app/admin-login.html</code>
+                • Deploy to Vercel: <code>vercel</code><br>
+                • All links above will automatically use your Vercel URL<br>
+                • Example: <code>https://your-project.vercel.app/admin-login.html</code><br><br>
+                📖 See <code>LOCAL_ACCESS_INSTRUCTIONS.md</code> for detailed setup guide
             </p>
         </div>
     </div>
