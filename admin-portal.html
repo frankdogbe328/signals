@@ -198,6 +198,54 @@
             </div>
         </div>
         
+        <!-- BFT Score Entry Section -->
+        <div class="card">
+            <h3>BFT (Battle Fitness Test) Score Entry</h3>
+            <p style="color: #666; margin-bottom: 20px;">
+                Enter BFT scores manually. Each student must take 2 BFTs (compulsory). 
+                Each BFT contributes 2.5% (Total: 5% for both BFTs).
+            </p>
+            <div class="filter-section">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="bftClass">Class</label>
+                        <select id="bftClass" class="form-control" onchange="loadBFTStudents()">
+                            <option value="">Select Class</option>
+                            <optgroup label="Signals">
+                                <option value="signals-basic">SIGNALS BASIC</option>
+                                <option value="signals-b-iii-b-ii">SIGNALS B III – B II</option>
+                                <option value="signals-b-ii-b-i">SIGNALS B II – B I</option>
+                            </optgroup>
+                            <optgroup label="Advanced Courses">
+                                <option value="superintendent">SUPERINTENDENT</option>
+                                <option value="pre-qualifying">PRE-QUALIFYING</option>
+                            </optgroup>
+                            <optgroup label="Regimental">
+                                <option value="regimental-basic">REGIMENTAL BASIC</option>
+                                <option value="regimental-b-iii-b-ii">REGIMENTAL B III – B II</option>
+                                <option value="regimental-b-ii-b-i">REGIMENTAL B II – B I</option>
+                            </optgroup>
+                            <optgroup label="Specialized">
+                                <option value="rso-rsi">RSO / RSI</option>
+                                <option value="electronic-warfare-course">ELECTRONIC WARFARE COURSE</option>
+                                <option value="tactical-drone-course">TACTICAL DRONE COURSE</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="bftNumber">BFT Number</label>
+                        <select id="bftNumber" class="form-control" onchange="loadBFTStudents()">
+                            <option value="1">BFT 1 (2.5%)</option>
+                            <option value="2">BFT 2 (2.5%)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div id="bftEntryContainer" style="margin-top: 20px;">
+                <p class="empty-state">Select a class to enter BFT scores</p>
+            </div>
+        </div>
+        
         <!-- Final Grades Summary -->
         <div class="card">
             <h3>Final Grades Summary by Class</h3>

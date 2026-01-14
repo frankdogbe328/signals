@@ -753,7 +753,9 @@ function getExamTypePercentage(examType) {
     const percentages = {
         'opening_exam': 5,
         'quiz': 5,
-        'bft': 5,
+        'bft': 2.5, // Each BFT is 2.5%, 2 BFTs = 5% total
+        'bft_1': 2.5, // BFT 1 is 2.5%
+        'bft_2': 2.5, // BFT 2 is 2.5%
         'mid_course_exercise': 15,
         'mid_cs_exam': 20,
         'gen_assessment': 5,
@@ -769,7 +771,9 @@ function formatExamType(examType) {
     const types = {
         'opening_exam': 'Opening Exam',
         'quiz': 'Quiz',
-        'bft': 'BFT (Written 2x Compulsory)',
+        'bft': 'BFT (Field Exercise - 2x Compulsory)',
+        'bft_1': 'BFT 1 (2.5%)',
+        'bft_2': 'BFT 2 (2.5%)',
         'mid_course_exercise': 'Mid Course Exercise',
         'mid_cs_exam': 'Mid CS Exam',
         'gen_assessment': 'Gen Assessment',
@@ -777,4 +781,353 @@ function formatExamType(examType) {
         'final_exam': 'Final Exam'
     };
     return types[examType] || examType;
+}
+
+// Load students for BFT score entry
+async function loadBFTStudents() {
+    const classId = document.getElementById('bftClass').value;
+    const bftNumber = document.getElementById('bftNumber').value;
+    const container = document.getElementById('bftEntryContainer');
+    
+    if (!classId) {
+        container.innerHTML = '<p class="empty-state">Select a class to enter BFT scores</p>';
+        return;
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            container.innerHTML = '<p class="empty-state" style="color: red;">Database connection error</p>';
+            return;
+        }
+        
+        // Get all students in the selected class
+        const { data: students, error } = await supabase
+            .from('users')
+            .select('id, name, username, class')
+            .eq('role', 'student')
+            .eq('class', classId)
+            .order('name', { ascending: true });
+        
+        if (error) {
+            console.error('Error loading students:', error);
+            container.innerHTML = '<p class="empty-state" style="color: red;">Error loading students</p>';
+            return;
+        }
+        
+        if (!students || students.length === 0) {
+            container.innerHTML = '<p class="empty-state">No students found in this class</p>';
+            return;
+        }
+        
+        // Get existing BFT scores for this BFT number
+        const examType = `bft_${bftNumber}`;
+        const { data: existingGrades } = await supabase
+            .from('exam_grades')
+            .select('student_id, score, percentage')
+            .eq('exam_id', await getOrCreateBFTExam(classId, examType));
+        
+        const existingScores = {};
+        if (existingGrades) {
+            existingGrades.forEach(grade => {
+                existingScores[grade.student_id] = grade;
+            });
+        }
+        
+        let html = `
+            <div style="overflow-x: auto;">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>BFT ${bftNumber} Score (0-100)</th>
+                            <th>Percentage</th>
+                            <th>Scaled Score (2.5%)</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        students.forEach(student => {
+            const existing = existingScores[student.id];
+            const studentDisplay = student.name 
+                ? `${escapeHtml(student.name)} <small style="color: #666;">(${escapeHtml(student.username || 'N/A')})</small>`
+                : escapeHtml(student.username || 'Unknown');
+            
+            html += `
+                <tr>
+                    <td>${studentDisplay}</td>
+                    <td>
+                        <input type="number" 
+                               id="bft_score_${student.id}" 
+                               class="form-control" 
+                               min="0" 
+                               max="100" 
+                               step="0.1"
+                               value="${existing ? existing.score : ''}"
+                               placeholder="Enter score (0-100)"
+                               style="width: 120px;">
+                    </td>
+                    <td id="bft_percentage_${student.id}">
+                        ${existing ? existing.percentage.toFixed(1) + '%' : '-'}
+                    </td>
+                    <td id="bft_scaled_${student.id}">
+                        ${existing ? (existing.percentage * 2.5 / 100).toFixed(2) + '%' : '-'}
+                    </td>
+                    <td>
+                        <button onclick="saveBFTScore('${student.id}', '${student.name || student.username}', ${bftNumber})" 
+                                class="btn btn-primary" 
+                                style="padding: 6px 12px; font-size: 12px;">
+                            Save
+                        </button>
+                    </td>
+                </tr>
+            `;
+            
+            // Add event listener for real-time calculation
+            setTimeout(() => {
+                const scoreInput = document.getElementById(`bft_score_${student.id}`);
+                if (scoreInput) {
+                    scoreInput.addEventListener('input', function() {
+                        const score = parseFloat(this.value) || 0;
+                        const percentage = score; // BFT score is already a percentage (0-100)
+                        const scaled = percentage * 2.5 / 100;
+                        
+                        document.getElementById(`bft_percentage_${student.id}`).textContent = 
+                            score > 0 ? percentage.toFixed(1) + '%' : '-';
+                        document.getElementById(`bft_scaled_${student.id}`).textContent = 
+                            score > 0 ? scaled.toFixed(2) + '%' : '-';
+                    });
+                }
+            }, 100);
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top: 20px;">
+                <button onclick="saveAllBFTScores(${bftNumber})" class="btn btn-success">
+                    Save All Scores
+                </button>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error loading BFT students:', error);
+        container.innerHTML = '<p class="empty-state" style="color: red;">Error loading students</p>';
+    }
+}
+
+// Get or create BFT exam record
+async function getOrCreateBFTExam(classId, examType) {
+    const supabase = getSupabaseClient();
+    if (!supabase) return null;
+    
+    // Check if BFT exam exists
+    const { data: existingExam } = await supabase
+        .from('exams')
+        .select('id')
+        .eq('exam_type', examType)
+        .eq('class_id', classId)
+        .maybeSingle();
+    
+    if (existingExam) {
+        return existingExam.id;
+    }
+    
+    // Create BFT exam if it doesn't exist
+    const { data: newExam, error } = await supabase
+        .from('exams')
+        .insert({
+            title: `BFT ${examType.split('_')[1]} - ${formatClassName(classId)}`,
+            exam_type: examType,
+            subject: 'BFT (Battle Fitness Test)',
+            class_id: classId,
+            total_marks: 100,
+            duration_minutes: 0, // Field exercise, no time limit
+            is_active: true,
+            results_released: false
+        })
+        .select('id')
+        .single();
+    
+    if (error) {
+        console.error('Error creating BFT exam:', error);
+        return null;
+    }
+    
+    return newExam.id;
+}
+
+// Save individual BFT score
+async function saveBFTScore(studentId, studentName, bftNumber) {
+    const classId = document.getElementById('bftClass').value;
+    const scoreInput = document.getElementById(`bft_score_${studentId}`);
+    const score = parseFloat(scoreInput.value);
+    
+    if (!score || score < 0 || score > 100) {
+        showError('Please enter a valid score between 0 and 100', 'Invalid Score');
+        return;
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        const examType = `bft_${bftNumber}`;
+        const examId = await getOrCreateBFTExam(classId, examType);
+        
+        if (!examId) {
+            showError('Error creating BFT exam record', 'Error');
+            return;
+        }
+        
+        const percentage = score; // BFT score is already a percentage
+        const scaledScore = percentage * 2.5 / 100; // 2.5% per BFT
+        const grade = calculateGrade(percentage);
+        
+        // Check if grade already exists
+        const { data: existingGrade } = await supabase
+            .from('exam_grades')
+            .select('id')
+            .eq('student_id', studentId)
+            .eq('exam_id', examId)
+            .maybeSingle();
+        
+        if (existingGrade) {
+            // Update existing grade
+            const { error } = await supabase
+                .from('exam_grades')
+                .update({
+                    score: score,
+                    percentage: percentage,
+                    grade: grade,
+                    scaling_percentage: 2.5,
+                    scaled_score: scaledScore
+                })
+                .eq('id', existingGrade.id);
+            
+            if (error) throw error;
+            showSuccess(`BFT ${bftNumber} score updated for ${studentName}`, 'Success');
+        } else {
+            // Create new grade (need to create a dummy attempt first)
+            const { data: attempt } = await supabase
+                .from('student_exam_attempts')
+                .insert({
+                    student_id: studentId,
+                    exam_id: examId,
+                    status: 'submitted',
+                    started_at: new Date().toISOString(),
+                    submitted_at: new Date().toISOString()
+                })
+                .select('id')
+                .single();
+            
+            if (!attempt) {
+                throw new Error('Failed to create attempt');
+            }
+            
+            const { error } = await supabase
+                .from('exam_grades')
+                .insert({
+                    student_id: studentId,
+                    exam_id: examId,
+                    attempt_id: attempt.id,
+                    score: score,
+                    percentage: percentage,
+                    grade: grade,
+                    scaling_percentage: 2.5,
+                    scaled_score: scaledScore
+                });
+            
+            if (error) throw error;
+            showSuccess(`BFT ${bftNumber} score saved for ${studentName}`, 'Success');
+        }
+        
+        // Refresh displays
+        loadBFTStudents();
+        loadFinalGrades();
+        loadResults();
+        
+    } catch (error) {
+        console.error('Error saving BFT score:', error);
+        showError('Failed to save BFT score. Please try again.', 'Error');
+    }
+}
+
+// Save all BFT scores at once
+async function saveAllBFTScores(bftNumber) {
+    const classId = document.getElementById('bftClass').value;
+    if (!classId) {
+        showError('Please select a class first', 'Error');
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to save all BFT ${bftNumber} scores for this class?`)) {
+        return;
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        // Get all students in class
+        const { data: students } = await supabase
+            .from('users')
+            .select('id, name, username')
+            .eq('role', 'student')
+            .eq('class', classId);
+        
+        if (!students || students.length === 0) {
+            showError('No students found in this class', 'Error');
+            return;
+        }
+        
+        const examType = `bft_${bftNumber}`;
+        const examId = await getOrCreateBFTExam(classId, examType);
+        
+        if (!examId) {
+            showError('Error creating BFT exam record', 'Error');
+            return;
+        }
+        
+        let saved = 0;
+        let errors = 0;
+        
+        for (const student of students) {
+            const scoreInput = document.getElementById(`bft_score_${student.id}`);
+            if (!scoreInput || !scoreInput.value) continue;
+            
+            const score = parseFloat(scoreInput.value);
+            if (score < 0 || score > 100) continue;
+            
+            try {
+                await saveBFTScore(student.id, student.name || student.username, bftNumber);
+                saved++;
+            } catch (err) {
+                errors++;
+                console.error(`Error saving score for ${student.name}:`, err);
+            }
+        }
+        
+        if (saved > 0) {
+            showSuccess(`Saved ${saved} BFT ${bftNumber} score(s)${errors > 0 ? `. ${errors} error(s) occurred.` : ''}`, 'Success');
+        } else {
+            showError('No valid scores to save', 'Error');
+        }
+        
+    } catch (error) {
+        console.error('Error saving all BFT scores:', error);
+        showError('Failed to save scores. Please try again.', 'Error');
+    }
 }
