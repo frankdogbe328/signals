@@ -336,8 +336,8 @@
             
             .answer-option input[type="radio"],
             .answer-option input[type="checkbox"] {
-                width: 22px;
-                height: 22px;
+                width: 24px;
+                height: 24px;
                 margin-right: 14px;
                 flex-shrink: 0;
                 cursor: pointer;
@@ -346,6 +346,8 @@
                 border: 2px solid #ccc;
                 border-radius: 50%;
                 position: relative;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
             }
             
             .answer-option input[type="checkbox"] {
@@ -396,11 +398,27 @@
                 border-radius: 8px;
                 font-weight: 600;
                 -webkit-tap-highlight-color: transparent;
+                touch-action: manipulation;
+                user-select: none;
+                -webkit-user-select: none;
+                border: none;
+                cursor: pointer;
             }
             
             .navigation-buttons button:active {
                 transform: scale(0.98);
                 opacity: 0.9;
+            }
+            
+            .navigation-buttons button:disabled {
+                opacity: 0.5;
+                cursor: not-allowed;
+                pointer-events: none;
+            }
+            
+            .navigation-buttons button:focus {
+                outline: 2px solid var(--primary-color);
+                outline-offset: 2px;
             }
             
             /* Exam Info Card */
@@ -656,9 +674,9 @@
                 </div>
                 
                 <div class="navigation-buttons">
-                    <button id="prevBtn" class="btn btn-secondary disabled" onclick="previousQuestion()" disabled>← Previous</button>
-                    <button id="nextBtn" class="btn btn-primary" onclick="nextQuestion()">Next →</button>
-                    <button id="submitBtn" class="btn submit-exam-btn" onclick="submitExam()" style="display: none;">Submit Exam</button>
+                    <button id="prevBtn" class="btn btn-secondary disabled" disabled>← Previous</button>
+                    <button id="nextBtn" class="btn btn-primary">Next →</button>
+                    <button id="submitBtn" class="btn submit-exam-btn" style="display: none;">Submit Exam</button>
                 </div>
             </div>
         </div>

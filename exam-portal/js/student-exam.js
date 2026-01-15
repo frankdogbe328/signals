@@ -62,6 +62,9 @@ document.addEventListener('DOMContentLoaded', function() {
         studentNameEl.textContent = `Welcome, ${displayName}`;
     }
     
+    // Setup mobile-friendly button handlers initially
+    setupMobileButtonHandlers();
+    
     // Load available exams
     loadAvailableExams();
     
@@ -545,13 +548,23 @@ function loadQuestion(index) {
     document.getElementById('currentQuestionNum').textContent = index + 1;
     
     // Update navigation buttons
-    document.getElementById('prevBtn').disabled = (index === 0);
-    document.getElementById('nextBtn').style.display = (index < randomizedQuestions.length - 1) ? 'inline-block' : 'none';
-    document.getElementById('submitBtn').style.display = (index === randomizedQuestions.length - 1) ? 'inline-block' : 'none';
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    prevBtn.disabled = (index === 0);
+    nextBtn.style.display = (index < randomizedQuestions.length - 1) ? 'inline-block' : 'none';
+    submitBtn.style.display = (index === randomizedQuestions.length - 1) ? 'inline-block' : 'none';
+    
+    // Setup mobile-friendly event handlers
+    setupMobileButtonHandlers();
     
     // Display question
     const container = document.getElementById('questionContainer');
     container.innerHTML = renderQuestion(question, index);
+    
+    // Setup mobile-friendly answer option handlers
+    setupAnswerOptionHandlers(question);
     
     // Restore answer if exists
     if (answers[question.id]) {
@@ -560,6 +573,125 @@ function loadQuestion(index) {
     
     // Update question navigation sidebar
     updateQuestionNavSidebar();
+}
+
+// Setup mobile-friendly answer option handlers
+function setupAnswerOptionHandlers(question) {
+    const questionType = (question.question_type || '').toLowerCase().trim();
+    
+    if (questionType === 'multiple_choice' || questionType === 'true_false' || questionType === 'true/false') {
+        const optionLabels = document.querySelectorAll(`.answer-option[data-question-id="${question.id}"]`);
+        
+        optionLabels.forEach(label => {
+            const radio = label.querySelector('input[type="radio"]');
+            if (!radio) return;
+            
+            // Remove existing listeners by cloning
+            const newLabel = label.cloneNode(true);
+            label.parentNode.replaceChild(newLabel, label);
+            const newRadio = newLabel.querySelector('input[type="radio"]');
+            
+            // Handle both click and touch events
+            const handleSelection = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Uncheck all radios in this group first
+                document.querySelectorAll(`input[name="question_${question.id}"]`).forEach(r => {
+                    r.checked = false;
+                    r.closest('.answer-option')?.classList.remove('selected');
+                });
+                
+                // Check this radio
+                newRadio.checked = true;
+                newLabel.classList.add('selected');
+                
+                // Save answer
+                saveAnswer(question.id, newRadio.value);
+            };
+            
+            newLabel.addEventListener('click', handleSelection);
+            newLabel.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                handleSelection(e);
+            });
+            
+            // Also handle direct radio input changes (for accessibility)
+            newRadio.addEventListener('change', () => {
+                if (newRadio.checked) {
+                    document.querySelectorAll(`input[name="question_${question.id}"]`).forEach(r => {
+                        r.closest('.answer-option')?.classList.remove('selected');
+                    });
+                    newLabel.classList.add('selected');
+                    saveAnswer(question.id, newRadio.value);
+                }
+            });
+        });
+    }
+}
+
+// Setup mobile-friendly button handlers (works for both touch and click)
+function setupMobileButtonHandlers() {
+    const prevBtn = document.getElementById('prevBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    // Remove existing listeners to prevent duplicates
+    const newPrevBtn = prevBtn.cloneNode(true);
+    const newNextBtn = nextBtn.cloneNode(true);
+    const newSubmitBtn = submitBtn.cloneNode(true);
+    
+    prevBtn.parentNode.replaceChild(newPrevBtn, prevBtn);
+    nextBtn.parentNode.replaceChild(newNextBtn, nextBtn);
+    submitBtn.parentNode.replaceChild(newSubmitBtn, submitBtn);
+    
+    // Add event listeners that work on both mobile and desktop
+    const handleEvent = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        return true;
+    };
+    
+    // Previous button
+    if (!newPrevBtn.disabled) {
+        newPrevBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            previousQuestion();
+        });
+        newPrevBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!newPrevBtn.disabled) {
+                previousQuestion();
+            }
+        });
+    }
+    
+    // Next button
+    newNextBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        nextQuestion();
+    });
+    newNextBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        nextQuestion();
+    });
+    
+    // Submit button
+    newSubmitBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        submitExam();
+    });
+    newSubmitBtn.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        submitExam();
+    });
 }
 
 // Toggle question navigation sidebar
@@ -665,10 +797,11 @@ function renderQuestion(question, index) {
             html += '<p style="color: #dc3545;">⚠️ No options available for this question. Please contact your lecturer.</p>';
         } else {
             options.forEach((option, optIndex) => {
+                const optionValue = escapeHtml(String(option));
                 html += `
-                    <label class="answer-option">
-                        <input type="radio" name="question_${question.id}" value="${escapeHtml(String(option))}" onchange="saveAnswer('${question.id}', '${escapeHtml(String(option))}')">
-                        ${escapeHtml(String(option))}
+                    <label class="answer-option" data-question-id="${question.id}" data-option-value="${optionValue}">
+                        <input type="radio" name="question_${question.id}" value="${optionValue}">
+                        ${optionValue}
                     </label>
                 `;
             });
@@ -679,10 +812,11 @@ function renderQuestion(question, index) {
         html += `
             ${trueFalseOptions.map((opt, idx) => {
                 const letter = String.fromCharCode(65 + idx); // A, B
+                const optionValue = escapeHtml(opt);
                 return `
-                    <label class="answer-option">
-                        <input type="radio" name="question_${question.id}" value="${escapeHtml(opt)}" onchange="saveAnswer('${question.id}', '${escapeHtml(opt)}')">
-                        ${letter}. ${escapeHtml(opt)}
+                    <label class="answer-option" data-question-id="${question.id}" data-option-value="${optionValue}">
+                        <input type="radio" name="question_${question.id}" value="${optionValue}">
+                        ${letter}. ${optionValue}
                     </label>
                 `;
             }).join('')}
@@ -938,11 +1072,137 @@ async function updateTimeRemaining() {
 
 // Submit exam
 async function submitExam() {
-    if (!confirm('Are you sure you want to submit? You cannot change your answers after submission.')) {
-        return;
+    // Mobile-friendly confirmation
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isMobile) {
+        // On mobile, use a more reliable confirmation method
+        const confirmed = await showMobileConfirmDialog('Are you sure you want to submit? You cannot change your answers after submission.');
+        if (!confirmed) {
+            return;
+        }
+    } else {
+        if (!confirm('Are you sure you want to submit? You cannot change your answers after submission.')) {
+            return;
+        }
     }
     
-    await finalizeExam('submitted');
+    // Disable submit button to prevent double submission
+    const submitBtn = document.getElementById('submitBtn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Submitting...';
+    }
+    
+    try {
+        await finalizeExam('submitted');
+    } catch (error) {
+        // Re-enable button on error
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Exam';
+        }
+        throw error;
+    }
+}
+
+// Mobile-friendly confirmation dialog
+function showMobileConfirmDialog(message) {
+    return new Promise((resolve) => {
+        // Create modal overlay
+        const overlay = document.createElement('div');
+        overlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        `;
+        
+        const modal = document.createElement('div');
+        modal.style.cssText = `
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        `;
+        
+        modal.innerHTML = `
+            <h3 style="margin: 0 0 15px 0; color: var(--primary-color);">Confirm Submission</h3>
+            <p style="margin: 0 0 20px 0; line-height: 1.6;">${escapeHtml(message)}</p>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button id="mobileCancelBtn" style="
+                    padding: 12px 24px;
+                    background: #6c757d;
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    font-size: 16px;
+                    cursor: pointer;
+                    min-height: 44px;
+                    touch-action: manipulation;
+                ">Cancel</button>
+                <button id="mobileConfirmBtn" style="
+                    padding: 12px 24px;
+                    background: var(--danger-color);
+                    color: white;
+                    border: none;
+                    border-radius: 5px;
+                    font-size: 16px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    min-height: 44px;
+                    touch-action: manipulation;
+                ">Submit</button>
+            </div>
+        `;
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        const cancelBtn = modal.querySelector('#mobileCancelBtn');
+        const confirmBtn = modal.querySelector('#mobileConfirmBtn');
+        
+        const cleanup = () => {
+            document.body.removeChild(overlay);
+        };
+        
+        cancelBtn.addEventListener('click', () => {
+            cleanup();
+            resolve(false);
+        });
+        cancelBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            cleanup();
+            resolve(false);
+        });
+        
+        confirmBtn.addEventListener('click', () => {
+            cleanup();
+            resolve(true);
+        });
+        confirmBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            cleanup();
+            resolve(true);
+        });
+        
+        // Close on overlay click
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                cleanup();
+                resolve(false);
+            }
+        });
+    });
 }
 
 // Auto-submit exam (when time expires)
