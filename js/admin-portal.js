@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
         loadResults();
         loadFinalGrades();
         loadStatistics();
+        loadDatabaseStats(); // Also refresh database stats
     }, 30000); // 30 seconds
     
     // Auto-refresh analytics every 60 seconds
@@ -71,7 +72,7 @@ async function loadAllStudents() {
         
         const { data: students, error } = await supabase
             .from('users')
-            .select('id, username, name, class, email, created_at')
+            .select('id, username, name, class, email, courses, created_at')
             .eq('role', 'student')
             .order('created_at', { ascending: false });
         
@@ -400,6 +401,12 @@ function displayResultsGroupedByClass(results) {
                 ? `${escapeHtml(student.name)} <small style="color: #666;">(${escapeHtml(student.username || 'N/A')})</small>`
                 : escapeHtml(student.username || 'Unknown');
             
+            // Show registered subjects for this student
+            const registeredSubjects = student.courses || [];
+            const subjectsDisplay = registeredSubjects.length > 0 
+                ? `<div style="font-size: 11px; color: #17a2b8; margin-top: 4px;"><strong>Registered:</strong> ${registeredSubjects.map(s => escapeHtml(s)).join(', ')}</div>`
+                : `<div style="font-size: 11px; color: #999; margin-top: 4px; font-style: italic;">No subjects registered</div>`;
+            
             // Filter results by subject if filter is applied
             let displayResults = studentResults;
             if (subjectFilter !== 'all') {
@@ -410,7 +417,7 @@ function displayResultsGroupedByClass(results) {
                 // Student with no exam results yet (for any subject)
                 html += `
                     <tr style="opacity: 0.7;">
-                        <td>${studentDisplay}</td>
+                        <td>${studentDisplay}${subjectsDisplay}</td>
                         <td colspan="10" style="color: #999; font-style: italic;">No exam results yet</td>
                     </tr>
                 `;
@@ -418,7 +425,7 @@ function displayResultsGroupedByClass(results) {
                 // Student has results but not for the selected subject
                 html += `
                     <tr style="opacity: 0.7;">
-                        <td>${studentDisplay}</td>
+                        <td>${studentDisplay}${subjectsDisplay}</td>
                         <td colspan="10" style="color: #999; font-style: italic;">No results for selected subject</td>
                     </tr>
                 `;
@@ -440,7 +447,7 @@ function displayResultsGroupedByClass(results) {
                     
                     html += `
                         <tr>
-                            <td>${studentDisplay}</td>
+                            <td>${studentDisplay}${subjectsDisplay}</td>
                             <td class="exam-cell">${escapeHtml(exam.title || 'Unknown')}</td>
                             <td>
                                 <span style="font-weight: 600; color: var(--primary-color);">${examTypeDisplay}</span>
@@ -1251,16 +1258,17 @@ async function loadAllUsers() {
         const supabase = getSupabaseClient();
         if (!supabase) {
             console.error('Supabase client not available');
+            showError('Database connection error. Please refresh the page.', 'Error');
             return;
         }
         
-        const roleFilter = document.getElementById('userRoleFilter').value;
-        const classFilter = document.getElementById('userClassFilter').value;
-        const searchFilter = document.getElementById('userSearchFilter').value.toLowerCase().trim();
+        const roleFilter = document.getElementById('userRoleFilter')?.value || 'all';
+        const classFilter = document.getElementById('userClassFilter')?.value || 'all';
+        const searchFilter = (document.getElementById('userSearchFilter')?.value || '').toLowerCase().trim();
         
         let query = supabase
             .from('users')
-            .select('id, username, name, email, role, class, created_at')
+            .select('id, username, name, email, role, class, courses, created_at')
             .order('created_at', { ascending: false });
         
         if (roleFilter !== 'all') {
@@ -1275,7 +1283,7 @@ async function loadAllUsers() {
         
         if (error) {
             console.error('Error loading users:', error);
-            showError('Failed to load users. Please try again.', 'Error');
+            showError(`Failed to load users: ${error.message || 'Unknown error'}. Please try again.`, 'Error');
             return;
         }
         
@@ -1286,9 +1294,11 @@ async function loadAllUsers() {
                 const name = (user.name || '').toLowerCase();
                 const username = (user.username || '').toLowerCase();
                 const email = (user.email || '').toLowerCase();
+                const courses = (user.courses || []).join(' ').toLowerCase();
                 return name.includes(searchFilter) || 
                        username.includes(searchFilter) || 
-                       email.includes(searchFilter);
+                       email.includes(searchFilter) ||
+                       courses.includes(searchFilter);
             });
         }
         
@@ -1296,7 +1306,7 @@ async function loadAllUsers() {
         
     } catch (error) {
         console.error('Error loading users:', error);
-        showError('Failed to load users. Please try again.', 'Error');
+        showError(`Failed to load users: ${error.message || 'Unknown error'}. Please try again.`, 'Error');
     }
 }
 
@@ -1389,10 +1399,14 @@ function displayUsers(users) {
             const className = user.class ? formatClassName(user.class) : '-';
             const registeredDate = user.created_at ? new Date(user.created_at).toLocaleDateString() : '-';
             const nameDisplay = user.name || user.username || 'Unknown';
+            const registeredSubjects = user.courses || [];
+            const subjectsDisplay = registeredSubjects.length > 0 
+                ? `<div style="font-size: 11px; color: #17a2b8; margin-top: 4px;"><strong>Subjects:</strong> ${registeredSubjects.map(s => escapeHtml(s)).join(', ')}</div>`
+                : (user.role === 'student' ? '<div style="font-size: 11px; color: #999; margin-top: 4px; font-style: italic;">No subjects registered</div>' : '');
             
             html += `
                 <tr>
-                    <td>${escapeHtml(nameDisplay)}</td>
+                    <td>${escapeHtml(nameDisplay)}${subjectsDisplay}</td>
                     <td>${escapeHtml(user.username || 'N/A')}</td>
                     <td>${escapeHtml(user.email || 'N/A')}</td>
                     <td>${config.badge}</td>
@@ -1812,26 +1826,41 @@ function downloadCSV(csv, filename) {
 
 // Save grade thresholds
 async function saveGradeThresholds() {
-    const gradeA = parseInt(document.getElementById('gradeA').value);
-    const gradeB = parseInt(document.getElementById('gradeB').value);
-    const gradeC = parseInt(document.getElementById('gradeC').value);
-    const gradeD = parseInt(document.getElementById('gradeD').value);
-    
-    // Validate thresholds
-    if (gradeA < gradeB || gradeB < gradeC || gradeC < gradeD || gradeD < 0) {
-        showError('Invalid grade thresholds. Grade A must be highest, followed by B, C, and D.', 'Error');
-        return;
+    try {
+        const gradeA = parseInt(document.getElementById('gradeA').value);
+        const gradeB = parseInt(document.getElementById('gradeB').value);
+        const gradeC = parseInt(document.getElementById('gradeC').value);
+        const gradeD = parseInt(document.getElementById('gradeD').value);
+        
+        // Validate inputs are numbers
+        if (isNaN(gradeA) || isNaN(gradeB) || isNaN(gradeC) || isNaN(gradeD)) {
+            showError('Please enter valid numbers for all grade thresholds.', 'Invalid Input');
+            return;
+        }
+        
+        // Validate thresholds
+        if (gradeA < gradeB || gradeB < gradeC || gradeC < gradeD || gradeD < 0 || gradeA > 100) {
+            showError('Invalid grade thresholds. Grade A must be highest (≤100), followed by B, C, and D (≥0).', 'Error');
+            return;
+        }
+        
+        // Store in localStorage (in production, store in database)
+        localStorage.setItem('gradeThresholds', JSON.stringify({
+            A: gradeA,
+            B: gradeB,
+            C: gradeC,
+            D: gradeD
+        }));
+        
+        showSuccess(`Grade thresholds saved successfully!\n\nA: ${gradeA}%+\nB: ${gradeB}%+\nC: ${gradeC}%+\nD: ${gradeD}%+\nF: <${gradeD}%`, 'Success');
+        
+        // Refresh final grades to apply new thresholds
+        loadFinalGrades();
+        
+    } catch (error) {
+        console.error('Error saving grade thresholds:', error);
+        showError('Failed to save grade thresholds. Please try again.', 'Error');
     }
-    
-    // Store in localStorage (in production, store in database)
-    localStorage.setItem('gradeThresholds', JSON.stringify({
-        A: gradeA,
-        B: gradeB,
-        C: gradeC,
-        D: gradeD
-    }));
-    
-    showSuccess('Grade thresholds saved successfully!', 'Success');
 }
 
 // Reset grade thresholds
@@ -1941,39 +1970,48 @@ async function backupAllData() {
         
         showSuccess('Creating backup... This may take a moment.', 'Backup in Progress');
         
-        // Get all data
-        const [users, exams, grades, attempts, questions, responses, materials] = await Promise.all([
+        // Get all data with proper error handling
+        const [usersResult, examsResult, gradesResult, attemptsResult, questionsResult, responsesResult, materialsResult] = await Promise.all([
             supabase.from('users').select('*'),
             supabase.from('exams').select('*'),
             supabase.from('exam_grades').select('*'),
             supabase.from('student_exam_attempts').select('*'),
             supabase.from('questions').select('*'),
             supabase.from('student_responses').select('*'),
-            supabase.from('materials').select('*').catch(() => ({ data: [] }))
+            supabase.from('materials').select('*').catch(() => ({ data: [], error: null }))
         ]);
+        
+        // Check for errors
+        if (usersResult.error) throw new Error(`Users: ${usersResult.error.message}`);
+        if (examsResult.error) throw new Error(`Exams: ${examsResult.error.message}`);
+        if (gradesResult.error) throw new Error(`Grades: ${gradesResult.error.message}`);
+        if (attemptsResult.error) throw new Error(`Attempts: ${attemptsResult.error.message}`);
+        if (questionsResult.error) throw new Error(`Questions: ${questionsResult.error.message}`);
+        if (responsesResult.error) throw new Error(`Responses: ${responsesResult.error.message}`);
         
         const backup = {
             timestamp: new Date().toISOString(),
             version: '1.0',
             data: {
-                users: users.data || [],
-                exams: exams.data || [],
-                grades: grades.data || [],
-                attempts: attempts.data || [],
-                questions: questions.data || [],
-                responses: responses.data || [],
-                materials: materials.data || []
+                users: usersResult.data || [],
+                exams: examsResult.data || [],
+                grades: gradesResult.data || [],
+                attempts: attemptsResult.data || [],
+                questions: questionsResult.data || [],
+                responses: responsesResult.data || [],
+                materials: materialsResult.data || []
             }
         };
         
         // Save to Supabase storage or download as JSON
         const json = JSON.stringify(backup, null, 2);
-        const filename = `backup_all_${new Date().toISOString().split('T')[0]}.json`;
+        const filename = `backup_all_${new Date().toISOString().split('T')[0]}_${Date.now()}.json`;
         
-        // Download file
+        // Always download file first (this always works)
         downloadJSON(json, filename);
         
-        // Also save to Supabase storage if possible
+        // Try to save to Supabase storage (optional - may fail if bucket doesn't exist)
+        let storageSaved = false;
         try {
             const file = new Blob([json], { type: 'application/json' });
             const { data, error } = await supabase.storage
@@ -1983,18 +2021,26 @@ async function backupAllData() {
                     upsert: false
                 });
             
-            if (error && error.message !== 'The resource already exists') {
-                console.warn('Could not save to Supabase storage:', error);
+            if (!error) {
+                storageSaved = true;
+            } else if (error.message && error.message.includes('Bucket not found')) {
+                console.warn('Supabase storage bucket "backups" does not exist. Backup downloaded only.');
+            } else if (error.message && error.message !== 'The resource already exists') {
+                console.warn('Could not save to Supabase storage:', error.message);
             }
         } catch (e) {
-            console.warn('Supabase storage not available, backup downloaded only');
+            console.warn('Supabase storage not available:', e.message || e);
         }
         
-        showSuccess(`Backup created successfully!\n\nFile: ${filename}\n\nSaved to Supabase storage and downloaded.`, 'Backup Complete');
+        const successMsg = storageSaved 
+            ? `Backup created successfully!\n\nFile: ${filename}\n\n✅ Saved to Supabase storage and downloaded.`
+            : `Backup created successfully!\n\nFile: ${filename}\n\n✅ Downloaded to your device.\n\n⚠️ Note: Supabase storage bucket not configured. Backup saved locally only.`;
+        
+        showSuccess(successMsg, 'Backup Complete');
         
     } catch (error) {
         console.error('Error creating backup:', error);
-        showError('Failed to create backup. Please try again.', 'Error');
+        showError(`Failed to create backup: ${error.message || 'Unknown error'}\n\nPlease try again.`, 'Error');
     }
 }
 
@@ -2022,12 +2068,13 @@ async function backupUsers() {
         };
         
         const json = JSON.stringify(backup, null, 2);
-        const filename = `backup_users_${new Date().toISOString().split('T')[0]}.json`;
+        const filename = `backup_users_${new Date().toISOString().split('T')[0]}_${Date.now()}.json`;
         
-        // Download file
+        // Always download file first
         downloadJSON(json, filename);
         
-        // Also save to Supabase storage if possible
+        // Try to save to Supabase storage (optional)
+        let storageSaved = false;
         try {
             const file = new Blob([json], { type: 'application/json' });
             const { data, error } = await supabase.storage
@@ -2037,18 +2084,22 @@ async function backupUsers() {
                     upsert: false
                 });
             
-            if (error && error.message !== 'The resource already exists') {
-                console.warn('Could not save to Supabase storage:', error);
+            if (!error) {
+                storageSaved = true;
             }
         } catch (e) {
-            console.warn('Supabase storage not available, backup downloaded only');
+            console.warn('Supabase storage not available:', e.message || e);
         }
         
-        showSuccess(`Users backup created successfully!\n\nFile: ${filename}\n\nSaved to Supabase storage and downloaded.`, 'Backup Complete');
+        const successMsg = storageSaved 
+            ? `Users backup created successfully!\n\nFile: ${filename}\n\n✅ Saved to Supabase storage and downloaded.`
+            : `Users backup created successfully!\n\nFile: ${filename}\n\n✅ Downloaded to your device.`;
+        
+        showSuccess(successMsg, 'Backup Complete');
         
     } catch (error) {
         console.error('Error backing up users:', error);
-        showError(`Failed to backup users: ${error.message}`, 'Error');
+        showError(`Failed to backup users: ${error.message || 'Unknown error'}`, 'Error');
     }
 }
 
@@ -2084,12 +2135,13 @@ async function backupExams() {
         };
         
         const json = JSON.stringify(backup, null, 2);
-        const filename = `backup_exams_${new Date().toISOString().split('T')[0]}.json`;
+        const filename = `backup_exams_${new Date().toISOString().split('T')[0]}_${Date.now()}.json`;
         
-        // Download file
+        // Always download file first
         downloadJSON(json, filename);
         
-        // Also save to Supabase storage if possible
+        // Try to save to Supabase storage (optional)
+        let storageSaved = false;
         try {
             const file = new Blob([json], { type: 'application/json' });
             const { data, error } = await supabase.storage
@@ -2099,18 +2151,22 @@ async function backupExams() {
                     upsert: false
                 });
             
-            if (error && error.message !== 'The resource already exists') {
-                console.warn('Could not save to Supabase storage:', error);
+            if (!error) {
+                storageSaved = true;
             }
         } catch (e) {
-            console.warn('Supabase storage not available, backup downloaded only');
+            console.warn('Supabase storage not available:', e.message || e);
         }
         
-        showSuccess(`Exams backup created successfully!\n\nFile: ${filename}\n\nSaved to Supabase storage and downloaded.`, 'Backup Complete');
+        const successMsg = storageSaved 
+            ? `Exams backup created successfully!\n\nFile: ${filename}\n\n✅ Saved to Supabase storage and downloaded.`
+            : `Exams backup created successfully!\n\nFile: ${filename}\n\n✅ Downloaded to your device.`;
+        
+        showSuccess(successMsg, 'Backup Complete');
         
     } catch (error) {
         console.error('Error backing up exams:', error);
-        showError(`Failed to backup exams: ${error.message}`, 'Error');
+        showError(`Failed to backup exams: ${error.message || 'Unknown error'}`, 'Error');
     }
 }
 
@@ -2143,12 +2199,13 @@ async function backupMaterials() {
         };
         
         const json = JSON.stringify(backup, null, 2);
-        const filename = `backup_materials_${new Date().toISOString().split('T')[0]}.json`;
+        const filename = `backup_materials_${new Date().toISOString().split('T')[0]}_${Date.now()}.json`;
         
-        // Download file
+        // Always download file first
         downloadJSON(json, filename);
         
-        // Also save to Supabase storage if possible
+        // Try to save to Supabase storage (optional)
+        let storageSaved = false;
         try {
             const file = new Blob([json], { type: 'application/json' });
             const { data, error } = await supabase.storage
@@ -2158,18 +2215,22 @@ async function backupMaterials() {
                     upsert: false
                 });
             
-            if (error && error.message !== 'The resource already exists') {
-                console.warn('Could not save to Supabase storage:', error);
+            if (!error) {
+                storageSaved = true;
             }
         } catch (e) {
-            console.warn('Supabase storage not available, backup downloaded only');
+            console.warn('Supabase storage not available:', e.message || e);
         }
         
-        showSuccess(`Materials backup created successfully!\n\nFile: ${filename}\n\nSaved to Supabase storage and downloaded.`, 'Backup Complete');
+        const successMsg = storageSaved 
+            ? `Materials backup created successfully!\n\nFile: ${filename}\n\n✅ Saved to Supabase storage and downloaded.`
+            : `Materials backup created successfully!\n\nFile: ${filename}\n\n✅ Downloaded to your device.`;
+        
+        showSuccess(successMsg, 'Backup Complete');
         
     } catch (error) {
         console.error('Error backing up materials:', error);
-        showError(`Failed to backup materials: ${error.message}`, 'Error');
+        showError(`Failed to backup materials: ${error.message || 'Unknown error'}`, 'Error');
     }
 }
 
@@ -2251,6 +2312,179 @@ async function clearTestData() {
     } catch (error) {
         console.error('Error clearing test data:', error);
         showError('Failed to clear test data. Please try again.', 'Error');
+    }
+}
+
+// Delete data by class
+async function deleteDataByClass() {
+    const classId = prompt('Enter the class ID to delete (e.g., signals-basic, regimental-basic):\n\n⚠️ WARNING: This will delete ALL data for this class including:\n- All students in this class\n- All exams for this class\n- All results for this class\n\nType the class ID to confirm:');
+    
+    if (!classId || classId.trim() === '') {
+        return;
+    }
+    
+    const className = formatClassName(classId.trim());
+    
+    if (!confirm(`⚠️⚠️⚠️ FINAL CONFIRMATION ⚠️⚠️⚠️\n\nYou are about to DELETE ALL DATA for:\n\nClass: ${className}\n\nThis will delete:\n- All students in this class\n- All exams for this class\n- All exam results for this class\n- All questions for exams in this class\n- All student responses for exams in this class\n\nTHIS CANNOT BE UNDONE!\n\nHave you created a backup?\n\nType "DELETE ${classId.toUpperCase()}" to confirm:`)) {
+        return;
+    }
+    
+    const finalConfirm = prompt(`Type "DELETE ${classId.toUpperCase()}" to confirm deletion:`);
+    if (finalConfirm !== `DELETE ${classId.toUpperCase()}`) {
+        showError('Deletion cancelled. You must type the exact confirmation text.', 'Cancelled');
+        return;
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        showSuccess('Deleting class data... This may take a moment.', 'In Progress');
+        
+        // Get all students in this class
+        const { data: classStudents } = await supabase
+            .from('users')
+            .select('id')
+            .eq('role', 'student')
+            .eq('class', classId.trim());
+        
+        const studentIds = classStudents?.map(s => s.id) || [];
+        
+        // Get all exams for this class
+        const { data: classExams } = await supabase
+            .from('exams')
+            .select('id')
+            .eq('class_id', classId.trim());
+        
+        const examIds = classExams?.map(e => e.id) || [];
+        
+        let deletedCounts = {
+            responses: 0,
+            grades: 0,
+            attempts: 0,
+            questions: 0,
+            exams: 0,
+            students: 0
+        };
+        
+        // Delete in order (respecting foreign keys)
+        if (examIds.length > 0) {
+            // Delete student responses for these exams
+            const { data: responses } = await supabase
+                .from('student_responses')
+                .select('id')
+                .in('exam_id', examIds);
+            
+            if (responses && responses.length > 0) {
+                const responseIds = responses.map(r => r.id);
+                await supabase.from('student_responses').delete().in('id', responseIds);
+                deletedCounts.responses = responses.length;
+            }
+            
+            // Delete exam grades for these exams
+            const { data: grades } = await supabase
+                .from('exam_grades')
+                .select('id')
+                .in('exam_id', examIds);
+            
+            if (grades && grades.length > 0) {
+                const gradeIds = grades.map(g => g.id);
+                await supabase.from('exam_grades').delete().in('id', gradeIds);
+                deletedCounts.grades = grades.length;
+            }
+            
+            // Delete exam attempts for these exams
+            const { data: attempts } = await supabase
+                .from('student_exam_attempts')
+                .select('id')
+                .in('exam_id', examIds);
+            
+            if (attempts && attempts.length > 0) {
+                const attemptIds = attempts.map(a => a.id);
+                await supabase.from('student_exam_attempts').delete().in('id', attemptIds);
+                deletedCounts.attempts = attempts.length;
+            }
+            
+            // Delete questions for these exams
+            const { data: questions } = await supabase
+                .from('questions')
+                .select('id')
+                .in('exam_id', examIds);
+            
+            if (questions && questions.length > 0) {
+                const questionIds = questions.map(q => q.id);
+                await supabase.from('questions').delete().in('id', questionIds);
+                deletedCounts.questions = questions.length;
+            }
+            
+            // Delete exams
+            await supabase.from('exams').delete().in('id', examIds);
+            deletedCounts.exams = examIds.length;
+        }
+        
+        // Delete student data (responses, grades, attempts) for students in this class
+        if (studentIds.length > 0) {
+            // Delete student responses
+            const { data: studentResponses } = await supabase
+                .from('student_responses')
+                .select('id')
+                .in('student_id', studentIds);
+            
+            if (studentResponses && studentResponses.length > 0) {
+                const responseIds = studentResponses.map(r => r.id);
+                await supabase.from('student_responses').delete().in('id', responseIds);
+                deletedCounts.responses += studentResponses.length;
+            }
+            
+            // Delete exam grades
+            const { data: studentGrades } = await supabase
+                .from('exam_grades')
+                .select('id')
+                .in('student_id', studentIds);
+            
+            if (studentGrades && studentGrades.length > 0) {
+                const gradeIds = studentGrades.map(g => g.id);
+                await supabase.from('exam_grades').delete().in('id', gradeIds);
+                deletedCounts.grades += studentGrades.length;
+            }
+            
+            // Delete exam attempts
+            const { data: studentAttempts } = await supabase
+                .from('student_exam_attempts')
+                .select('id')
+                .in('student_id', studentIds);
+            
+            if (studentAttempts && studentAttempts.length > 0) {
+                const attemptIds = studentAttempts.map(a => a.id);
+                await supabase.from('student_exam_attempts').delete().in('id', attemptIds);
+                deletedCounts.attempts += studentAttempts.length;
+            }
+            
+            // Delete students
+            await supabase.from('users').delete().in('id', studentIds);
+            deletedCounts.students = studentIds.length;
+        }
+        
+        const summary = `Class data deleted successfully!\n\nClass: ${className}\n\nDeleted:\n` +
+            `- Students: ${deletedCounts.students}\n` +
+            `- Exams: ${deletedCounts.exams}\n` +
+            `- Exam grades: ${deletedCounts.grades}\n` +
+            `- Exam attempts: ${deletedCounts.attempts}\n` +
+            `- Questions: ${deletedCounts.questions}\n` +
+            `- Student responses: ${deletedCounts.responses}`;
+        
+        showSuccess(summary, 'Complete');
+        loadDatabaseStats();
+        loadAllUsers();
+        loadResults();
+        loadStatistics();
+        
+    } catch (error) {
+        console.error('Error deleting class data:', error);
+        showError(`Failed to delete class data: ${error.message}\n\nSome data may have been deleted. Please check the database.`, 'Error');
     }
 }
 

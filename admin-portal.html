@@ -513,7 +513,8 @@
                     </div>
                 </div>
                 <div style="margin-top: 15px;">
-                    <button onclick="loadDatabaseStats()" class="btn btn-primary">Refresh Statistics</button>
+                    <button onclick="loadDatabaseStats()" class="btn btn-primary">Refresh Statistics Now</button>
+                    <small style="display: block; margin-top: 8px; color: #666; font-size: 12px;">ℹ️ Statistics auto-refresh every 30 seconds</small>
                 </div>
             </div>
             
@@ -538,8 +539,15 @@
                     <strong>⚠️ DANGER ZONE:</strong> These operations cannot be undone. Always backup first!
                 </p>
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button onclick="deleteDataByClass()" class="btn btn-warning">Delete Data by Class</button>
                     <button onclick="clearTestData()" class="btn btn-warning">Clear Test/Demo Data Only</button>
                     <button onclick="clearAllData()" class="btn btn-danger">Clear ALL Data</button>
+                </div>
+                <div style="margin-top: 10px; padding: 10px; background: #fff3cd; border-radius: 5px; border-left: 4px solid #ffc107;">
+                    <strong style="color: #856404;">📋 Delete by Class:</strong>
+                    <p style="color: #856404; font-size: 13px; margin: 5px 0 0 0;">
+                        Deletes all data for a specific class (students, exams, results). Useful for cleaning up specific classes.
+                    </p>
                 </div>
                 <div style="margin-top: 15px; padding: 15px; background: white; border-radius: 5px;">
                     <h5 style="color: #721c24; margin-bottom: 10px;">Alternative: Use SQL Scripts</h5>
