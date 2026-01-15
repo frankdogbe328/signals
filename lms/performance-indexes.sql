@@ -37,11 +37,11 @@ CREATE INDEX IF NOT EXISTS idx_responses_attempt_question ON student_responses(a
 CREATE INDEX IF NOT EXISTS idx_questions_exam_id ON questions(exam_id);
 CREATE INDEX IF NOT EXISTS idx_questions_sequence ON questions(exam_id, sequence_order);
 
--- Materials Indexes
-CREATE INDEX IF NOT EXISTS idx_materials_lecturer_id ON learning_materials(lecturer_id);
-CREATE INDEX IF NOT EXISTS idx_materials_class_id ON learning_materials(class_id);
-CREATE INDEX IF NOT EXISTS idx_materials_subject ON learning_materials(subject);
-CREATE INDEX IF NOT EXISTS idx_materials_class_subject ON learning_materials(class_id, subject);
+-- Materials Indexes (table name is 'materials', columns: course, class, uploaded_by)
+CREATE INDEX IF NOT EXISTS idx_materials_uploaded_by ON materials(uploaded_by);
+CREATE INDEX IF NOT EXISTS idx_materials_class ON materials(class);
+CREATE INDEX IF NOT EXISTS idx_materials_course ON materials(course);
+CREATE INDEX IF NOT EXISTS idx_materials_class_course ON materials(class, course);
 
 -- Analyze tables to update statistics (helps query planner)
 ANALYZE exam_grades;
@@ -50,7 +50,7 @@ ANALYZE users;
 ANALYZE student_exam_attempts;
 ANALYZE student_responses;
 ANALYZE questions;
-ANALYZE learning_materials;
+ANALYZE materials;
 
 -- Verify indexes were created
 SELECT 
@@ -60,5 +60,5 @@ SELECT
     indexdef
 FROM pg_indexes
 WHERE schemaname = 'public'
-    AND tablename IN ('exam_grades', 'exams', 'users', 'student_exam_attempts', 'student_responses', 'questions', 'learning_materials')
+    AND tablename IN ('exam_grades', 'exams', 'users', 'student_exam_attempts', 'student_responses', 'questions', 'materials')
 ORDER BY tablename, indexname;
