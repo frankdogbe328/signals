@@ -119,6 +119,29 @@
             }
         }
         
+        // Check for registration success parameter
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const registered = urlParams.get('registered');
+            
+            if (registered === 'true') {
+                const errorMessage = document.getElementById('lecturerErrorMessage');
+                if (errorMessage) {
+                    errorMessage.textContent = '✅ Registration successful! Please login with your credentials.';
+                    errorMessage.style.color = '#28a745';
+                    errorMessage.style.backgroundColor = '#d4edda';
+                    errorMessage.style.border = '1px solid #c3e6cb';
+                    errorMessage.style.borderRadius = '5px';
+                    errorMessage.style.padding = '10px';
+                    errorMessage.style.display = 'block';
+                    errorMessage.classList.add('show');
+                    
+                    // Clean URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            }
+        });
+        
         // Handle lecturer login
         document.getElementById('lecturerLoginForm').addEventListener('submit', async function(e) {
             e.preventDefault();

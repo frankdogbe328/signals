@@ -171,16 +171,16 @@ async function handleLecturerRegistration(e) {
             return;
         }
         
-        // Success - show message and redirect to login page with role pre-selected
+        // Success - show message and redirect to lecturer login page
         if (typeof showSuccess === 'function') {
-            showSuccess('Registration successful! Redirecting to login page...', 'Registration Successful');
+            showSuccess('Registration successful! Redirecting to lecturer login page...', 'Registration Successful');
         } else {
-            alert('Registration successful! Redirecting to login page...');
+            alert('Registration successful! Redirecting to lecturer login page...');
         }
         
-        // Redirect to login page with role pre-selected after 2 seconds
+        // Redirect to lecturer login page after 2 seconds
         setTimeout(() => {
-            window.location.href = 'index.html?role=lecturer&registered=true';
+            window.location.href = 'lecturer-login.html?registered=true';
         }, 2000);
         
     } catch (error) {
