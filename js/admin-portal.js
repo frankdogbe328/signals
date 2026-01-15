@@ -1971,8 +1971,8 @@ async function backupAllData() {
         showSuccess('Creating backup... This may take a moment.', 'Backup in Progress');
         
         // Get all data with proper error handling
-        // Use Promise.allSettled to handle errors gracefully for each query
-        const results = await Promise.allSettled([
+        // Supabase queries always resolve (never reject), so we check the error property
+        const [usersResult, examsResult, gradesResult, attemptsResult, questionsResult, responsesResult, materialsResult] = await Promise.all([
             supabase.from('users').select('*'),
             supabase.from('exams').select('*'),
             supabase.from('exam_grades').select('*'),
@@ -1982,38 +1982,59 @@ async function backupAllData() {
             supabase.from('materials').select('*')
         ]);
         
-        // Extract results, handling both fulfilled and rejected promises
-        const usersResult = results[0].status === 'fulfilled' ? results[0].value : { data: [], error: { message: results[0].reason?.message || 'Unknown error' } };
-        const examsResult = results[1].status === 'fulfilled' ? results[1].value : { data: [], error: { message: results[1].reason?.message || 'Unknown error' } };
-        const gradesResult = results[2].status === 'fulfilled' ? results[2].value : { data: [], error: { message: results[2].reason?.message || 'Unknown error' } };
-        const attemptsResult = results[3].status === 'fulfilled' ? results[3].value : { data: [], error: { message: results[3].reason?.message || 'Unknown error' } };
-        const questionsResult = results[4].status === 'fulfilled' ? results[4].value : { data: [], error: { message: results[4].reason?.message || 'Unknown error' } };
-        const responsesResult = results[5].status === 'fulfilled' ? results[5].value : { data: [], error: { message: results[5].reason?.message || 'Unknown error' } };
-        const materialsResult = results[6].status === 'fulfilled' ? results[6].value : { data: [], error: { message: results[6].reason?.message || 'Unknown error' } };
-        
         // Check for critical errors (but allow missing tables to return empty arrays)
         const criticalErrors = [];
-        if (usersResult.error && !usersResult.error.message?.includes('does not exist') && !usersResult.error.message?.includes('relation')) {
-            criticalErrors.push(`Users: ${usersResult.error.message}`);
+        
+        if (usersResult.error) {
+            const errorMsg = usersResult.error.message || 'Unknown error';
+            if (!errorMsg.includes('does not exist') && !errorMsg.includes('relation')) {
+                criticalErrors.push(`Users: ${errorMsg}`);
+            }
         }
-        if (examsResult.error && !examsResult.error.message?.includes('does not exist') && !examsResult.error.message?.includes('relation')) {
-            criticalErrors.push(`Exams: ${examsResult.error.message}`);
+        
+        if (examsResult.error) {
+            const errorMsg = examsResult.error.message || 'Unknown error';
+            if (!errorMsg.includes('does not exist') && !errorMsg.includes('relation')) {
+                criticalErrors.push(`Exams: ${errorMsg}`);
+            }
         }
-        if (gradesResult.error && !gradesResult.error.message?.includes('does not exist') && !gradesResult.error.message?.includes('relation')) {
-            criticalErrors.push(`Grades: ${gradesResult.error.message}`);
+        
+        if (gradesResult.error) {
+            const errorMsg = gradesResult.error.message || 'Unknown error';
+            if (!errorMsg.includes('does not exist') && !errorMsg.includes('relation')) {
+                criticalErrors.push(`Grades: ${errorMsg}`);
+            }
         }
-        if (attemptsResult.error && !attemptsResult.error.message?.includes('does not exist') && !attemptsResult.error.message?.includes('relation')) {
-            criticalErrors.push(`Attempts: ${attemptsResult.error.message}`);
+        
+        if (attemptsResult.error) {
+            const errorMsg = attemptsResult.error.message || 'Unknown error';
+            if (!errorMsg.includes('does not exist') && !errorMsg.includes('relation')) {
+                criticalErrors.push(`Attempts: ${errorMsg}`);
+            }
         }
-        if (questionsResult.error && !questionsResult.error.message?.includes('does not exist') && !questionsResult.error.message?.includes('relation')) {
-            criticalErrors.push(`Questions: ${questionsResult.error.message}`);
+        
+        if (questionsResult.error) {
+            const errorMsg = questionsResult.error.message || 'Unknown error';
+            if (!errorMsg.includes('does not exist') && !errorMsg.includes('relation')) {
+                criticalErrors.push(`Questions: ${errorMsg}`);
+            }
         }
-        if (responsesResult.error && !responsesResult.error.message?.includes('does not exist') && !responsesResult.error.message?.includes('relation')) {
-            criticalErrors.push(`Responses: ${responsesResult.error.message}`);
+        
+        if (responsesResult.error) {
+            const errorMsg = responsesResult.error.message || 'Unknown error';
+            if (!errorMsg.includes('does not exist') && !errorMsg.includes('relation')) {
+                criticalErrors.push(`Responses: ${errorMsg}`);
+            }
         }
-        if (materialsResult.error && !materialsResult.error.message?.includes('does not exist') && !materialsResult.error.message?.includes('relation')) {
-            // Materials table might not exist, that's okay
-            console.warn('Materials table not found, continuing with empty materials array');
+        
+        // Materials table might not exist, that's okay - just log a warning
+        if (materialsResult.error) {
+            const errorMsg = materialsResult.error.message || 'Unknown error';
+            if (!errorMsg.includes('does not exist') && !errorMsg.includes('relation')) {
+                console.warn('Materials table error:', errorMsg);
+            } else {
+                console.warn('Materials table not found, continuing with empty materials array');
+            }
         }
         
         if (criticalErrors.length > 0) {
@@ -2090,7 +2111,13 @@ async function backupUsers() {
             .from('users')
             .select('*');
         
-        if (error) throw error;
+        if (error) {
+            const errorMsg = error.message || 'Unknown error';
+            if (errorMsg.includes('does not exist') || errorMsg.includes('relation')) {
+                throw new Error(`Users table does not exist: ${errorMsg}`);
+            }
+            throw new Error(`Failed to fetch users: ${errorMsg}`);
+        }
         
         const backup = {
             timestamp: new Date().toISOString(),
@@ -2145,8 +2172,8 @@ async function backupExams() {
         
         showSuccess('Creating exams backup...', 'Backup in Progress');
         
-        // Use Promise.allSettled to handle errors gracefully
-        const results = await Promise.allSettled([
+        // Supabase queries always resolve (never reject), so we check the error property
+        const [examsResult, gradesResult, attemptsResult, questionsResult, responsesResult] = await Promise.all([
             supabase.from('exams').select('*'),
             supabase.from('exam_grades').select('*'),
             supabase.from('student_exam_attempts').select('*'),
@@ -2154,29 +2181,42 @@ async function backupExams() {
             supabase.from('student_responses').select('*')
         ]);
         
-        // Extract results
-        const examsResult = results[0].status === 'fulfilled' ? results[0].value : { data: [], error: { message: results[0].reason?.message || 'Unknown error' } };
-        const gradesResult = results[1].status === 'fulfilled' ? results[1].value : { data: [], error: { message: results[1].reason?.message || 'Unknown error' } };
-        const attemptsResult = results[2].status === 'fulfilled' ? results[2].value : { data: [], error: { message: results[2].reason?.message || 'Unknown error' } };
-        const questionsResult = results[3].status === 'fulfilled' ? results[3].value : { data: [], error: { message: results[3].reason?.message || 'Unknown error' } };
-        const responsesResult = results[4].status === 'fulfilled' ? results[4].value : { data: [], error: { message: results[4].reason?.message || 'Unknown error' } };
-        
         // Check for critical errors
         const criticalErrors = [];
-        if (examsResult.error && !examsResult.error.message?.includes('does not exist') && !examsResult.error.message?.includes('relation')) {
-            criticalErrors.push(`Exams: ${examsResult.error.message}`);
+        
+        if (examsResult.error) {
+            const errorMsg = examsResult.error.message || 'Unknown error';
+            if (!errorMsg.includes('does not exist') && !errorMsg.includes('relation')) {
+                criticalErrors.push(`Exams: ${errorMsg}`);
+            }
         }
-        if (gradesResult.error && !gradesResult.error.message?.includes('does not exist') && !gradesResult.error.message?.includes('relation')) {
-            criticalErrors.push(`Grades: ${gradesResult.error.message}`);
+        
+        if (gradesResult.error) {
+            const errorMsg = gradesResult.error.message || 'Unknown error';
+            if (!errorMsg.includes('does not exist') && !errorMsg.includes('relation')) {
+                criticalErrors.push(`Grades: ${errorMsg}`);
+            }
         }
-        if (attemptsResult.error && !attemptsResult.error.message?.includes('does not exist') && !attemptsResult.error.message?.includes('relation')) {
-            criticalErrors.push(`Attempts: ${attemptsResult.error.message}`);
+        
+        if (attemptsResult.error) {
+            const errorMsg = attemptsResult.error.message || 'Unknown error';
+            if (!errorMsg.includes('does not exist') && !errorMsg.includes('relation')) {
+                criticalErrors.push(`Attempts: ${errorMsg}`);
+            }
         }
-        if (questionsResult.error && !questionsResult.error.message?.includes('does not exist') && !questionsResult.error.message?.includes('relation')) {
-            criticalErrors.push(`Questions: ${questionsResult.error.message}`);
+        
+        if (questionsResult.error) {
+            const errorMsg = questionsResult.error.message || 'Unknown error';
+            if (!errorMsg.includes('does not exist') && !errorMsg.includes('relation')) {
+                criticalErrors.push(`Questions: ${errorMsg}`);
+            }
         }
-        if (responsesResult.error && !responsesResult.error.message?.includes('does not exist') && !responsesResult.error.message?.includes('relation')) {
-            criticalErrors.push(`Responses: ${responsesResult.error.message}`);
+        
+        if (responsesResult.error) {
+            const errorMsg = responsesResult.error.message || 'Unknown error';
+            if (!errorMsg.includes('does not exist') && !errorMsg.includes('relation')) {
+                criticalErrors.push(`Responses: ${errorMsg}`);
+            }
         }
         
         if (criticalErrors.length > 0) {
@@ -2246,12 +2286,13 @@ async function backupMaterials() {
             .from('materials')
             .select('*');
         
-        if (error && error.message.includes('does not exist')) {
-            showError('Materials table does not exist.', 'Error');
-            return;
+        if (error) {
+            const errorMsg = error.message || 'Unknown error';
+            if (errorMsg.includes('does not exist') || errorMsg.includes('relation')) {
+                throw new Error(`Materials table does not exist: ${errorMsg}`);
+            }
+            throw new Error(`Failed to fetch materials: ${errorMsg}`);
         }
-        
-        if (error) throw error;
         
         const backup = {
             timestamp: new Date().toISOString(),
