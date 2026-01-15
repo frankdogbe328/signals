@@ -1,6 +1,6 @@
-# Ghana Armed Forces Signals Training School - Learning Management System
+# Signal Training School - Learning Management System
 
-A comprehensive Learning Management System (LMS) and Exam Portal for the Ghana Armed Forces Signals Training School.
+A comprehensive Learning Management System (LMS) and Exam Portal for Signal Training School.
 
 **Last Updated:** January 2026
 
@@ -111,4 +111,4 @@ Developed and Powered by **Frank Kojo Dogbe** | Co-developed by Solomon A. Norte
 
 ## 📝 License
 
-© 2026 Ghana Armed Forces Signals Training School. All rights reserved.
+© 2026 Signal Training School. All rights reserved.

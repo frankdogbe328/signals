@@ -285,7 +285,7 @@ function displayProgressDashboard() {
     dashboardContainer.innerHTML = html;
 }
 
-// Helper function to get grade from percentage (Ghana Armed Forces Signals Training School grading system)
+// Helper function to get grade from percentage (Signal Training School grading system)
 function getGradeFromPercentage(percentage) {
     if (percentage >= 90) return 'A';
     if (percentage >= 80) return 'B';

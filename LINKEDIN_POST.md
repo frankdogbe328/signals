@@ -1,8 +1,8 @@
-# LinkedIn Post - Ghana Armed Forces Signals Training School LMS
+# LinkedIn Post - Signal Training School LMS
 
 🎓 **Excited to share my latest project!** 🚀
 
-I'm thrilled to announce the completion of a comprehensive **Learning Management System (LMS) and Exam Portal** for the Ghana Armed Forces Signals Training School!
+I'm thrilled to announce the completion of a comprehensive **Learning Management System (LMS) and Exam Portal** for Signal Training School!
 
 ## 🎯 What I Built
 
@@ -51,7 +51,7 @@ This system streamlines the educational process for military training, providing
 
 **Alternative Shorter Version:**
 
-🚀 Just completed a comprehensive Learning Management System & Exam Portal for the Ghana Armed Forces Signals Training School!
+🚀 Just completed a comprehensive Learning Management System & Exam Portal for Signal Training School!
 
 ✨ Built with HTML5, CSS3, JavaScript, and Supabase
 📚 Features: Material uploads, progress tracking, timed exams, analytics

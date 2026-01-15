@@ -1,6 +1,6 @@
 # Project Review & Status Report
 **Date:** January 2026  
-**System:** Ghana Armed Forces Signals Training School - LMS & Exam Portal
+**System:** Signal Training School - LMS & Exam Portal
 
 ## ✅ COMPLETED FEATURES
 

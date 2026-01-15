@@ -1671,7 +1671,7 @@ function updateStudentResultsCount(shown, total) {
     }
 }
 
-// Calculate grade from percentage (Ghana Armed Forces Signals Training School grading system)
+// Calculate grade from percentage (Signal Training School grading system)
 function calculateGrade(percentage) {
     if (percentage >= 90) return 'A';
     if (percentage >= 80) return 'B';

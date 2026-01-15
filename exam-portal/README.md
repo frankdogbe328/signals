@@ -1,6 +1,6 @@
 # Exam Portal
 
-The Exam and Quiz System for the Ghana Armed Forces Signals Training School.
+The Exam and Quiz System for Signal Training School.
 
 ## 📁 Structure
 
