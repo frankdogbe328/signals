@@ -1059,16 +1059,17 @@ async function generateNextStudentIndex(classId) {
         
         const prefix = getClassIndexPrefix(classId);
         
-        // Get all existing student indices for this class
+        // Get all students in this class ordered by registration time (first come first serve)
+        // This ensures sequential numbering based on registration order
         const { data: students, error } = await supabase
             .from('users')
-            .select('student_index')
+            .select('id, created_at, student_index')
             .eq('role', 'student')
             .eq('class', classId)
-            .not('student_index', 'is', null);
+            .order('created_at', { ascending: true }); // Order by registration time
         
         if (error) {
-            console.error('Error fetching student indices:', error);
+            console.error('Error fetching students:', error);
             // Fallback: try to generate based on count
             const { data: allStudents } = await supabase
                 .from('users')
@@ -1080,21 +1081,14 @@ async function generateNextStudentIndex(classId) {
             return `${prefix}-${String(nextNumber).padStart(3, '0')}`;
         }
         
-        // Extract numbers from existing indices
-        const existingNumbers = (students || [])
-            .map(s => {
-                if (!s.student_index) return 0;
-                const match = s.student_index.match(/\d+$/);
-                return match ? parseInt(match[0]) : 0;
-            })
-            .filter(n => n > 0);
-        
-        // Find next available number
-        let nextNumber = 1;
-        if (existingNumbers.length > 0) {
-            const maxNumber = Math.max(...existingNumbers);
-            nextNumber = maxNumber + 1;
+        if (!students || students.length === 0) {
+            // First student in this class gets 001
+            return `${prefix}-001`;
         }
+        
+        // Find the next sequential number based on registration order
+        // Count how many students have been registered (including the one being registered now)
+        const nextNumber = students.length + 1;
         
         return `${prefix}-${String(nextNumber).padStart(3, '0')}`;
         
@@ -2321,9 +2315,9 @@ function closeRegisteredSubjectsModal() {
     }
 }
 
-// Assign student indices to existing students who don't have one
+// Assign student indices to existing students based on registration order (first come first serve)
 async function assignStudentIndices() {
-    if (!confirm('This will assign student indices to all students who don\'t have one yet.\n\nEach student will get a unique index based on their class (e.g., SB-001, SB-002 for SIGNALS BASIC).\n\nContinue?')) {
+    if (!confirm('This will reassign student indices to ALL students based on registration order (first come first serve).\n\nEach student will get a sequential index based on when they registered:\n- First student to register = 001\n- Second student = 002\n- And so on...\n\nIndices are unique per class (e.g., SB-001, SB-002 for SIGNALS BASIC).\n\nContinue?')) {
         return;
     }
     
@@ -2334,12 +2328,12 @@ async function assignStudentIndices() {
             return;
         }
         
-        // Get all students without indices, grouped by class
-        const { data: students, error } = await supabase
+        // Get all students grouped by class to reassign indices based on registration order
+        const { data: allStudents, error } = await supabase
             .from('users')
-            .select('id, name, username, class, student_index')
+            .select('id, name, username, class, student_index, created_at')
             .eq('role', 'student')
-            .or('student_index.is.null,student_index.eq.');
+            .not('class', 'is', null);
         
         if (error) {
             console.error('Error loading students:', error);
@@ -2347,15 +2341,15 @@ async function assignStudentIndices() {
             return;
         }
         
-        if (!students || students.length === 0) {
-            showSuccess('All students already have indices assigned!', 'No Action Needed');
+        if (!allStudents || allStudents.length === 0) {
+            showSuccess('No students found!', 'No Action Needed');
             return;
         }
         
         // Group by class
         const studentsByClass = {};
-        students.forEach(student => {
-            if (!student.student_index && student.class) {
+        allStudents.forEach(student => {
+            if (student.class) {
                 if (!studentsByClass[student.class]) {
                     studentsByClass[student.class] = [];
                 }
@@ -2366,52 +2360,44 @@ async function assignStudentIndices() {
         let assigned = 0;
         let errors = 0;
         
-        // Assign indices for each class
+        // Assign indices for each class based on registration order (first come first serve)
         for (const [classId, classStudents] of Object.entries(studentsByClass)) {
-            // Get existing indices for this class to find next number
-            const { data: existingStudents } = await supabase
-                .from('users')
-                .select('student_index')
-                .eq('role', 'student')
-                .eq('class', classId)
-                .not('student_index', 'is', null);
+            // Sort students by registration time (created_at) - first come first serve
+            classStudents.sort((a, b) => {
+                const timeA = new Date(a.created_at || 0).getTime();
+                const timeB = new Date(b.created_at || 0).getTime();
+                return timeA - timeB; // Ascending order (oldest first)
+            });
             
-            // Extract numbers from existing indices
-            const existingNumbers = (existingStudents || [])
-                .map(s => {
-                    if (!s.student_index) return 0;
-                    const match = s.student_index.match(/\d+$/);
-                    return match ? parseInt(match[0]) : 0;
-                })
-                .filter(n => n > 0);
-            
-            // Find starting number
-            let nextNumber = 1;
-            if (existingNumbers.length > 0) {
-                const maxNumber = Math.max(...existingNumbers);
-                nextNumber = maxNumber + 1;
+            if (classStudents.length === 0) {
+                continue;
             }
             
             const prefix = getClassIndexPrefix(classId);
             
-            // Assign indices to students in this class
-            for (const student of classStudents) {
+            // Reassign all indices based on registration order (first registered = 001, second = 002, etc.)
+            for (let i = 0; i < classStudents.length; i++) {
+                const student = classStudents[i];
+                const studentIndex = `${prefix}-${String(i + 1).padStart(3, '0')}`;
+                
                 try {
-                    const studentIndex = `${prefix}-${String(nextNumber).padStart(3, '0')}`;
-                    
-                    const { error: updateError } = await supabase
-                        .from('users')
-                        .update({ student_index: studentIndex })
-                        .eq('id', student.id);
-                    
-                    if (updateError) {
-                        console.error(`Error assigning index to ${student.name}:`, updateError);
-                        errors++;
-                    } else {
-                        assigned++;
+                    // Only update if the index is different (to avoid unnecessary updates)
+                    if (student.student_index !== studentIndex) {
+                        const { error: updateError } = await supabase
+                            .from('users')
+                            .update({ student_index: studentIndex })
+                            .eq('id', student.id);
+                        
+                        if (updateError) {
+                            console.error(`Error assigning index to ${student.name || student.username}:`, updateError);
+                            errors++;
+                        } else {
+                            // Count as assigned if it was missing or changed
+                            if (!student.student_index || student.student_index !== studentIndex) {
+                                assigned++;
+                            }
+                        }
                     }
-                    
-                    nextNumber++;
                 } catch (err) {
                     console.error(`Error assigning index to ${student.name}:`, err);
                     errors++;
