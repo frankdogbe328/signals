@@ -47,6 +47,46 @@ document.addEventListener('DOMContentLoaded', function() {
         updateSubjectDropdown(this.value);
     });
     
+    // Manual score entry event listeners
+    const manualScoreClass = document.getElementById('manualScoreClass');
+    const manualScoreType = document.getElementById('manualScoreType');
+    const manualScoreSubject = document.getElementById('manualScoreSubject');
+    
+    if (manualScoreClass) {
+        manualScoreClass.addEventListener('change', async function() {
+            const classId = this.value;
+            if (classId) {
+                // Populate subjects for this class
+                await populateSubjectsForClass(classId, 'manualScoreSubject');
+                // Try to load students (will show message if subject not selected)
+                loadManualScoreStudents();
+            } else {
+                // Clear subject dropdown and container
+                if (manualScoreSubject) {
+                    manualScoreSubject.innerHTML = '<option value="">Select Subject</option>';
+                }
+                const container = document.getElementById('manualScoreEntryContainer');
+                if (container) {
+                    container.innerHTML = '<p class="empty-state">Select class, score type, and subject to enter manual scores</p>';
+                }
+            }
+        });
+    }
+    
+    if (manualScoreType) {
+        manualScoreType.addEventListener('change', function() {
+            // Try to load students when score type changes
+            loadManualScoreStudents();
+        });
+    }
+    
+    if (manualScoreSubject) {
+        manualScoreSubject.addEventListener('change', function() {
+            // Load students when subject is selected
+            loadManualScoreStudents();
+        });
+    }
+    
     // Auto-refresh data every 30 seconds
     setInterval(() => {
         loadResults();
@@ -1128,17 +1168,24 @@ async function loadManualScoreStudents() {
         return loadBFTStudents();
     }
     
-    if (!classId || !scoreType || !subject) {
-        container.innerHTML = '<p class="empty-state">Select class, score type, and subject to enter manual scores</p>';
+    // Populate subjects dropdown based on class if class is selected
+    if (classId) {
+        await populateSubjectsForClass(classId, 'manualScoreSubject');
+    }
+    
+    // Check what's missing and show appropriate message
+    if (!classId) {
+        container.innerHTML = '<p class="empty-state">Please select a class first</p>';
         return;
     }
     
-    // Populate subjects dropdown based on class
-    await populateSubjectsForClass(classId, 'manualScoreSubject');
+    if (!scoreType) {
+        container.innerHTML = '<p class="empty-state">Please select a score type</p>';
+        return;
+    }
     
-    // If subject not selected yet, wait
     if (!subject) {
-        container.innerHTML = '<p class="empty-state">Please select a subject</p>';
+        container.innerHTML = '<p class="empty-state">Please select a subject to enter scores</p>';
         return;
     }
     
