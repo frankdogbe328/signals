@@ -169,7 +169,7 @@ async function loadResults() {
             .from('exam_grades')
             .select(`
                 *,
-                student:users!exam_grades_student_id_fkey(id, name, username, class),
+                student:users!exam_grades_student_id_fkey(id, name, username, class, student_index),
                 exam:exams!exam_grades_exam_id_fkey(
                     id,
                     title,
@@ -986,6 +986,92 @@ function formatClassName(classId) {
     return classNames[classId] || classId.toUpperCase();
 }
 
+// Get class prefix for student index
+function getClassIndexPrefix(classId) {
+    const prefixMap = {
+        'signals-basic': 'SB',
+        'signals-b-iii-b-ii': 'SB3B2',
+        'signals-b-ii-b-i': 'SB2B1',
+        'superintendent': 'SUP',
+        'pre-qualifying': 'PQ',
+        'regimental-basic': 'RB',
+        'regimental-b-iii-b-ii': 'RB3B2',
+        'regimental-b-ii-b-i': 'RB2B1',
+        'rso-rsi': 'RSO',
+        'electronic-warfare-course': 'EW',
+        'tactical-drone-course': 'TD'
+    };
+    return prefixMap[classId] || 'STU'; // Default prefix if class not found
+}
+
+// Make functions globally accessible
+if (typeof window !== 'undefined') {
+    window.getClassIndexPrefix = getClassIndexPrefix;
+}
+
+// Generate next student index for a class
+async function generateNextStudentIndex(classId) {
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            throw new Error('Supabase client not available');
+        }
+        
+        const prefix = getClassIndexPrefix(classId);
+        
+        // Get all existing student indices for this class
+        const { data: students, error } = await supabase
+            .from('users')
+            .select('student_index')
+            .eq('role', 'student')
+            .eq('class', classId)
+            .not('student_index', 'is', null);
+        
+        if (error) {
+            console.error('Error fetching student indices:', error);
+            // Fallback: try to generate based on count
+            const { data: allStudents } = await supabase
+                .from('users')
+                .select('id')
+                .eq('role', 'student')
+                .eq('class', classId);
+            
+            const nextNumber = (allStudents?.length || 0) + 1;
+            return `${prefix}-${String(nextNumber).padStart(3, '0')}`;
+        }
+        
+        // Extract numbers from existing indices
+        const existingNumbers = (students || [])
+            .map(s => {
+                if (!s.student_index) return 0;
+                const match = s.student_index.match(/\d+$/);
+                return match ? parseInt(match[0]) : 0;
+            })
+            .filter(n => n > 0);
+        
+        // Find next available number
+        let nextNumber = 1;
+        if (existingNumbers.length > 0) {
+            const maxNumber = Math.max(...existingNumbers);
+            nextNumber = maxNumber + 1;
+        }
+        
+        return `${prefix}-${String(nextNumber).padStart(3, '0')}`;
+        
+    } catch (error) {
+        console.error('Error generating student index:', error);
+        // Fallback: return a timestamp-based index
+        const prefix = getClassIndexPrefix(classId);
+        const timestamp = Date.now().toString().slice(-6);
+        return `${prefix}-${timestamp}`;
+    }
+}
+
+// Make function globally accessible
+if (typeof window !== 'undefined') {
+    window.generateNextStudentIndex = generateNextStudentIndex;
+}
+
 // Escape HTML
 function escapeHtml(text) {
     if (!text) return '';
@@ -1066,7 +1152,7 @@ async function loadManualScoreStudents() {
         // Get all students in the class
         const { data: students, error: studentsError } = await supabase
             .from('users')
-            .select('id, name, username, class')
+            .select('id, name, username, class, student_index')
             .eq('role', 'student')
             .eq('class', classId)
             .order('username', { ascending: true });
@@ -1209,7 +1295,7 @@ async function loadBFTStudents() {
         // Get all students in the selected class
         const { data: students, error } = await supabase
             .from('users')
-            .select('id, name, username, class')
+            .select('id, name, username, class, student_index')
             .eq('role', 'student')
             .eq('class', classId)
             .order('name', { ascending: true });
@@ -1256,9 +1342,11 @@ async function loadBFTStudents() {
         
         students.forEach(student => {
             const existing = existingScores[student.id];
+            const studentIndex = student.student_index || '';
+            const indexDisplay = studentIndex ? `<span style="color: var(--primary-color); font-weight: bold; margin-right: 8px;">${escapeHtml(studentIndex)}</span>` : '';
             const studentDisplay = student.name 
-                ? `${escapeHtml(student.name)} <small style="color: #666;">(${escapeHtml(student.username || 'N/A')})</small>`
-                : escapeHtml(student.username || 'Unknown');
+                ? `${indexDisplay}${escapeHtml(student.name)} <small style="color: #666;">(${escapeHtml(student.username || 'N/A')})</small>`
+                : `${indexDisplay}${escapeHtml(student.username || 'Unknown')}`;
             
             html += `
                 <tr>
@@ -1832,7 +1920,7 @@ async function loadAllUsers() {
         
         let query = supabase
             .from('users')
-            .select('id, username, name, email, role, class, courses, created_at')
+            .select('id, username, name, email, role, class, courses, created_at, student_index, phone')
             .order('created_at', { ascending: false });
         
         if (roleFilter !== 'all') {
@@ -1932,6 +2020,7 @@ async function viewAllRegisteredSubjects() {
                         username: student.username,
                         class: className,
                         classId: student.class,
+                        student_index: student.student_index || null,
                         subjects: []
                     };
                 }
@@ -2027,7 +2116,7 @@ async function viewAllRegisteredSubjects() {
                         <table class="results-table">
                             <thead>
                                 <tr>
-                                    <th>Student ID</th>
+                                    <th>Student Index</th>
                                     <th>Name</th>
                                     <th>Class</th>
                                     <th>Registered Subjects</th>
@@ -2046,9 +2135,10 @@ async function viewAllRegisteredSubjects() {
         
         sortedStudents.forEach(student => {
             const subjectsList = student.subjects.sort().join(', ');
+            const studentIndex = student.student_index || '<span style="color: #999; font-style: italic;">Not assigned</span>';
             html += `
                 <tr class="student-item" data-student="${escapeHtml(student.name.toLowerCase())}">
-                    <td>${escapeHtml(student.username || 'N/A')}</td>
+                    <td>${studentIndex}</td>
                     <td>${escapeHtml(student.name)}</td>
                     <td>${escapeHtml(student.class)}</td>
                     <td style="max-width: 400px;">
@@ -2153,6 +2243,117 @@ function closeRegisteredSubjectsModal() {
     }
 }
 
+// Assign student indices to existing students who don't have one
+async function assignStudentIndices() {
+    if (!confirm('This will assign student indices to all students who don\'t have one yet.\n\nEach student will get a unique index based on their class (e.g., SB-001, SB-002 for SIGNALS BASIC).\n\nContinue?')) {
+        return;
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        // Get all students without indices, grouped by class
+        const { data: students, error } = await supabase
+            .from('users')
+            .select('id, name, username, class, student_index')
+            .eq('role', 'student')
+            .or('student_index.is.null,student_index.eq.');
+        
+        if (error) {
+            console.error('Error loading students:', error);
+            showError('Failed to load students. Please try again.', 'Error');
+            return;
+        }
+        
+        if (!students || students.length === 0) {
+            showSuccess('All students already have indices assigned!', 'No Action Needed');
+            return;
+        }
+        
+        // Group by class
+        const studentsByClass = {};
+        students.forEach(student => {
+            if (!student.student_index && student.class) {
+                if (!studentsByClass[student.class]) {
+                    studentsByClass[student.class] = [];
+                }
+                studentsByClass[student.class].push(student);
+            }
+        });
+        
+        let assigned = 0;
+        let errors = 0;
+        
+        // Assign indices for each class
+        for (const [classId, classStudents] of Object.entries(studentsByClass)) {
+            // Get existing indices for this class to find next number
+            const { data: existingStudents } = await supabase
+                .from('users')
+                .select('student_index')
+                .eq('role', 'student')
+                .eq('class', classId)
+                .not('student_index', 'is', null);
+            
+            // Extract numbers from existing indices
+            const existingNumbers = (existingStudents || [])
+                .map(s => {
+                    if (!s.student_index) return 0;
+                    const match = s.student_index.match(/\d+$/);
+                    return match ? parseInt(match[0]) : 0;
+                })
+                .filter(n => n > 0);
+            
+            // Find starting number
+            let nextNumber = 1;
+            if (existingNumbers.length > 0) {
+                const maxNumber = Math.max(...existingNumbers);
+                nextNumber = maxNumber + 1;
+            }
+            
+            const prefix = getClassIndexPrefix(classId);
+            
+            // Assign indices to students in this class
+            for (const student of classStudents) {
+                try {
+                    const studentIndex = `${prefix}-${String(nextNumber).padStart(3, '0')}`;
+                    
+                    const { error: updateError } = await supabase
+                        .from('users')
+                        .update({ student_index: studentIndex })
+                        .eq('id', student.id);
+                    
+                    if (updateError) {
+                        console.error(`Error assigning index to ${student.name}:`, updateError);
+                        errors++;
+                    } else {
+                        assigned++;
+                    }
+                    
+                    nextNumber++;
+                } catch (err) {
+                    console.error(`Error assigning index to ${student.name}:`, err);
+                    errors++;
+                }
+            }
+        }
+        
+        if (assigned > 0) {
+            showSuccess(`✅ Successfully assigned ${assigned} student index${assigned !== 1 ? 'ices' : ''}${errors > 0 ? `\n\n⚠️ ${errors} error(s) occurred.` : ''}`, 'Success');
+            loadAllUsers();
+        } else {
+            showError('No indices were assigned. Please check for errors.', 'Error');
+        }
+        
+    } catch (error) {
+        console.error('Error assigning student indices:', error);
+        showError('Failed to assign student indices. Please try again.', 'Error');
+    }
+}
+
 // Display users in table, grouped by role
 function displayUsers(users) {
     const container = document.getElementById('usersContainer');
@@ -2254,9 +2455,11 @@ function displayUsers(users) {
             const registeredDate = user.created_at ? new Date(user.created_at).toLocaleDateString() : '-';
             const nameDisplay = user.name || user.username || 'Unknown';
             // Subjects are now shown in the "View All Registered Subjects" modal - removed from here for cleaner display
+            const studentIndex = user.student_index || (user.role === 'student' ? '<span style="color: #999; font-style: italic;">Not assigned</span>' : '-');
             
             html += `
                 <tr>
+                    <td>${user.role === 'student' ? escapeHtml(studentIndex) : '-'}</td>
                     <td>${escapeHtml(nameDisplay)}</td>
                     <td>${escapeHtml(user.username || 'N/A')}</td>
                     <td>${escapeHtml(user.email || 'N/A')}</td>
@@ -2912,7 +3115,7 @@ async function exportFinalGrades(classFilter) {
         .from('exam_grades')
         .select(`
             *,
-            student:users!exam_grades_student_id_fkey(id, name, username, class),
+                student:users!exam_grades_student_id_fkey(id, name, username, class, student_index),
             exam:exams!exam_grades_exam_id_fkey(id, subject, class_id, exam_type)
         `);
     
@@ -2974,7 +3177,7 @@ async function exportAllResults(classFilter) {
         .from('exam_grades')
         .select(`
             *,
-            student:users!exam_grades_student_id_fkey(id, name, username, class),
+                student:users!exam_grades_student_id_fkey(id, name, username, class, student_index),
             exam:exams!exam_grades_exam_id_fkey(id, title, subject, class_id, exam_type, total_marks)
         `);
     

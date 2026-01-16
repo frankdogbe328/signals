@@ -304,6 +304,50 @@ async function createUserInSupabase(userData) {
     }
     
     try {
+        // Generate student index for students
+        let studentIndex = null;
+        if (role === 'student' && userData.class) {
+            // Generate unique student index for this class
+            // Check if function exists in global scope or admin-portal.js
+            if (typeof window.generateNextStudentIndex === 'function') {
+                studentIndex = await window.generateNextStudentIndex(userData.class);
+            } else if (typeof generateNextStudentIndex === 'function') {
+                studentIndex = await generateNextStudentIndex(userData.class);
+            } else {
+                // Fallback: generate simple index based on class prefix
+                const prefixMap = {
+                    'signals-basic': 'SB',
+                    'signals-b-iii-b-ii': 'SB3B2',
+                    'signals-b-ii-b-i': 'SB2B1',
+                    'superintendent': 'SUP',
+                    'pre-qualifying': 'PQ',
+                    'regimental-basic': 'RB',
+                    'regimental-b-iii-b-ii': 'RB3B2',
+                    'regimental-b-ii-b-i': 'RB2B1',
+                    'rso-rsi': 'RSO',
+                    'electronic-warfare-course': 'EW',
+                    'tactical-drone-course': 'TD'
+                };
+                const prefix = prefixMap[userData.class] || 'STU';
+                
+                // Get count of students in this class to generate next number
+                try {
+                    const { data: existingStudents } = await client
+                        .from('users')
+                        .select('id')
+                        .eq('role', 'student')
+                        .eq('class', userData.class);
+                    
+                    const nextNumber = (existingStudents?.length || 0) + 1;
+                    studentIndex = `${prefix}-${String(nextNumber).padStart(3, '0')}`;
+                } catch (err) {
+                    // Final fallback: use timestamp
+                    const timestamp = Date.now().toString().slice(-6);
+                    studentIndex = `${prefix}-${timestamp}`;
+                }
+            }
+        }
+        
         const insertData = {
             username: userData.username.trim(),
             password: hashedPassword, // Store hashed password
@@ -314,7 +358,8 @@ async function createUserInSupabase(userData) {
             email: userData.email ? (SecurityUtils && SecurityUtils.validateEmail ? 
                 (SecurityUtils.validateEmail(userData.email) ? userData.email.trim().toLowerCase() : null) : 
                 userData.email.trim().toLowerCase()) : null,
-            phone: userData.phone || null // Phone number (required for students)
+            phone: userData.phone || null, // Phone number (required for students)
+            student_index: studentIndex // Unique student index per class
         };
         
         console.log('Inserting user data:', { ...insertData, password: '[HIDDEN]' });
