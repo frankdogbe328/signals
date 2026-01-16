@@ -35,7 +35,23 @@ BEGIN
     END LOOP;
 END $$;
 
--- Step 5: Ensure required columns exist (phone_number, student_index)
+-- Step 5: Ensure role constraint allows 'admin' role
+DO $$ 
+BEGIN
+    -- Drop existing role constraints
+    ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check CASCADE;
+    ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check1 CASCADE;
+    ALTER TABLE users DROP CONSTRAINT IF EXISTS users_check_role CASCADE;
+    
+    -- Add constraint that allows admin role
+    ALTER TABLE users 
+    ADD CONSTRAINT users_role_check 
+    CHECK (role IN ('lecturer', 'student', 'admin'));
+    
+    RAISE NOTICE 'Role constraint updated to allow admin role';
+END $$;
+
+-- Step 6: Ensure required columns exist (phone_number, student_index)
 -- Add phone_number column if it doesn't exist
 DO $$ 
 BEGIN
@@ -66,7 +82,7 @@ BEGIN
     END IF;
 END $$;
 
--- Step 6: Verification queries (run these to verify)
+-- Step 7: Verification queries (run these to verify)
 SELECT 'Users remaining:' as info, COUNT(*) as count FROM users;
 SELECT 'Exams remaining:' as info, COUNT(*) as count FROM exams;
 SELECT 'Questions remaining:' as info, COUNT(*) as count FROM questions;

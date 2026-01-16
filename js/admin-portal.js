@@ -1450,9 +1450,123 @@ async function getOrCreateManualExam(classId, examType, subject) {
     if (!supabase) return null;
     
     // Get admin user ID (for lecturer_id requirement)
-    const currentUser = getCurrentUser();
+    let currentUser = getCurrentUser();
     if (!currentUser || currentUser.role !== 'admin') {
         console.error('Error: Admin user not found when creating manual exam');
+        return null;
+    }
+    
+    // Verify admin user exists in database (in case database was cleared)
+    let adminUserId = null;
+    
+    // First, check if current user's ID exists in database
+    if (currentUser.id) {
+        const { data: dbUser, error: userError } = await supabase
+            .from('users')
+            .select('id, role')
+            .eq('id', currentUser.id)
+            .maybeSingle();
+        
+        if (!userError && dbUser && dbUser.role === 'admin') {
+            adminUserId = dbUser.id;
+            console.log('Using current admin user from database:', adminUserId);
+        }
+    }
+    
+    // If current user doesn't exist in DB, find any admin user
+    if (!adminUserId) {
+        console.warn('Current admin user not found in database, searching for any admin user...');
+        const { data: anyAdmin, error: adminError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('role', 'admin')
+            .limit(1)
+            .maybeSingle();
+        
+        if (!adminError && anyAdmin) {
+            adminUserId = anyAdmin.id;
+            console.log('Using existing admin user from database:', adminUserId);
+        } else {
+            // No admin user found - create one automatically
+            console.warn('No admin user found in database. Creating system admin user...');
+            try {
+                // Create a system admin user for manual exam creation
+                const systemAdminData = {
+                    username: 'system_admin',
+                    password: 'system_admin_temp_' + Date.now(), // Temporary password
+                    role: 'admin',
+                    name: 'System Administrator',
+                    email: 'admin@system.local'
+                };
+                
+                // Hash password if SecurityUtils is available
+                let hashedPassword = systemAdminData.password;
+                if (typeof SecurityUtils !== 'undefined' && SecurityUtils.hashPassword) {
+                    try {
+                        hashedPassword = await SecurityUtils.hashPassword(systemAdminData.password);
+                    } catch (hashError) {
+                        console.warn('Password hashing failed, using plaintext:', hashError);
+                    }
+                }
+                
+                // Try to create admin user, but handle role constraint issues
+                const { data: newAdmin, error: createError } = await supabase
+                    .from('users')
+                    .insert([{
+                        username: systemAdminData.username,
+                        password: hashedPassword,
+                        role: 'admin',
+                        name: systemAdminData.name,
+                        email: systemAdminData.email
+                    }])
+                    .select('id')
+                    .single();
+                
+                if (createError) {
+                    console.error('Failed to create system admin user:', createError);
+                    // If role constraint error, try using lecturer role as fallback
+                    if (createError.code === '23514' || createError.message?.includes('role') || createError.message?.includes('constraint')) {
+                        console.warn('Admin role not allowed, trying with lecturer role...');
+                        // Try to find any lecturer user instead
+                        const { data: anyLecturer, error: lecturerError } = await supabase
+                            .from('users')
+                            .select('id')
+                            .eq('role', 'lecturer')
+                            .limit(1)
+                            .maybeSingle();
+                        
+                        if (!lecturerError && anyLecturer) {
+                            adminUserId = anyLecturer.id;
+                            console.log('Using lecturer user as fallback:', adminUserId);
+                        } else {
+                            showError('No admin user found and role constraint prevents creating one. Please create an admin user manually using the SQL script.', 'Database Error');
+                            return null;
+                        }
+                    } else {
+                        showError('No admin user found in database and failed to create one. Please create an admin user manually before entering scores.', 'Database Error');
+                        return null;
+                    }
+                } else if (newAdmin) {
+                    adminUserId = newAdmin.id;
+                    console.log('Created system admin user:', adminUserId);
+                } else {
+                    showError('No admin user found in database. Please create an admin user before entering scores.', 'Database Error');
+                    return null;
+                }
+                
+                adminUserId = newAdmin.id;
+                console.log('Created system admin user:', adminUserId);
+            } catch (createErr) {
+                console.error('Error creating system admin user:', createErr);
+                showError('No admin user found in database. Please create an admin user before entering scores.', 'Database Error');
+                return null;
+            }
+        }
+    }
+    
+    if (!adminUserId) {
+        console.error('Failed to get or create admin user ID');
+        showError('Unable to verify admin user. Please refresh the page and try again.', 'Database Error');
         return null;
     }
     
@@ -1474,7 +1588,7 @@ async function getOrCreateManualExam(classId, examType, subject) {
     const { data: newExam, error } = await supabase
         .from('exams')
         .insert([{
-            lecturer_id: currentUser.id,
+            lecturer_id: adminUserId, // Use verified admin user ID
             title: `${examTypeDisplay} - ${subject} - ${formatClassName(classId)}`,
             exam_type: examType,
             subject: subject,
@@ -1489,6 +1603,11 @@ async function getOrCreateManualExam(classId, examType, subject) {
     
     if (error) {
         console.error('Error creating manual exam:', error);
+        if (error.code === '23503') {
+            showError('Admin user not found in database. Please log out and log back in, or create an admin user.', 'Database Error');
+        } else {
+            showError(`Failed to create exam record: ${error.message || 'Unknown error'}`, 'Error');
+        }
         return null;
     }
     
@@ -1517,6 +1636,36 @@ async function getOrCreateBFTExam(classId, examType) {
         return null;
     }
     
+    // Verify admin user exists in database (in case database was cleared)
+    let adminUserId = currentUser.id;
+    if (adminUserId) {
+        const { data: dbUser, error: userError } = await supabase
+            .from('users')
+            .select('id')
+            .eq('id', adminUserId)
+            .maybeSingle();
+        
+        if (userError || !dbUser) {
+            console.warn('Admin user not found in database, searching for any admin user...');
+            // Try to find any admin user in the database
+            const { data: anyAdmin, error: adminError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('role', 'admin')
+                .limit(1)
+                .maybeSingle();
+            
+            if (adminError || !anyAdmin) {
+                console.error('No admin user found in database. Please create an admin user first.');
+                showError('No admin user found in database. Please create an admin user before entering scores.', 'Database Error');
+                return null;
+            }
+            
+            adminUserId = anyAdmin.id;
+            console.log('Using existing admin user from database:', adminUserId);
+        }
+    }
+    
     // Check if BFT exam exists
     const { data: existingExam } = await supabase
         .from('exams')
@@ -1534,7 +1683,7 @@ async function getOrCreateBFTExam(classId, examType) {
     const { data: newExam, error } = await supabase
         .from('exams')
         .insert({
-            lecturer_id: currentUser.id, // Required field - use admin's ID
+            lecturer_id: adminUserId, // Use verified admin user ID
             title: `BFT ${examType.split('_')[1]} - ${formatClassName(classId)}`,
             exam_type: examType,
             subject: 'BFT (Battle Fitness Test)',
@@ -1549,6 +1698,11 @@ async function getOrCreateBFTExam(classId, examType) {
     
     if (error) {
         console.error('Error creating BFT exam:', error);
+        if (error.code === '23503') {
+            showError('Admin user not found in database. Please log out and log back in, or create an admin user.', 'Database Error');
+        } else {
+            showError(`Failed to create BFT exam record: ${error.message || 'Unknown error'}`, 'Error');
+        }
         return null;
     }
     
