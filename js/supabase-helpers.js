@@ -391,7 +391,9 @@ async function createUserInSupabase(userData) {
             name: data.name,
             class: data.class,
             courses: data.courses || [],
-            email: data.email || null
+            email: data.email || null,
+            phone_number: data.phone_number || null,
+            student_index: data.student_index || null
         };
     } catch (err) {
         console.error('Error creating user:', err);
