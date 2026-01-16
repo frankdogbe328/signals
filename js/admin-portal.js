@@ -1918,9 +1918,15 @@ async function loadAllUsers() {
         const classFilter = document.getElementById('userClassFilter')?.value || 'all';
         const searchFilter = (document.getElementById('userSearchFilter')?.value || '').toLowerCase().trim();
         
+        // Select fields - phone_number is optional (only if column exists in database)
+        // Start without phone_number to avoid errors, can be added after migration
+        let selectFields = 'id, username, name, email, role, class, courses, created_at, student_index';
+        
+        // Try to include phone_number if the column exists (will be added after migration)
+        // For now, we'll query without it to prevent errors
         let query = supabase
             .from('users')
-            .select('id, username, name, email, role, class, courses, created_at, student_index, phone_number')
+            .select(selectFields)
             .order('created_at', { ascending: false });
         
         if (roleFilter !== 'all') {
