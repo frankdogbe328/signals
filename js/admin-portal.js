@@ -1874,6 +1874,285 @@ async function loadAllUsers() {
     }
 }
 
+// View all registered subjects by students
+async function viewAllRegisteredSubjects() {
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        // Get all students with their registered subjects
+        const { data: students, error } = await supabase
+            .from('users')
+            .select('id, name, username, class, courses')
+            .eq('role', 'student')
+            .order('class', { ascending: true })
+            .order('username', { ascending: true });
+        
+        if (error) {
+            console.error('Error loading students:', error);
+            showError('Failed to load student registrations. Please try again.', 'Error');
+            return;
+        }
+        
+        if (!students || students.length === 0) {
+            showError('No students found in the system.', 'No Data');
+            return;
+        }
+        
+        // Group by subject
+        const subjectGroups = {};
+        const studentSubjectMap = {};
+        
+        students.forEach(student => {
+            const registeredSubjects = student.courses || [];
+            const className = formatClassName(student.class || 'unknown');
+            const studentDisplay = student.name || student.username || 'Unknown';
+            const studentId = student.username || student.id;
+            
+            registeredSubjects.forEach(subject => {
+                if (!subjectGroups[subject]) {
+                    subjectGroups[subject] = [];
+                }
+                
+                subjectGroups[subject].push({
+                    id: student.id,
+                    name: studentDisplay,
+                    username: student.username,
+                    class: className,
+                    classId: student.class
+                });
+                
+                // Also create student-to-subjects map
+                if (!studentSubjectMap[studentId]) {
+                    studentSubjectMap[studentId] = {
+                        name: studentDisplay,
+                        username: student.username,
+                        class: className,
+                        classId: student.class,
+                        subjects: []
+                    };
+                }
+                if (!studentSubjectMap[studentId].subjects.includes(subject)) {
+                    studentSubjectMap[studentId].subjects.push(subject);
+                }
+            });
+        });
+        
+        // Create modal content
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.display = 'flex';
+        modal.id = 'registeredSubjectsModal';
+        
+        // Sort subjects alphabetically
+        const sortedSubjects = Object.keys(subjectGroups).sort();
+        
+        // Create tabs for Subject View and Student View
+        let html = `
+            <div class="modal-content" style="max-width: 90%; max-height: 90vh; overflow-y: auto;">
+                <span class="modal-close" onclick="closeRegisteredSubjectsModal()" style="position: absolute; right: 20px; top: 20px; font-size: 28px; cursor: pointer; z-index: 1001;">&times;</span>
+                <h2 style="margin-bottom: 20px; color: var(--primary-color);">📚 All Registered Subjects</h2>
+                
+                <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px;">
+                    <button id="subjectViewTab" onclick="switchSubjectView('subject')" class="btn btn-primary">View by Subject</button>
+                    <button id="studentViewTab" onclick="switchSubjectView('student')" class="btn btn-secondary">View by Student</button>
+                </div>
+                
+                <div id="subjectViewContent">
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="subjectSearchInput" placeholder="Search subjects..." class="form-control" onkeyup="filterSubjects()" style="max-width: 300px;">
+                    </div>
+                    <div id="subjectsList">
+        `;
+        
+        // Subject View: Group by subject
+        sortedSubjects.forEach(subject => {
+            const studentsInSubject = subjectGroups[subject];
+            html += `
+                <div class="card" style="margin-bottom: 20px; subject-item" data-subject="${escapeHtml(subject)}">
+                    <h4 style="color: var(--primary-color); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-color);">
+                        ${escapeHtml(subject)}
+                        <span style="font-size: 14px; font-weight: normal; color: #666;">(${studentsInSubject.length} student${studentsInSubject.length !== 1 ? 's' : ''})</span>
+                    </h4>
+                    <div class="table-wrapper">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                    <th>Class</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+            `;
+            
+            // Sort students by class, then by name
+            studentsInSubject.sort((a, b) => {
+                if (a.class !== b.class) {
+                    return a.class.localeCompare(b.class);
+                }
+                return a.name.localeCompare(b.name);
+            });
+            
+            studentsInSubject.forEach(student => {
+                html += `
+                    <tr>
+                        <td>${escapeHtml(student.username || 'N/A')}</td>
+                        <td>${escapeHtml(student.name)}</td>
+                        <td>${escapeHtml(student.class)}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                    </div>
+                </div>
+                
+                <div id="studentViewContent" style="display: none;">
+                    <div style="margin-bottom: 15px;">
+                        <input type="text" id="studentSearchInput" placeholder="Search students..." class="form-control" onkeyup="filterStudents()" style="max-width: 300px;">
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="results-table">
+                            <thead>
+                                <tr>
+                                    <th>Student ID</th>
+                                    <th>Name</th>
+                                    <th>Class</th>
+                                    <th>Registered Subjects</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+        `;
+        
+        // Student View: Show all students with their subjects
+        const sortedStudents = Object.values(studentSubjectMap).sort((a, b) => {
+            if (a.class !== b.class) {
+                return a.class.localeCompare(b.class);
+            }
+            return a.name.localeCompare(b.name);
+        });
+        
+        sortedStudents.forEach(student => {
+            const subjectsList = student.subjects.sort().join(', ');
+            html += `
+                <tr class="student-item" data-student="${escapeHtml(student.name.toLowerCase())}">
+                    <td>${escapeHtml(student.username || 'N/A')}</td>
+                    <td>${escapeHtml(student.name)}</td>
+                    <td>${escapeHtml(student.class)}</td>
+                    <td style="max-width: 400px;">
+                        <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                            ${student.subjects.sort().map(subject => 
+                                `<span style="background: #e6f2ff; color: var(--primary-color); padding: 4px 10px; border-radius: 15px; font-size: 12px; font-weight: 600;">${escapeHtml(subject)}</span>`
+                            ).join('')}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; text-align: center;">
+                    <button onclick="closeRegisteredSubjectsModal()" class="btn btn-primary">Close</button>
+                </div>
+            </div>
+        `;
+        
+        modal.innerHTML = html;
+        document.body.appendChild(modal);
+        
+        // Add close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeRegisteredSubjectsModal();
+            }
+        });
+        
+    } catch (error) {
+        console.error('Error loading registered subjects:', error);
+        showError('Failed to load registered subjects. Please try again.', 'Error');
+    }
+}
+
+// Switch between subject and student view
+function switchSubjectView(view) {
+    const subjectView = document.getElementById('subjectViewContent');
+    const studentView = document.getElementById('studentViewContent');
+    const subjectTab = document.getElementById('subjectViewTab');
+    const studentTab = document.getElementById('studentViewTab');
+    
+    if (view === 'subject') {
+        subjectView.style.display = 'block';
+        studentView.style.display = 'none';
+        subjectTab.classList.remove('btn-secondary');
+        subjectTab.classList.add('btn-primary');
+        studentTab.classList.remove('btn-primary');
+        studentTab.classList.add('btn-secondary');
+    } else {
+        subjectView.style.display = 'none';
+        studentView.style.display = 'block';
+        studentTab.classList.remove('btn-secondary');
+        studentTab.classList.add('btn-primary');
+        subjectTab.classList.remove('btn-primary');
+        subjectTab.classList.add('btn-secondary');
+    }
+}
+
+// Filter subjects in subject view
+function filterSubjects() {
+    const searchTerm = document.getElementById('subjectSearchInput').value.toLowerCase();
+    const subjectItems = document.querySelectorAll('#subjectsList .subject-item');
+    
+    subjectItems.forEach(item => {
+        const subject = item.getAttribute('data-subject').toLowerCase();
+        if (subject.includes(searchTerm)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Filter students in student view
+function filterStudents() {
+    const searchTerm = document.getElementById('studentSearchInput').value.toLowerCase();
+    const studentRows = document.querySelectorAll('#studentViewContent .student-item');
+    
+    studentRows.forEach(row => {
+        const studentName = row.getAttribute('data-student');
+        const rowText = row.textContent.toLowerCase();
+        if (studentName.includes(searchTerm) || rowText.includes(searchTerm)) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// Close registered subjects modal
+function closeRegisteredSubjectsModal() {
+    const modal = document.getElementById('registeredSubjectsModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
 // Display users in table, grouped by role
 function displayUsers(users) {
     const container = document.getElementById('usersContainer');
@@ -1974,14 +2253,11 @@ function displayUsers(users) {
             const className = user.class ? formatClassName(user.class) : '-';
             const registeredDate = user.created_at ? new Date(user.created_at).toLocaleDateString() : '-';
             const nameDisplay = user.name || user.username || 'Unknown';
-            const registeredSubjects = user.courses || [];
-            const subjectsDisplay = registeredSubjects.length > 0 
-                ? `<div style="font-size: 11px; color: #17a2b8; margin-top: 4px;"><strong>Subjects:</strong> ${registeredSubjects.map(s => escapeHtml(s)).join(', ')}</div>`
-                : (user.role === 'student' ? '<div style="font-size: 11px; color: #999; margin-top: 4px; font-style: italic;">No subjects registered</div>' : '');
+            // Subjects are now shown in the "View All Registered Subjects" modal - removed from here for cleaner display
             
             html += `
                 <tr>
-                    <td>${escapeHtml(nameDisplay)}${subjectsDisplay}</td>
+                    <td>${escapeHtml(nameDisplay)}</td>
                     <td>${escapeHtml(user.username || 'N/A')}</td>
                     <td>${escapeHtml(user.email || 'N/A')}</td>
                     <td>${config.badge}</td>
