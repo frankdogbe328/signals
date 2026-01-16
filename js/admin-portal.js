@@ -1920,7 +1920,7 @@ async function loadAllUsers() {
         
         let query = supabase
             .from('users')
-            .select('id, username, name, email, role, class, courses, created_at, student_index, phone')
+            .select('id, username, name, email, role, class, courses, created_at, student_index, phone_number')
             .order('created_at', { ascending: false });
         
         if (roleFilter !== 'all') {

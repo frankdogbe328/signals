@@ -358,7 +358,7 @@ async function createUserInSupabase(userData) {
             email: userData.email ? (SecurityUtils && SecurityUtils.validateEmail ? 
                 (SecurityUtils.validateEmail(userData.email) ? userData.email.trim().toLowerCase() : null) : 
                 userData.email.trim().toLowerCase()) : null,
-            phone: userData.phone || null, // Phone number (required for students)
+            phone_number: userData.phone || null, // Phone number (required for students)
             student_index: studentIndex // Unique student index per class
         };
         
