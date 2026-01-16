@@ -1972,7 +1972,7 @@ async function viewAllRegisteredSubjects() {
         sortedSubjects.forEach(subject => {
             const studentsInSubject = subjectGroups[subject];
             html += `
-                <div class="card" style="margin-bottom: 20px; subject-item" data-subject="${escapeHtml(subject)}">
+                <div class="card subject-item" style="margin-bottom: 20px;" data-subject="${escapeHtml(subject)}">
                     <h4 style="color: var(--primary-color); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-color);">
                         ${escapeHtml(subject)}
                         <span style="font-size: 14px; font-weight: normal; color: #666;">(${studentsInSubject.length} student${studentsInSubject.length !== 1 ? 's' : ''})</span>
