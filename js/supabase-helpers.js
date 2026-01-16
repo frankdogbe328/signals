@@ -313,7 +313,8 @@ async function createUserInSupabase(userData) {
             courses: userData.courses || [],
             email: userData.email ? (SecurityUtils && SecurityUtils.validateEmail ? 
                 (SecurityUtils.validateEmail(userData.email) ? userData.email.trim().toLowerCase() : null) : 
-                userData.email.trim().toLowerCase()) : null
+                userData.email.trim().toLowerCase()) : null,
+            phone: userData.phone || null // Phone number (required for students)
         };
         
         console.log('Inserting user data:', { ...insertData, password: '[HIDDEN]' });

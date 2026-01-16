@@ -331,7 +331,7 @@ async function handleCreateExam(e) {
         passing_score: passingScore,
         start_date: startDate,
         end_date: endDate,
-        is_active: true,
+        is_active: false, // Exams are inactive by default - lecturer must activate
         results_released: false
     };
     
@@ -446,9 +446,8 @@ function displayExams(exams) {
                 </div>
                 <div class="exam-card-actions">
                     <button onclick="viewExamDetails('${exam.id}')" class="btn btn-primary">Manage</button>
-                    <button onclick="toggleExamStatus('${exam.id}', ${exam.is_active})" class="btn btn-secondary">
-                        ${exam.is_active ? 'Deactivate' : 'Activate'}
-                    </button>
+                    ${!exam.is_active ? `<button onclick="activateExam('${exam.id}')" class="btn btn-success">Activate Exam</button>` : ''}
+                    ${exam.is_active ? `<button onclick="resetExamTime('${exam.id}')" class="btn btn-warning">Reset Time/Date</button>` : ''}
                     ${!exam.results_released ? `<button onclick="releaseResults('${exam.id}')" class="btn btn-success">Release Results</button>` : ''}
                     <button onclick="viewExamStats('${exam.id}')" class="btn btn-secondary">View Stats</button>
                     <button onclick="deleteExam('${exam.id}', '${escapeHtml(exam.title || '').replace(/'/g, "\\'")}')" class="btn btn-danger" style="font-size: 12px; padding: 6px 12px;" title="Delete Exam">🗑️ Delete</button>
@@ -1147,8 +1146,12 @@ async function saveQuestion(examId, questionData) {
     }
 }
 
-// Toggle exam status (activate/deactivate)
-async function toggleExamStatus(examId, currentStatus) {
+// Activate exam (one-way - cannot deactivate once activated)
+async function activateExam(examId) {
+    if (!confirm('Are you sure you want to activate this exam? Once activated, students will be able to take it. You cannot deactivate it, but you can reset the time/date range.')) {
+        return;
+    }
+    
     try {
         const client = getSupabaseClient();
         if (!client) {
@@ -1158,37 +1161,120 @@ async function toggleExamStatus(examId, currentStatus) {
         // Get current user for authorization check
         const currentUser = getCurrentUser();
         if (!currentUser || currentUser.role !== 'lecturer') {
-            showError('You must be logged in as a lecturer to change exam status.', 'Authorization Required');
+            showError('You must be logged in as a lecturer to activate exams.', 'Authorization Required');
             return;
         }
         
         // Verify exam belongs to current lecturer
         const { data: exam, error: examError } = await client
             .from('exams')
-            .select('lecturer_id')
+            .select('lecturer_id, title')
             .eq('id', examId)
             .single();
         
         if (examError) throw examError;
         if (!exam || exam.lecturer_id !== currentUser.id) {
-            showError('You do not have permission to modify this exam.', 'Access Denied');
+            showError('You do not have permission to activate this exam.', 'Access Denied');
             return;
         }
         
         const { error } = await client
             .from('exams')
-            .update({ is_active: !currentStatus })
+            .update({ is_active: true })
             .eq('id', examId);
         
         if (error) throw error;
         
-        showSuccess(`Exam ${!currentStatus ? 'activated' : 'deactivated'} successfully!`, 'Success');
+        showSuccess(`Exam "${exam.title}" activated successfully! Students can now take this exam.`, 'Success');
         loadExams();
         
     } catch (error) {
-        console.error('Error updating exam status:', error);
-        showError('Failed to update exam status. Please try again.', 'Error Updating Status');
+        console.error('Error activating exam:', error);
+        showError('Failed to activate exam. Please try again.', 'Error Activating Exam');
     }
+}
+
+// Reset exam time/date range (for activated exams)
+async function resetExamTime(examId) {
+    const newStartDate = prompt('Enter new start date and time (YYYY-MM-DD HH:MM):\n\nExample: 2026-01-15 09:00');
+    if (!newStartDate) return;
+    
+    const newEndDate = prompt('Enter new end date and time (YYYY-MM-DD HH:MM):\n\nExample: 2026-01-15 11:00');
+    if (!newEndDate) return;
+    
+    try {
+        const startDate = new Date(newStartDate);
+        const endDate = new Date(newEndDate);
+        
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            showError('Invalid date format. Please use YYYY-MM-DD HH:MM format.', 'Invalid Date');
+            return;
+        }
+        
+        if (endDate <= startDate) {
+            showError('End date must be after start date.', 'Invalid Date Range');
+            return;
+        }
+        
+        const client = getSupabaseClient();
+        if (!client) {
+            throw new Error('Supabase client not available');
+        }
+        
+        // Get current user for authorization check
+        const currentUser = getCurrentUser();
+        if (!currentUser || currentUser.role !== 'lecturer') {
+            showError('You must be logged in as a lecturer to reset exam time.', 'Authorization Required');
+            return;
+        }
+        
+        // Verify exam belongs to current lecturer and is activated
+        const { data: exam, error: examError } = await client
+            .from('exams')
+            .select('lecturer_id, title, is_active')
+            .eq('id', examId)
+            .single();
+        
+        if (examError) throw examError;
+        if (!exam || exam.lecturer_id !== currentUser.id) {
+            showError('You do not have permission to reset this exam time.', 'Access Denied');
+            return;
+        }
+        
+        if (!exam.is_active) {
+            showError('Exam must be activated before resetting time. Please activate the exam first.', 'Exam Not Activated');
+            return;
+        }
+        
+        const { error } = await client
+            .from('exams')
+            .update({ 
+                start_date: startDate.toISOString(),
+                end_date: endDate.toISOString()
+            })
+            .eq('id', examId);
+        
+        if (error) throw error;
+        
+        showSuccess(`Exam time/date range updated successfully!\n\nStart: ${startDate.toLocaleString()}\nEnd: ${endDate.toLocaleString()}`, 'Success');
+        loadExams();
+        
+    } catch (error) {
+        console.error('Error resetting exam time:', error);
+        showError('Failed to reset exam time. Please try again.', 'Error Resetting Time');
+    }
+}
+
+// Toggle exam status (legacy function - kept for compatibility)
+async function toggleExamStatus(examId, currentStatus) {
+    // If trying to deactivate an active exam, show message that it's not allowed
+    if (currentStatus) {
+        showError('Once an exam is activated, it cannot be deactivated. You can reset the time/date range instead.', 'Cannot Deactivate');
+        return;
+    }
+    
+    // If inactive, activate it
+    await activateExam(examId);
 }
 
 // Delete exam (with confirmation)

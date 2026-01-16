@@ -1895,6 +1895,11 @@ function formatClassName(classId) {
 
 // Go back to exams list
 function goBackToExams() {
+    // Reset back button attempts counter
+    if (typeof window.resetBackButtonAttempts === 'function') {
+        window.resetBackButtonAttempts();
+    }
+    
     // Disable exam security when leaving exam view
     if (typeof disableExamSecurity === 'function') {
         disableExamSecurity();

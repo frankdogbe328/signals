@@ -139,11 +139,32 @@ async function handleRegistration(e) {
     errorMessage.classList.remove('show');
     errorMessage.textContent = '';
     
+    // Get phone number (required for students only)
+    const phoneInput = document.getElementById('regPhone');
+    const phone = phoneInput ? phoneInput.value.trim() : '';
+    
     // Validate inputs based on role
     if (!name || !username || !email || !password || !confirmPassword) {
         errorMessage.textContent = 'Please fill in all required fields';
         errorMessage.classList.add('show');
         return;
+    }
+    
+    // Validate phone number for students (required)
+    if (role === 'student') {
+        if (!phone) {
+            errorMessage.textContent = 'Phone number is required for students';
+            errorMessage.classList.add('show');
+            return;
+        }
+        
+        // Validate Ghana phone format: +233XXXXXXXXX (13 characters total)
+        const phoneRegex = /^\+233[0-9]{9}$/;
+        if (!phoneRegex.test(phone)) {
+            errorMessage.textContent = 'Phone number must be in Ghana format: +233XXXXXXXXX (e.g., +233241234567)';
+            errorMessage.classList.add('show');
+            return;
+        }
     }
     
     // Validate name length
@@ -260,6 +281,7 @@ async function handleRegistration(e) {
             role: 'student',
             name: name,
             email: email,
+            phone: phone, // Phone number (required for students)
             class: classSelect,
             courses: course ? [course] : [] // Store as array for multiple courses (can be empty)
         };

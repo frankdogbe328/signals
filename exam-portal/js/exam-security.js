@@ -747,16 +747,53 @@ function handleVisibilityChange() {
 function preventNavigation() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     
-    // Prevent back button
+    // Enhanced back button prevention with warning and auto-submit
+    let backButtonAttempts = 0;
     window.addEventListener('popstate', function(e) {
         if (securityEnabled) {
-            window.history.pushState(null, null, window.location.href);
-            showWarning('Navigating back is not allowed during the exam.');
+            backButtonAttempts++;
+            
+            if (backButtonAttempts === 1) {
+                // First attempt: Show warning
+                e.preventDefault();
+                window.history.pushState(null, null, window.location.href);
+                
+                if (typeof showError === 'function') {
+                    showError('⚠️ WARNING: Going back will auto-submit your exam!\n\nIf you go back again, your exam will be automatically submitted with your current answers.\n\nStay on this page to continue your exam.', 'Back Button Warning');
+                } else {
+                    alert('⚠️ WARNING: Going back will auto-submit your exam!\n\nIf you go back again, your exam will be automatically submitted with your current answers.');
+                }
+            } else if (backButtonAttempts >= 2) {
+                // Second attempt: Auto-submit exam
+                e.preventDefault();
+                window.history.pushState(null, null, window.location.href);
+                
+                if (typeof showError === 'function') {
+                    showError('Exam auto-submitted due to back button usage. Your answers have been saved.', 'Exam Auto-Submitted');
+                }
+                
+                // Auto-submit the exam
+                if (typeof finalizeExam === 'function') {
+                    finalizeExam('auto_submitted');
+                } else if (typeof submitExam === 'function') {
+                    submitExam();
+                }
+                
+                // Reset counter
+                backButtonAttempts = 0;
+            }
         }
     });
     
     // Push state to prevent back navigation
     window.history.pushState(null, null, window.location.href);
+    
+    // Reset back button attempts counter when exam ends
+    if (typeof window !== 'undefined') {
+        window.resetBackButtonAttempts = function() {
+            backButtonAttempts = 0;
+        };
+    }
 }
 
 function handleBeforeUnload(e) {

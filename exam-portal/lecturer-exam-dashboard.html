@@ -376,7 +376,15 @@
                     
                     <div class="form-group">
                         <label for="examDescription">Description</label>
-                        <textarea id="examDescription" rows="3" placeholder="Brief description of the exam"></textarea>
+                        <select id="examDescription" class="form-control">
+                            <option value="">Select Description Type (Optional)</option>
+                            <option value="Opening Exam">Opening Exam</option>
+                            <option value="BFT">BFT</option>
+                            <option value="Mid Course Exercise">Mid Course Exercise</option>
+                            <option value="General Assessment">General Assessment</option>
+                            <option value="Final Exercise">Final Exercise</option>
+                        </select>
+                        <small style="color: #666; display: block; margin-top: 5px;">Select a description type or leave blank for custom description</small>
                     </div>
                     
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">

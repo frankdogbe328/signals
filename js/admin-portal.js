@@ -238,18 +238,27 @@ function displayResultsGroupedByClass(results) {
     const container = document.getElementById('resultsContainer');
     if (!container) return;
     
-    // Check if there are unreleased results
-    const hasUnreleased = results.some(r => !r.exam?.results_released);
-    const releaseAllBtn = document.getElementById('releaseAllBtn');
-    if (releaseAllBtn) {
-        releaseAllBtn.style.display = hasUnreleased ? 'block' : 'none';
+    // Check if there are unreleased mid results (BFT1, Mid Exams, Mid Exercise)
+    const hasUnreleasedMid = results.some(r => {
+        const examType = r.exam?.exam_type;
+        return !r.exam?.results_released && 
+               (examType === 'bft_1' || examType === 'mid_cs_exam' || examType === 'mid_course_exercise');
+    });
+    const releaseMidBtn = document.getElementById('releaseMidBtn');
+    if (releaseMidBtn) {
+        releaseMidBtn.style.display = hasUnreleasedMid ? 'block' : 'none';
     }
     
-    // Check if there are unreleased semester results
-    const hasUnreleasedSemester = results.some(r => !r.exam?.semester_results_released);
-    const releaseSemesterBtn = document.getElementById('releaseSemesterBtn');
-    if (releaseSemesterBtn) {
-        releaseSemesterBtn.style.display = hasUnreleasedSemester ? 'block' : 'none';
+    // Check if there are unreleased final results (Opening, BFT2, Final Exams, Final Exercise, Quizzes)
+    const hasUnreleasedFinal = results.some(r => {
+        const examType = r.exam?.exam_type;
+        return !r.exam?.results_released && 
+               (examType === 'opening_exam' || examType === 'bft_2' || examType === 'final_exam' || 
+                examType === 'final_cse_exercise' || examType === 'quiz' || examType === 'gen_assessment');
+    });
+    const releaseFinalBtn = document.getElementById('releaseFinalBtn');
+    if (releaseFinalBtn) {
+        releaseFinalBtn.style.display = hasUnreleasedFinal ? 'block' : 'none';
     }
     
     // Get filter values
@@ -510,8 +519,11 @@ async function releaseExamResults(examId) {
         }
         
         showSuccess('Results released successfully! Students can now view their scores.', 'Success');
-        loadResults();
-        loadStatistics();
+        // Force refresh results display
+        setTimeout(() => {
+            loadResults();
+            loadStatistics();
+        }, 500);
         
     } catch (error) {
         console.error('Error releasing results:', error);
@@ -519,9 +531,9 @@ async function releaseExamResults(examId) {
     }
 }
 
-// Release all final results (individual exam results - lecturers control this)
-async function releaseAllResults() {
-    if (!confirm('⚠️ WARNING: This will release ALL pending individual exam results to students. Lecturers can also release their own exam results. Are you sure you want to proceed?')) {
+// Release Mid Results (BFT1, Mid Exams, Mid Exercise)
+async function releaseMidResults() {
+    if (!confirm('⚠️ RELEASE MID RESULTS\n\nThis will release results for:\n- BFT 1\n- Mid CS Exams\n- Mid Course Exercise\n\nStudents will be able to view their scores for these exams.\n\nAre you sure you want to proceed?')) {
         return;
     }
     
@@ -532,24 +544,68 @@ async function releaseAllResults() {
             return;
         }
         
+        // Release mid exam types: bft_1, mid_cs_exam, mid_course_exercise
         const { error } = await supabase
             .from('exams')
             .update({ results_released: true })
+            .in('exam_type', ['bft_1', 'mid_cs_exam', 'mid_course_exercise'])
             .eq('results_released', false);
         
         if (error) {
-            console.error('Error releasing all results:', error);
-            showError('Failed to release results. Please try again.', 'Error');
+            console.error('Error releasing mid results:', error);
+            showError('Failed to release mid results. Please try again.', 'Error');
             return;
         }
         
-        showSuccess('All individual exam results released successfully! Students can now view their scores.', 'Success');
-        loadResults();
-        loadStatistics();
+        showSuccess('✅ Mid results released successfully!\n\nStudents can now view their BFT1, Mid Exams, and Mid Exercise scores.', 'Success');
+        // Force refresh results display
+        setTimeout(() => {
+            loadResults();
+            loadStatistics();
+        }, 500);
         
     } catch (error) {
-        console.error('Error releasing all results:', error);
-        showError('Failed to release results. Please try again.', 'Error');
+        console.error('Error releasing mid results:', error);
+        showError('Failed to release mid results. Please try again.', 'Error');
+    }
+}
+
+// Release Final Results (Opening exams, BFT2, Final exams, Final exercise, Quizzes)
+async function releaseFinalResults() {
+    if (!confirm('⚠️ RELEASE FINAL RESULTS\n\nThis will release results for:\n- Opening Exams\n- BFT 2\n- Final Exams\n- Final CSE Exercise\n- Quizzes\n- General Assessment\n\nStudents will be able to view their scores for these exams.\n\nAre you sure you want to proceed?')) {
+        return;
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error. Please try again.', 'Error');
+            return;
+        }
+        
+        // Release final exam types: opening_exam, bft_2, final_exam, final_cse_exercise, quiz, gen_assessment
+        const { error } = await supabase
+            .from('exams')
+            .update({ results_released: true })
+            .in('exam_type', ['opening_exam', 'bft_2', 'final_exam', 'final_cse_exercise', 'quiz', 'gen_assessment'])
+            .eq('results_released', false);
+        
+        if (error) {
+            console.error('Error releasing final results:', error);
+            showError('Failed to release final results. Please try again.', 'Error');
+            return;
+        }
+        
+        showSuccess('✅ Final results released successfully!\n\nStudents can now view their Opening Exams, BFT2, Final Exams, Final Exercise, Quizzes, and General Assessment scores.', 'Success');
+        // Force refresh results display
+        setTimeout(() => {
+            loadResults();
+            loadStatistics();
+        }, 500);
+        
+    } catch (error) {
+        console.error('Error releasing final results:', error);
+        showError('Failed to release final results. Please try again.', 'Error');
     }
 }
 
@@ -882,10 +938,168 @@ function formatExamType(examType) {
     return types[examType] || examType;
 }
 
-// Load students for BFT score entry
+// Load students for manual score entry (unified function for all types)
+async function loadManualScoreStudents() {
+    const classId = document.getElementById('manualScoreClass')?.value;
+    const scoreType = document.getElementById('manualScoreType')?.value;
+    const subject = document.getElementById('manualScoreSubject')?.value;
+    const container = document.getElementById('manualScoreEntryContainer');
+    
+    if (!container) {
+        // Fallback to old BFT container for backward compatibility
+        return loadBFTStudents();
+    }
+    
+    if (!classId || !scoreType || !subject) {
+        container.innerHTML = '<p class="empty-state">Select class, score type, and subject to enter manual scores</p>';
+        return;
+    }
+    
+    // Populate subjects dropdown based on class
+    await populateSubjectsForClass(classId, 'manualScoreSubject');
+    
+    // If subject not selected yet, wait
+    if (!subject) {
+        container.innerHTML = '<p class="empty-state">Please select a subject</p>';
+        return;
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            container.innerHTML = '<p class="empty-state" style="color: red;">Database connection error</p>';
+            return;
+        }
+        
+        // Get all students in the class
+        const { data: students, error: studentsError } = await supabase
+            .from('users')
+            .select('id, name, username, class')
+            .eq('role', 'student')
+            .eq('class', classId)
+            .order('username', { ascending: true });
+        
+        if (studentsError) throw studentsError;
+        
+        if (!students || students.length === 0) {
+            container.innerHTML = '<p class="empty-state">No students found in this class</p>';
+            return;
+        }
+        
+        // Determine exam type and percentage
+        const examType = scoreType;
+        const examTypePercentage = getExamTypePercentage(examType);
+        const examTypeDisplay = formatExamType(examType);
+        
+        // Get or create exam record for this score type and subject
+        const examId = await getOrCreateManualExam(classId, examType, subject);
+        
+        if (!examId) {
+            container.innerHTML = '<p class="empty-state" style="color: red;">Error creating exam record</p>';
+            return;
+        }
+        
+        // Get existing scores
+        const { data: existingGrades } = await supabase
+            .from('exam_grades')
+            .select('*')
+            .eq('exam_id', examId);
+        
+        const existingScores = {};
+        (existingGrades || []).forEach(grade => {
+            existingScores[grade.student_id] = grade;
+        });
+        
+        // Build table
+        let html = `
+            <div class="table-wrapper">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>${examTypeDisplay} Score (0-100)</th>
+                            <th>Percentage</th>
+                            <th>Scaled Score (${examTypePercentage}%)</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+        
+        students.forEach(student => {
+            const existing = existingScores[student.id];
+            html += `
+                <tr>
+                    <td>${escapeHtml(student.username || 'N/A')}</td>
+                    <td>${escapeHtml(student.name || student.username || 'Unknown')}</td>
+                    <td>
+                        <input type="number" 
+                               id="manual_score_${student.id}" 
+                               class="form-control" 
+                               min="0" 
+                               max="100" 
+                               step="0.1"
+                               value="${existing ? existing.score : ''}" 
+                               placeholder="0-100">
+                    </td>
+                    <td id="manual_percentage_${student.id}">
+                        ${existing ? existing.percentage.toFixed(1) + '%' : '-'}
+                    </td>
+                    <td id="manual_scaled_${student.id}">
+                        ${existing ? (existing.percentage * examTypePercentage / 100).toFixed(2) + '%' : '-'}
+                    </td>
+                    <td>
+                        <button onclick="saveManualScore('${student.id}', '${escapeHtml(student.name || student.username)}', '${examType}', '${subject}')" 
+                                class="btn btn-primary" 
+                                style="padding: 6px 12px; font-size: 12px;">
+                            Save
+                        </button>
+                    </td>
+                </tr>
+            `;
+            
+            // Add input listener for real-time calculation
+            setTimeout(() => {
+                const scoreInput = document.getElementById(`manual_score_${student.id}`);
+                if (scoreInput) {
+                    scoreInput.addEventListener('input', function() {
+                        const score = parseFloat(this.value) || 0;
+                        const percentage = score; // Score is already a percentage (0-100)
+                        const scaled = percentage * examTypePercentage / 100;
+                        
+                        document.getElementById(`manual_percentage_${student.id}`).textContent = 
+                            score > 0 ? percentage.toFixed(1) + '%' : '-';
+                        document.getElementById(`manual_scaled_${student.id}`).textContent = 
+                            score > 0 ? scaled.toFixed(2) + '%' : '-';
+                    });
+                }
+            }, 100);
+        });
+        
+        html += `
+                    </tbody>
+                </table>
+            </div>
+            <div style="margin-top: 15px;">
+                <button onclick="saveAllManualScores('${examType}', '${subject}')" class="btn btn-success">
+                    Save All Scores
+                </button>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+        
+    } catch (error) {
+        console.error('Error loading manual score students:', error);
+        container.innerHTML = '<p class="empty-state" style="color: red;">Error loading students</p>';
+    }
+}
+
+// Load students for BFT score entry (legacy function - kept for backward compatibility)
 async function loadBFTStudents() {
-    const classId = document.getElementById('bftClass').value;
-    const bftNumber = document.getElementById('bftNumber').value;
+    const classId = document.getElementById('bftClass')?.value;
+    const bftNumber = document.getElementById('bftNumber')?.value;
     const container = document.getElementById('bftEntryContainer');
     
     if (!classId) {
@@ -1021,7 +1235,58 @@ async function loadBFTStudents() {
     }
 }
 
-// Get or create BFT exam record
+// Get or create manual exam record (for BFT, Opening Exam, Mid Exercise, Final Exercise, Quiz)
+async function getOrCreateManualExam(classId, examType, subject) {
+    const supabase = getSupabaseClient();
+    if (!supabase) return null;
+    
+    // Get admin user ID (for lecturer_id requirement)
+    const currentUser = getCurrentUser();
+    if (!currentUser || currentUser.role !== 'admin') {
+        console.error('Error: Admin user not found when creating manual exam');
+        return null;
+    }
+    
+    // Check if exam exists
+    const { data: existingExam } = await supabase
+        .from('exams')
+        .select('id')
+        .eq('exam_type', examType)
+        .eq('class_id', classId)
+        .eq('subject', subject)
+        .maybeSingle();
+    
+    if (existingExam) {
+        return existingExam.id;
+    }
+    
+    // Create exam if it doesn't exist
+    const examTypeDisplay = formatExamType(examType);
+    const { data: newExam, error } = await supabase
+        .from('exams')
+        .insert([{
+            lecturer_id: currentUser.id,
+            title: `${examTypeDisplay} - ${subject} - ${formatClassName(classId)}`,
+            exam_type: examType,
+            subject: subject,
+            class_id: classId,
+            total_marks: 100,
+            duration_minutes: 0, // Manual entry, no duration
+            is_active: true,
+            results_released: false
+        }])
+        .select('id')
+        .single();
+    
+    if (error) {
+        console.error('Error creating manual exam:', error);
+        return null;
+    }
+    
+    return newExam.id;
+}
+
+// Get or create BFT exam record (legacy function - kept for backward compatibility)
 async function getOrCreateBFTExam(classId, examType) {
     const supabase = getSupabaseClient();
     if (!supabase) return null;
@@ -1180,7 +1445,214 @@ async function saveBFTScore(studentId, studentName, bftNumber) {
     }
 }
 
-// Save all BFT scores at once
+// Save individual manual score
+async function saveManualScore(studentId, studentName, examType, subject) {
+    const classId = document.getElementById('manualScoreClass').value;
+    const scoreInput = document.getElementById(`manual_score_${studentId}`);
+    const score = parseFloat(scoreInput.value);
+    
+    if (!scoreInput || isNaN(score) || score < 0 || score > 100) {
+        showError('Please enter a valid score between 0 and 100', 'Invalid Score');
+        return;
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        const examId = await getOrCreateManualExam(classId, examType, subject);
+        
+        if (!examId) {
+            showError('Error creating exam record', 'Error');
+            return;
+        }
+        
+        const examTypePercentage = getExamTypePercentage(examType);
+        const percentage = score; // Score is already a percentage (0-100)
+        const scaledScore = percentage * examTypePercentage / 100;
+        const grade = calculateGrade(percentage);
+        
+        // Check if grade already exists
+        const { data: existingGrade } = await supabase
+            .from('exam_grades')
+            .select('id')
+            .eq('student_id', studentId)
+            .eq('exam_id', examId)
+            .maybeSingle();
+        
+        if (existingGrade) {
+            // Update existing grade
+            await supabase
+                .from('exam_grades')
+                .update({
+                    score: score,
+                    percentage: percentage,
+                    grade: grade,
+                    scaling_percentage: examTypePercentage,
+                    scaled_score: scaledScore
+                })
+                .eq('id', existingGrade.id);
+            
+            showSuccess(`${formatExamType(examType)} score updated for ${studentName}`, 'Success');
+        } else {
+            // Create new grade (need to create a dummy attempt first for quiz manual entry)
+            if (examType === 'quiz_manual') {
+                // For quiz manual, we need to check if there's an automated quiz attempt
+                // and add to it, or create a new one
+                const { data: quizExams } = await supabase
+                    .from('exams')
+                    .select('id')
+                    .eq('exam_type', 'quiz')
+                    .eq('class_id', classId)
+                    .eq('subject', subject)
+                    .limit(1);
+                
+                let attemptId = null;
+                if (quizExams && quizExams.length > 0) {
+                    const quizExamId = quizExams[0].id;
+                    const { data: existingAttempt } = await supabase
+                        .from('student_exam_attempts')
+                        .select('id')
+                        .eq('student_id', studentId)
+                        .eq('exam_id', quizExamId)
+                        .maybeSingle();
+                    
+                    if (existingAttempt) {
+                        attemptId = existingAttempt.id;
+                    }
+                }
+                
+                // Create grade with attempt_id if available
+                await supabase
+                    .from('exam_grades')
+                    .insert([{
+                        student_id: studentId,
+                        exam_id: examId,
+                        attempt_id: attemptId,
+                        score: score,
+                        percentage: percentage,
+                        grade: grade,
+                        scaling_percentage: examTypePercentage,
+                        scaled_score: scaledScore
+                    }]);
+            } else {
+                // For other types, create grade directly
+                await supabase
+                    .from('exam_grades')
+                    .insert([{
+                        student_id: studentId,
+                        exam_id: examId,
+                        score: score,
+                        percentage: percentage,
+                        grade: grade,
+                        scaling_percentage: examTypePercentage,
+                        scaled_score: scaledScore
+                    }]);
+            }
+            
+            showSuccess(`${formatExamType(examType)} score saved for ${studentName}`, 'Success');
+        }
+        
+        loadManualScoreStudents();
+        loadFinalGrades();
+        loadResults();
+        
+    } catch (error) {
+        console.error('Error saving manual score:', error);
+        showError('Failed to save manual score. Please try again.', 'Error');
+    }
+}
+
+// Save all manual scores at once
+async function saveAllManualScores(examType, subject) {
+    const classId = document.getElementById('manualScoreClass').value;
+    if (!classId) {
+        showError('Please select a class first', 'Error');
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to save all ${formatExamType(examType)} scores for ${subject} in this class?`)) {
+        return;
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        // Get all students
+        const { data: students } = await supabase
+            .from('users')
+            .select('id, name, username')
+            .eq('role', 'student')
+            .eq('class', classId);
+        
+        if (!students || students.length === 0) {
+            showError('No students found in this class', 'Error');
+            return;
+        }
+        
+        const examId = await getOrCreateManualExam(classId, examType, subject);
+        
+        if (!examId) {
+            showError('Error creating exam record', 'Error');
+            return;
+        }
+        
+        let saved = 0;
+        let errors = 0;
+        
+        for (const student of students) {
+            try {
+                const scoreInput = document.getElementById(`manual_score_${student.id}`);
+                if (!scoreInput || !scoreInput.value) continue;
+                
+                await saveManualScore(student.id, student.name || student.username, examType, subject);
+                saved++;
+            } catch (err) {
+                console.error(`Error saving score for ${student.name}:`, err);
+                errors++;
+            }
+        }
+        
+        if (saved > 0) {
+            showSuccess(`Saved ${saved} ${formatExamType(examType)} score(s)${errors > 0 ? `. ${errors} error(s) occurred.` : ''}`, 'Success');
+        } else {
+            showError('No valid scores to save', 'Error');
+        }
+        
+    } catch (error) {
+        console.error('Error saving all manual scores:', error);
+        showError('Failed to save scores. Please try again.', 'Error');
+    }
+}
+
+// Populate subjects dropdown based on class
+async function populateSubjectsForClass(classId, selectId) {
+    const subjectSelect = document.getElementById(selectId);
+    if (!subjectSelect) return;
+    
+    // Get courses for this class
+    const courses = getCoursesForClass(classId);
+    
+    // Clear existing options except the first one
+    subjectSelect.innerHTML = '<option value="">Select Subject</option>';
+    
+    // Add courses as options
+    courses.forEach(course => {
+        const option = document.createElement('option');
+        option.value = course;
+        option.textContent = course;
+        subjectSelect.appendChild(option);
+    });
+}
+
+// Save all BFT scores at once (legacy function - kept for backward compatibility)
 async function saveAllBFTScores(bftNumber) {
     const classId = document.getElementById('bftClass').value;
     if (!classId) {
@@ -1388,12 +1860,23 @@ function displayUsers(users) {
                         <tbody>
         `;
         
-        // Sort users alphabetically by name
-        roleUsers.sort((a, b) => {
-            const nameA = (a.name || a.username || '').toLowerCase();
-            const nameB = (b.name || b.username || '').toLowerCase();
-            return nameA.localeCompare(nameB);
-        });
+        // Sort users - check if sort by ID is active
+        const sortByID = window.usersSortByID || false;
+        if (sortByID && role === 'student') {
+            // Sort students by username (student ID) in ascending order
+            roleUsers.sort((a, b) => {
+                const idA = (a.username || '').toLowerCase();
+                const idB = (b.username || '').toLowerCase();
+                return idA.localeCompare(idB);
+            });
+        } else {
+            // Sort users alphabetically by name (default)
+            roleUsers.sort((a, b) => {
+                const nameA = (a.name || a.username || '').toLowerCase();
+                const nameB = (b.name || b.username || '').toLowerCase();
+                return nameA.localeCompare(nameB);
+            });
+        }
         
         roleUsers.forEach(user => {
             const className = user.class ? formatClassName(user.class) : '-';
@@ -1414,7 +1897,8 @@ function displayUsers(users) {
                     <td>${registeredDate}</td>
                     <td>
                         <button onclick="editUser('${user.id}')" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">Edit</button>
-                        <button onclick="resetUserPassword('${user.id}', '${escapeHtml(nameDisplay)}')" class="btn btn-warning" style="padding: 6px 12px; font-size: 12px;">Reset Password</button>
+                        <button onclick="resetUserPassword('${user.id}', '${escapeHtml(nameDisplay)}')" class="btn btn-warning" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">Reset Password</button>
+                        ${user.role === 'student' ? `<button onclick="deleteStudent('${user.id}', '${escapeHtml(nameDisplay)}')" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">Delete</button>` : ''}
                     </td>
                 </tr>
             `;
@@ -1477,6 +1961,99 @@ async function editUser(userId) {
     } catch (error) {
         console.error('Error editing user:', error);
         showError('Failed to update user. Please try again.', 'Error');
+    }
+}
+
+// Sort users by Student ID (username)
+function sortUsersByID() {
+    window.usersSortByID = !window.usersSortByID;
+    loadAllUsers();
+    const btn = event.target;
+    if (window.usersSortByID) {
+        btn.textContent = 'Sort by Name';
+        btn.classList.remove('btn-secondary');
+        btn.classList.add('btn-info');
+    } else {
+        btn.textContent = 'Sort by Student ID';
+        btn.classList.remove('btn-info');
+        btn.classList.add('btn-secondary');
+    }
+}
+
+// Delete student and all associated data
+async function deleteStudent(studentId, studentName) {
+    if (!confirm(`⚠️ WARNING: Delete Student\n\nThis will PERMANENTLY delete:\n- Student: ${studentName}\n- All exam attempts\n- All exam grades\n- All student responses\n- All associated data\n\nThis action CANNOT be undone!\n\nAre you absolutely sure you want to proceed?`)) {
+        return;
+    }
+    
+    // Double confirmation
+    if (!confirm(`FINAL CONFIRMATION\n\nYou are about to PERMANENTLY delete ${studentName} and ALL their data.\n\nType "DELETE" to confirm (case-sensitive):`)) {
+        const confirmation = prompt('Type "DELETE" to confirm (case-sensitive):');
+        if (confirmation !== 'DELETE') {
+            showError('Deletion cancelled. Confirmation text did not match.', 'Cancelled');
+            return;
+        }
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        // Delete in order (respecting foreign key constraints)
+        // 1. Delete student responses
+        await supabase
+            .from('student_responses')
+            .delete()
+            .eq('attempt_id', supabase.from('student_exam_attempts').select('id').eq('student_id', studentId));
+        
+        // 2. Delete exam attempts (this will cascade delete responses if cascade is set)
+        const { data: attempts } = await supabase
+            .from('student_exam_attempts')
+            .select('id')
+            .eq('student_id', studentId);
+        
+        if (attempts && attempts.length > 0) {
+            const attemptIds = attempts.map(a => a.id);
+            await supabase
+                .from('student_responses')
+                .delete()
+                .in('attempt_id', attemptIds);
+            
+            await supabase
+                .from('student_exam_attempts')
+                .delete()
+                .eq('student_id', studentId);
+        }
+        
+        // 3. Delete exam grades
+        await supabase
+            .from('exam_grades')
+            .delete()
+            .eq('student_id', studentId);
+        
+        // 4. Delete user (student)
+        const { error } = await supabase
+            .from('users')
+            .delete()
+            .eq('id', studentId);
+        
+        if (error) {
+            console.error('Error deleting student:', error);
+            showError('Failed to delete student. Please try again.', 'Error');
+            return;
+        }
+        
+        showSuccess(`Student "${studentName}" and all associated data deleted successfully.`, 'Success');
+        loadAllUsers();
+        loadResults();
+        loadStatistics();
+        
+    } catch (error) {
+        console.error('Error deleting student:', error);
+        showError('Failed to delete student. Please try again.', 'Error');
     }
 }
 
