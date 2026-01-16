@@ -1920,10 +1920,9 @@ async function loadAllUsers() {
         
         // Select fields - phone_number is optional (only if column exists in database)
         // Start without phone_number to avoid errors, can be added after migration
+        // Version: 2026-01-27 - Removed phone/phone_number from query to fix column not found error
         let selectFields = 'id, username, name, email, role, class, courses, created_at, student_index';
         
-        // Try to include phone_number if the column exists (will be added after migration)
-        // For now, we'll query without it to prevent errors
         let query = supabase
             .from('users')
             .select(selectFields)
@@ -1937,7 +1936,33 @@ async function loadAllUsers() {
             query = query.eq('class', classFilter);
         }
         
-        const { data: users, error } = await query;
+        let { data: users, error } = await query;
+        
+        // Handle column not found errors (phone/phone_number)
+        if (error && (error.code === '42703' || 
+                     error.message?.includes('phone') || 
+                     error.message?.includes('does not exist') ||
+                     error.message?.includes('column users.phone'))) {
+            console.warn('Column error detected, retrying with minimal fields:', error.message);
+            // Retry with only essential fields
+            selectFields = 'id, username, name, email, role, class, courses, created_at';
+            query = supabase
+                .from('users')
+                .select(selectFields)
+                .order('created_at', { ascending: false });
+            
+            if (roleFilter !== 'all') {
+                query = query.eq('role', roleFilter);
+            }
+            
+            if (classFilter !== 'all') {
+                query = query.eq('class', classFilter);
+            }
+            
+            const retryResult = await query;
+            users = retryResult.data;
+            error = retryResult.error;
+        }
         
         if (error) {
             console.error('Error loading users:', error);
