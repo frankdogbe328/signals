@@ -2186,6 +2186,9 @@ function generateTempPassword() {
 }
 
 // Export users to CSV
+// Store registered subjects data globally for filtering
+let registeredSubjectsData = null;
+
 // View all registered subjects by students
 async function viewAllRegisteredSubjects() {
     const modal = document.getElementById('registeredSubjectsModal');
@@ -2260,6 +2263,9 @@ async function viewAllRegisteredSubjects() {
                 }
             });
         });
+        
+        // Store data globally for filtering
+        registeredSubjectsData = { subjectsMap, classSubjectsMap };
         
         // Populate subject filter dropdown
         const subjectFilter = document.getElementById('subjectViewFilter');
@@ -2362,8 +2368,13 @@ function displayRegisteredSubjects(subjectsMap, classSubjectsMap) {
 
 // Filter subject view
 function filterSubjectView() {
-    // Reload the view with current filters
-    viewAllRegisteredSubjects();
+    // Use stored data to filter without reloading
+    if (registeredSubjectsData) {
+        displayRegisteredSubjects(registeredSubjectsData.subjectsMap, registeredSubjectsData.classSubjectsMap);
+    } else {
+        // If no data stored, reload
+        viewAllRegisteredSubjects();
+    }
 }
 
 // Close registered subjects modal
