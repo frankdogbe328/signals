@@ -53,21 +53,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const manualScoreSubject = document.getElementById('manualScoreSubject');
     
     if (manualScoreClass) {
-        manualScoreClass.addEventListener('change', async function() {
+        manualScoreClass.addEventListener('change', function() {
             const classId = this.value;
             if (classId) {
-                // Populate subjects for this class
-                await populateSubjectsForClass(classId, 'manualScoreSubject');
-                // Try to load students (will show message if subject not selected)
+                // Load students when class is selected (no subject needed)
                 loadManualScoreStudents();
             } else {
-                // Clear subject dropdown and container
-                if (manualScoreSubject) {
-                    manualScoreSubject.innerHTML = '<option value="">Select Subject</option>';
-                }
+                // Clear container
                 const container = document.getElementById('manualScoreEntryContainer');
                 if (container) {
-                    container.innerHTML = '<p class="empty-state">Select class, score type, and subject to enter manual scores</p>';
+                    container.innerHTML = '<p class="empty-state">Select class and score type to enter manual scores</p>';
                 }
             }
         });
@@ -75,16 +70,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     if (manualScoreType) {
         manualScoreType.addEventListener('change', function() {
-            // Try to load students when score type changes
+            // Load students when score type changes
             loadManualScoreStudents();
         });
     }
     
+    // Hide subject dropdown if it exists (not needed for manual entry)
     if (manualScoreSubject) {
-        manualScoreSubject.addEventListener('change', function() {
-            // Load students when subject is selected
-            loadManualScoreStudents();
-        });
+        const subjectGroup = manualScoreSubject.closest('.form-group') || manualScoreSubject.parentElement;
+        if (subjectGroup) {
+            subjectGroup.style.display = 'none';
+        }
     }
     
     // Auto-refresh data every 30 seconds
@@ -1154,17 +1150,11 @@ function formatExamType(examType) {
 async function loadManualScoreStudents() {
     const classId = document.getElementById('manualScoreClass')?.value;
     const scoreType = document.getElementById('manualScoreType')?.value;
-    const subject = document.getElementById('manualScoreSubject')?.value;
     const container = document.getElementById('manualScoreEntryContainer');
     
     if (!container) {
         // Fallback to old BFT container for backward compatibility
         return loadBFTStudents();
-    }
-    
-    // Populate subjects dropdown based on class if class is selected
-    if (classId) {
-        await populateSubjectsForClass(classId, 'manualScoreSubject');
     }
     
     // Check what's missing and show appropriate message
@@ -1178,10 +1168,8 @@ async function loadManualScoreStudents() {
         return;
     }
     
-    if (!subject) {
-        container.innerHTML = '<p class="empty-state">Please select a subject to enter scores</p>';
-        return;
-    }
+    // Use a default subject for manual entry (not subject-specific)
+    const subject = 'Manual Entry';
     
     try {
         const supabase = getSupabaseClient();
@@ -1269,7 +1257,7 @@ async function loadManualScoreStudents() {
                         ${existing ? (existing.percentage * examTypePercentage / 100).toFixed(2) + '%' : '-'}
                     </td>
                     <td>
-                        <button onclick="saveManualScore('${student.id}', '${escapeHtml(student.name || student.username)}', '${examType}', '${subject}')" 
+                        <button onclick="saveManualScore('${student.id}', '${escapeHtml(student.name || student.username)}', '${examType}')" 
                                 class="btn btn-primary" 
                                 style="padding: 6px 12px; font-size: 12px;">
                             Save
@@ -1301,7 +1289,7 @@ async function loadManualScoreStudents() {
                 </table>
             </div>
             <div style="margin-top: 15px;">
-                <button onclick="saveAllManualScores('${examType}', '${subject}')" class="btn btn-success">
+                <button onclick="saveAllManualScores('${examType}')" class="btn btn-success">
                     Save All Scores
                 </button>
             </div>
@@ -1667,7 +1655,7 @@ async function saveBFTScore(studentId, studentName, bftNumber) {
 }
 
 // Save individual manual score
-async function saveManualScore(studentId, studentName, examType, subject) {
+async function saveManualScore(studentId, studentName, examType) {
     const classId = document.getElementById('manualScoreClass').value;
     const scoreInput = document.getElementById(`manual_score_${studentId}`);
     const score = parseFloat(scoreInput.value);
@@ -1684,6 +1672,8 @@ async function saveManualScore(studentId, studentName, examType, subject) {
             return;
         }
         
+        // Use default subject for manual entry
+        const subject = 'Manual Entry';
         const examId = await getOrCreateManualExam(classId, examType, subject);
         
         if (!examId) {
@@ -1788,14 +1778,18 @@ async function saveManualScore(studentId, studentName, examType, subject) {
 }
 
 // Save all manual scores at once
-async function saveAllManualScores(examType, subject) {
+async function saveAllManualScores(examType) {
     const classId = document.getElementById('manualScoreClass').value;
+    
     if (!classId) {
         showError('Please select a class first', 'Error');
         return;
     }
     
-    if (!confirm(`Are you sure you want to save all ${formatExamType(examType)} scores for ${subject} in this class?`)) {
+    // Use default subject for manual entry
+    const subject = 'Manual Entry';
+    
+    if (!confirm(`Are you sure you want to save all ${formatExamType(examType)} scores for this class?`)) {
         return;
     }
     
@@ -1833,7 +1827,7 @@ async function saveAllManualScores(examType, subject) {
                 const scoreInput = document.getElementById(`manual_score_${student.id}`);
                 if (!scoreInput || !scoreInput.value) continue;
                 
-                await saveManualScore(student.id, student.name || student.username, examType, subject);
+                await saveManualScore(student.id, student.name || student.username, examType);
                 saved++;
             } catch (err) {
                 console.error(`Error saving score for ${student.name}:`, err);
