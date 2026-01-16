@@ -654,7 +654,7 @@ async function loadFinalGrades() {
             return;
         }
         
-        // Get all grades with student and exam info (including lecturer)
+        // Get all grades with student and exam info (including lecturer and release status)
         const { data: grades, error } = await supabase
             .from('exam_grades')
             .select(`
@@ -666,6 +666,8 @@ async function loadFinalGrades() {
                     class_id, 
                     exam_type,
                     lecturer_id,
+                    results_released,
+                    semester_results_released,
                     lecturer:users!exams_lecturer_id_fkey(id, name, username)
                 )
             `);
@@ -774,7 +776,7 @@ function displayFinalGrades(classGroups) {
                                 <th>Final Score</th>
                                 <th>Final Grade</th>
                                 <th>Exam Breakdown</th>
-                                <th>Status</th>
+                                <th>Status (Mid / Final / Semester)</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -792,8 +794,82 @@ function displayFinalGrades(classGroups) {
             const finalScore = studentData.totalScaledScore;
             const finalGrade = calculateFinalGrade(finalScore);
             const gradeClass = `grade-${finalGrade}`;
-            const allReleased = studentData.exams.every(e => e.exam?.results_released);
-            const semesterReleased = studentData.exams.some(e => e.exam?.semester_results_released);
+            
+            // Separate exams into Mid and Final halves
+            const midExamTypes = ['bft_1', 'mid_cs_exam', 'mid_course_exercise'];
+            const finalExamTypes = ['opening_exam', 'bft_2', 'final_exam', 'final_cse_exercise', 'quiz', 'gen_assessment'];
+            
+            const midExams = studentData.exams.filter(e => {
+                const examType = e.exam?.exam_type || '';
+                return midExamTypes.includes(examType);
+            });
+            const finalExams = studentData.exams.filter(e => {
+                const examType = e.exam?.exam_type || '';
+                return finalExamTypes.includes(examType);
+            });
+            
+            // Calculate Mid and Final scores separately
+            let midScore = 0;
+            midExams.forEach(exam => {
+                const examType = exam.exam?.exam_type || '';
+                const examTypePercentage = getExamTypePercentage(examType);
+                const scaledScore = exam.scaled_score || (exam.percentage ? (exam.percentage * examTypePercentage / 100) : 0);
+                midScore += scaledScore;
+            });
+            
+            let finalScoreHalf = 0;
+            finalExams.forEach(exam => {
+                const examType = exam.exam?.exam_type || '';
+                const examTypePercentage = getExamTypePercentage(examType);
+                const scaledScore = exam.scaled_score || (exam.percentage ? (exam.percentage * examTypePercentage / 100) : 0);
+                finalScoreHalf += scaledScore;
+            });
+            
+            // Check release status for Mid and Final separately
+            // Handle cases where exam data might be null/undefined
+            const midExamsWithData = midExams.filter(e => e.exam && e.exam.id);
+            const finalExamsWithData = finalExams.filter(e => e.exam && e.exam.id);
+            
+            // Mid status logic
+            let midStatus = 'No Mid Exams';
+            let midStatusColor = '#999';
+            if (midExams.length > 0) {
+                if (midExamsWithData.length === 0) {
+                    midStatus = 'No Exam Data';
+                    midStatusColor = '#999';
+                } else if (midExamsWithData.every(e => e.exam.results_released === true)) {
+                    midStatus = 'Released';
+                    midStatusColor = '#28a745';
+                } else if (midExamsWithData.some(e => e.exam.results_released === false || e.exam.results_released === null)) {
+                    midStatus = 'Pending';
+                    midStatusColor = '#ffc107';
+                } else {
+                    midStatus = 'Partial';
+                    midStatusColor = '#17a2b8';
+                }
+            }
+            
+            // Final status logic
+            let finalStatus = 'No Final Exams';
+            let finalStatusColor = '#999';
+            if (finalExams.length > 0) {
+                if (finalExamsWithData.length === 0) {
+                    finalStatus = 'No Exam Data';
+                    finalStatusColor = '#999';
+                } else if (finalExamsWithData.every(e => e.exam.results_released === true)) {
+                    finalStatus = 'Released';
+                    finalStatusColor = '#28a745';
+                } else if (finalExamsWithData.some(e => e.exam.results_released === false || e.exam.results_released === null)) {
+                    finalStatus = 'Pending';
+                    finalStatusColor = '#ffc107';
+                } else {
+                    finalStatus = 'Partial';
+                    finalStatusColor = '#17a2b8';
+                }
+            }
+            
+            // Check semester release status
+            const semesterReleased = studentData.exams.some(e => e.exam && e.exam.semester_results_released === true);
             
             // Display both name and username if available
             const studentDisplay = student.name 
@@ -825,8 +901,24 @@ function displayFinalGrades(classGroups) {
                     <td><span class="grade-badge ${gradeClass}">${finalGrade}</span></td>
                     <td style="max-width: 300px;">${breakdownHtml}</td>
                     <td>
-                        ${allReleased ? '<span style="color: #28a745;">✓ Individual Results Released</span><br>' : '<span style="color: #ffc107;">Individual Results Pending</span><br>'}
-                        ${semesterReleased ? '<span style="color: #28a745; font-weight: bold;">✓ Final Semester Released</span>' : '<span style="color: #dc3545;">Final Semester Pending</span>'}
+                        <div style="margin-bottom: 8px;">
+                            <strong>Mid Half:</strong> ${midScore.toFixed(2)}%<br>
+                            <span style="color: ${midStatusColor}; font-weight: ${midStatus === 'Released' ? 'bold' : 'normal'};">
+                                ${midStatus === 'Released' ? '✓ Released' : midStatus === 'Pending' ? '⏳ Pending' : midStatus}
+                            </span>
+                        </div>
+                        <div style="margin-bottom: 8px;">
+                            <strong>Final Half:</strong> ${finalScoreHalf.toFixed(2)}%<br>
+                            <span style="color: ${finalStatusColor}; font-weight: ${finalStatus === 'Released' ? 'bold' : 'normal'};">
+                                ${finalStatus === 'Released' ? '✓ Released' : finalStatus === 'Pending' ? '⏳ Pending' : finalStatus}
+                            </span>
+                        </div>
+                        <div>
+                            <strong>Semester:</strong><br>
+                            <span style="color: ${semesterReleased ? '#28a745' : '#dc3545'}; font-weight: bold;">
+                                ${semesterReleased ? '✓ Final Semester Released' : '⏳ Final Semester Pending'}
+                            </span>
+                        </div>
                     </td>
                 </tr>
             `;
