@@ -348,6 +348,7 @@ async function createUserInSupabase(userData) {
             }
         }
         
+        // Build insert data with only columns that exist
         const insertData = {
             username: userData.username.trim(),
             password: hashedPassword, // Store hashed password
@@ -357,10 +358,17 @@ async function createUserInSupabase(userData) {
             courses: userData.courses || [],
             email: userData.email ? (SecurityUtils && SecurityUtils.validateEmail ? 
                 (SecurityUtils.validateEmail(userData.email) ? userData.email.trim().toLowerCase() : null) : 
-                userData.email.trim().toLowerCase()) : null,
-            phone_number: userData.phone || null, // Phone number (required for students)
-            student_index: studentIndex // Unique student index per class
+                userData.email.trim().toLowerCase()) : null
         };
+        
+        // Add optional columns only if they have values (columns may not exist in database)
+        // These will be added via migrations if needed
+        if (userData.phone) {
+            insertData.phone_number = userData.phone;
+        }
+        if (studentIndex) {
+            insertData.student_index = studentIndex;
+        }
         
         console.log('Inserting user data:', { ...insertData, password: '[HIDDEN]' });
         
@@ -372,8 +380,26 @@ async function createUserInSupabase(userData) {
         
         if (error) {
             console.error('Supabase error creating user:', error);
-            // Throw generic error - caller should catch and show user-friendly message
-            throw new Error('Failed to create user account. Please try again.');
+            console.error('Error details:', {
+                code: error.code,
+                message: error.message,
+                details: error.details,
+                hint: error.hint
+            });
+            
+            // Provide more specific error messages
+            let errorMessage = 'Failed to create user account. ';
+            if (error.code === '42703') {
+                errorMessage += 'Database column missing. Please run database migrations.';
+            } else if (error.code === '23505') {
+                errorMessage += 'Username already exists. Please choose a different username.';
+            } else if (error.message) {
+                errorMessage += error.message;
+            } else {
+                errorMessage += 'Please try again.';
+            }
+            
+            throw new Error(errorMessage);
         }
         
         if (!data) {
