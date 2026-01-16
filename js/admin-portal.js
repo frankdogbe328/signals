@@ -2186,6 +2186,253 @@ function generateTempPassword() {
 }
 
 // Export users to CSV
+// View all registered subjects by students
+async function viewAllRegisteredSubjects() {
+    const modal = document.getElementById('registeredSubjectsModal');
+    if (!modal) {
+        showError('Modal not found. Please refresh the page.', 'Error');
+        return;
+    }
+    
+    modal.style.display = 'flex';
+    const content = document.getElementById('registeredSubjectsContent');
+    content.innerHTML = '<p class="empty-state">Loading registered subjects...</p>';
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            showError('Database connection error', 'Error');
+            return;
+        }
+        
+        // Get all students with their registered subjects
+        const { data: students, error } = await supabase
+            .from('users')
+            .select('id, name, username, class, courses')
+            .eq('role', 'student')
+            .order('class', { ascending: true })
+            .order('username', { ascending: true });
+        
+        if (error) throw error;
+        
+        if (!students || students.length === 0) {
+            content.innerHTML = '<p class="empty-state">No students found.</p>';
+            return;
+        }
+        
+        // Group subjects by subject name
+        const subjectsMap = {};
+        const classSubjectsMap = {}; // Track subjects by class
+        
+        students.forEach(student => {
+            const courses = student.courses || [];
+            const className = formatClassName(student.class || 'unknown');
+            
+            courses.forEach(subject => {
+                if (!subjectsMap[subject]) {
+                    subjectsMap[subject] = [];
+                }
+                
+                // Check if student already added (avoid duplicates)
+                if (!subjectsMap[subject].some(s => s.id === student.id)) {
+                    subjectsMap[subject].push({
+                        id: student.id,
+                        name: student.name || student.username || 'Unknown',
+                        username: student.username || 'N/A',
+                        class: student.class || 'unknown',
+                        className: className
+                    });
+                }
+                
+                // Track by class
+                if (!classSubjectsMap[className]) {
+                    classSubjectsMap[className] = {};
+                }
+                if (!classSubjectsMap[className][subject]) {
+                    classSubjectsMap[className][subject] = [];
+                }
+                if (!classSubjectsMap[className][subject].some(s => s.id === student.id)) {
+                    classSubjectsMap[className][subject].push({
+                        id: student.id,
+                        name: student.name || student.username || 'Unknown',
+                        username: student.username || 'N/A'
+                    });
+                }
+            });
+        });
+        
+        // Populate subject filter dropdown
+        const subjectFilter = document.getElementById('subjectViewFilter');
+        if (subjectFilter) {
+            const allSubjects = Object.keys(subjectsMap).sort();
+            subjectFilter.innerHTML = '<option value="all">All Subjects</option>' +
+                allSubjects.map(subject => `<option value="${escapeHtml(subject)}">${escapeHtml(subject)}</option>`).join('');
+        }
+        
+        // Display organized by subject
+        displayRegisteredSubjects(subjectsMap, classSubjectsMap);
+        
+    } catch (error) {
+        console.error('Error loading registered subjects:', error);
+        content.innerHTML = '<p class="empty-state" style="color: red;">Error loading registered subjects. Please try again.</p>';
+    }
+}
+
+// Display registered subjects in organized view
+function displayRegisteredSubjects(subjectsMap, classSubjectsMap) {
+    const content = document.getElementById('registeredSubjectsContent');
+    const subjectFilter = document.getElementById('subjectViewFilter')?.value || 'all';
+    const classFilter = document.getElementById('subjectViewClassFilter')?.value || 'all';
+    
+    let html = '';
+    
+    // Filter subjects
+    let filteredSubjects = Object.keys(subjectsMap);
+    if (subjectFilter !== 'all') {
+        filteredSubjects = filteredSubjects.filter(s => s === subjectFilter);
+    }
+    
+    if (filteredSubjects.length === 0) {
+        content.innerHTML = '<p class="empty-state">No subjects found matching the filter.</p>';
+        return;
+    }
+    
+    // Display by subject (organized view)
+    filteredSubjects.sort().forEach(subject => {
+        let students = subjectsMap[subject];
+        
+        // Filter by class if needed
+        if (classFilter !== 'all') {
+            students = students.filter(s => s.class === classFilter);
+        }
+        
+        if (students.length === 0) return;
+        
+        // Group students by class
+        const studentsByClass = {};
+        students.forEach(student => {
+            if (!studentsByClass[student.className]) {
+                studentsByClass[student.className] = [];
+            }
+            studentsByClass[student.className].push(student);
+        });
+        
+        html += `
+            <div class="card" style="margin-bottom: 20px;">
+                <h4 style="color: var(--primary-color); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-color);">
+                    📖 ${escapeHtml(subject)}
+                    <span style="font-size: 14px; font-weight: normal; color: #666;">
+                        (${students.length} ${students.length === 1 ? 'student' : 'students'})
+                    </span>
+                </h4>
+        `;
+        
+        // Display students grouped by class
+        Object.keys(studentsByClass).sort().forEach(className => {
+            const classStudents = studentsByClass[className];
+            html += `
+                <div style="margin-bottom: 15px;">
+                    <strong style="color: #666; font-size: 14px;">${escapeHtml(className)}:</strong>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px;">
+            `;
+            
+            classStudents.forEach(student => {
+                html += `
+                    <span style="background: #e6f2ff; padding: 6px 12px; border-radius: 5px; font-size: 13px; display: inline-block;">
+                        ${escapeHtml(student.name)} <small style="color: #666;">(${escapeHtml(student.username)})</small>
+                    </span>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `</div>`;
+    });
+    
+    if (html === '') {
+        content.innerHTML = '<p class="empty-state">No students registered for the selected filters.</p>';
+    } else {
+        content.innerHTML = html;
+    }
+}
+
+// Filter subject view
+function filterSubjectView() {
+    // Reload the view with current filters
+    viewAllRegisteredSubjects();
+}
+
+// Close registered subjects modal
+function closeRegisteredSubjectsModal() {
+    const modal = document.getElementById('registeredSubjectsModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Export registered subjects to CSV
+function exportRegisteredSubjectsToCSV() {
+    try {
+        const content = document.getElementById('registeredSubjectsContent');
+        const cards = content.querySelectorAll('.card');
+        
+        if (cards.length === 0) {
+            showError('No data to export', 'Error');
+            return;
+        }
+        
+        let csv = 'Subject,Class,Student Name,Student ID\n';
+        
+        cards.forEach(card => {
+            const subject = card.querySelector('h4')?.textContent?.replace(/📖\s*/, '').split('(')[0].trim() || 'Unknown';
+            const classDivs = card.querySelectorAll('div[style*="margin-bottom: 15px"]');
+            
+            classDivs.forEach(classDiv => {
+                const className = classDiv.querySelector('strong')?.textContent?.replace(':', '').trim() || 'Unknown';
+                const studentSpans = classDiv.querySelectorAll('span[style*="background: #e6f2ff"]');
+                
+                studentSpans.forEach(span => {
+                    const text = span.textContent.trim();
+                    const match = text.match(/^(.+?)\s*\((.+?)\)$/);
+                    const studentName = match ? match[1].trim() : text;
+                    const studentId = match ? match[2].trim() : 'N/A';
+                    
+                    csv += `"${escapeHtml(subject)}","${escapeHtml(className)}","${escapeHtml(studentName)}","${escapeHtml(studentId)}"\n`;
+                });
+            });
+        });
+        
+        // Download CSV
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', `registered_subjects_${new Date().toISOString().split('T')[0]}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        
+        showSuccess('Registered subjects exported successfully!', 'Success');
+        
+    } catch (error) {
+        console.error('Error exporting registered subjects:', error);
+        showError('Failed to export registered subjects. Please try again.', 'Error');
+    }
+}
+
+// Close modal when clicking outside
+window.onclick = function(event) {
+    const modal = document.getElementById('registeredSubjectsModal');
+    if (event.target == modal) {
+        closeRegisteredSubjectsModal();
+    }
+}
+
 function exportUsersToCSV() {
     // This will use the current filtered users (now grouped by role)
     const container = document.getElementById('usersContainer');

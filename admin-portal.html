@@ -331,6 +331,7 @@
                 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                     <button onclick="loadAllUsers()" class="btn btn-primary">Refresh Users</button>
                     <button onclick="sortUsersByID()" class="btn btn-secondary">Sort by Student ID</button>
+                    <button onclick="viewAllRegisteredSubjects()" class="btn btn-info">📚 View All Registered Subjects</button>
                     <button onclick="exportUsersToCSV()" class="btn btn-success">Export Users</button>
                 </div>
             </div>
@@ -595,6 +596,56 @@
             <h3 id="modalTitle"></h3>
             <p id="modalMessage"></p>
             <button id="modalButton" class="btn btn-primary">OK</button>
+        </div>
+    </div>
+    
+    <!-- Modal for All Registered Subjects -->
+    <div id="registeredSubjectsModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 900px; max-height: 90vh; overflow-y: auto;">
+            <span class="modal-close" onclick="closeRegisteredSubjectsModal()">&times;</span>
+            <h2 style="color: var(--primary-color); margin-bottom: 20px;">📚 All Registered Subjects by Students</h2>
+            <div class="filter-section" style="margin-bottom: 20px;">
+                <div class="filter-row">
+                    <div class="filter-group">
+                        <label for="subjectViewFilter">Filter by Subject</label>
+                        <select id="subjectViewFilter" class="form-control" onchange="filterSubjectView()">
+                            <option value="all">All Subjects</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="subjectViewClassFilter">Filter by Class</label>
+                        <select id="subjectViewClassFilter" class="form-control" onchange="filterSubjectView()">
+                            <option value="all">All Classes</option>
+                            <optgroup label="Signals">
+                                <option value="signals-basic">SIGNALS BASIC</option>
+                                <option value="signals-b-iii-b-ii">SIGNALS B III – B II</option>
+                                <option value="signals-b-ii-b-i">SIGNALS B II – B I</option>
+                            </optgroup>
+                            <optgroup label="Advanced Courses">
+                                <option value="superintendent">SUPERINTENDENT</option>
+                                <option value="pre-qualifying">PRE-QUALIFYING</option>
+                            </optgroup>
+                            <optgroup label="REGIMENTAL">
+                                <option value="regimental-basic">REGIMENTAL BASIC</option>
+                                <option value="regimental-b-iii-b-ii">REGIMENTAL B III – B II</option>
+                                <option value="regimental-b-ii-b-i">REGIMENTAL B II – B I</option>
+                            </optgroup>
+                            <optgroup label="Specialized">
+                                <option value="rso-rsi">RSO / RSI</option>
+                                <option value="electronic-warfare-course">ELECTRONIC WARFARE COURSE</option>
+                                <option value="tactical-drone-course">TACTICAL DRONE COURSE</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div id="registeredSubjectsContent">
+                <p class="empty-state">Loading registered subjects...</p>
+            </div>
+            <div style="margin-top: 20px; text-align: center;">
+                <button onclick="closeRegisteredSubjectsModal()" class="btn btn-secondary">Close</button>
+                <button onclick="exportRegisteredSubjectsToCSV()" class="btn btn-success" style="margin-left: 10px;">Export to CSV</button>
+            </div>
         </div>
     </div>
     
