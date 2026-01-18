@@ -7,30 +7,47 @@
     if (typeof window === 'undefined') return;
     
     // Pre-define functions on window immediately - will be overwritten with actual implementations
+    // These stubs ensure functions exist for event listeners, even if script hasn't fully loaded
     window.showExamsTab = function() {
-        console.error('showExamsTab: Function not yet defined. Script may not have loaded.');
-        alert('Page is still loading. Please wait a moment and try again.');
+        console.warn('showExamsTab: Stub function called. Real function should be defined by now.');
+        // Try to call real function if it exists
+        const realFn = window.showExamsTab._real || (function() {
+            console.error('showExamsTab: Real function never loaded!');
+            alert('Page is still loading. Please wait a moment and try again.');
+        });
+        if (realFn !== window.showExamsTab) {
+            realFn();
+        }
     };
     
     window.showResultsTab = function() {
-        console.error('showResultsTab: Function not yet defined. Script may not have loaded.');
-        alert('Page is still loading. Please wait a moment and try again.');
+        console.warn('showResultsTab: Stub function called. Real function should be defined by now.');
+        const realFn = window.showResultsTab._real || (function() {
+            console.error('showResultsTab: Real function never loaded!');
+            alert('Page is still loading. Please wait a moment and try again.');
+        });
+        if (realFn !== window.showResultsTab) {
+            realFn();
+        }
     };
     
     window.showAllResults = function() {
-        console.error('showAllResults: Function not yet defined. Script may not have loaded.');
+        const realFn = window.showAllResults._real;
+        if (realFn) realFn();
     };
     
     window.showMidSemesterResults = function() {
-        console.error('showMidSemesterResults: Function not yet defined. Script may not have loaded.');
+        const realFn = window.showMidSemesterResults._real;
+        if (realFn) realFn();
     };
     
     window.showFinalSemesterResults = function() {
-        console.error('showFinalSemesterResults: Function not yet defined. Script may not have loaded.');
+        const realFn = window.showFinalSemesterResults._real;
+        if (realFn) realFn();
     };
     
     // Log that pre-definitions are set
-    console.log('Student Exam Portal: Global functions pre-defined');
+    console.log('✓ Student Exam Portal: Global functions pre-defined');
 })();
 
 // Helper function to parse options (handles both JSON arrays and comma-separated strings)
