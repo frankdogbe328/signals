@@ -773,6 +773,8 @@
     <script src="/js/supabase-helpers.js"></script>
     <script src="/js/app.js"></script>
     <script src="/js/auth.js"></script>
+    <script src="/js/mobile.js"></script>
+    <script src="/js/mobile-menu-fix.js"></script>
     <script src="/js/modal.js"></script>
     <!-- Performance Utilities -->
     <script src="/js/performance.js"></script>
@@ -854,6 +856,27 @@
             closeHelpModal();
         }
     }
+        // Scroll to section function for mobile menu navigation
+        function scrollToExamSection(section) {
+            if (section === 'dashboard') {
+                // Switch to dashboard view
+                if (typeof showDashboardView === 'function') {
+                    showDashboardView();
+                }
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } else if (section === 'results') {
+                // Switch to results view
+                if (typeof showResultsView === 'function') {
+                    showResultsView();
+                }
+                // Scroll to top
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        }
+        
+        // Make functions globally accessible
+        window.scrollToExamSection = scrollToExamSection;
     </script>
 </body>
 </html>
