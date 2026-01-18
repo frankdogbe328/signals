@@ -617,7 +617,23 @@ body {
 .mobile-menu-content a.btn {
     text-decoration: none;
     text-align: center;
-    display: block;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.mobile-menu-content button.btn {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.mobile-menu-link {
+    width: 100% !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin-bottom: 10px;
 }
 
 .mobile-menu-link {
@@ -1373,12 +1389,11 @@ body {
         justify-content: center;
     }
     
+    /* Hide nav-user on mobile - all navigation goes in hamburger */
     .nav-user {
-        width: 100%;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 10px;
-        flex-direction: column;
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
     }
     
     .nav-user span {
