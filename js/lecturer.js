@@ -1255,24 +1255,24 @@ function loadMaterialStats(materials, students, progress) {
     // Sort by completion rate (lowest first to see what needs attention)
     materialStats.sort((a, b) => a.completionRate - b.completionRate);
     
-    let html = '<div class="material-stats-list">';
+    let html = '<div class="material-stats-list" style="width: 100%; max-width: 100%; overflow-x: hidden; box-sizing: border-box;">';
     materialStats.forEach(stat => {
         html += `
-            <div class="material-stat-item">
-                <div class="material-stat-header">
-                    <div>
-                        <strong>${stat.sequence ? `Module ${stat.sequence}: ` : ''}${stat.title}</strong>
-                        <div class="material-stat-meta">
+            <div class="material-stat-item" style="width: 100%; max-width: 100%; box-sizing: border-box; overflow: hidden; word-wrap: break-word;">
+                <div class="material-stat-header" style="width: 100%; gap: 15px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 0; overflow: hidden;">
+                        <strong style="display: block; word-wrap: break-word; overflow-wrap: break-word;">${stat.sequence ? `Module ${stat.sequence}: ` : ''}${stat.title}</strong>
+                        <div class="material-stat-meta" style="flex-wrap: wrap;">
                             <span>${stat.class}</span>
                             ${stat.category ? `<span>📁 ${stat.category}</span>` : ''}
                         </div>
                     </div>
-                    <div class="material-stat-rate">${stat.completionRate}%</div>
+                    <div class="material-stat-rate" style="flex-shrink: 0; white-space: nowrap;">${stat.completionRate}%</div>
                 </div>
-                <div class="progress-bar-container" style="margin-top: 10px;">
+                <div class="progress-bar-container" style="margin-top: 10px; width: 100%;">
                     <div class="progress-bar" style="width: ${stat.completionRate}%"></div>
                 </div>
-                <div class="material-stat-footer">
+                <div class="material-stat-footer" style="width: 100%;">
                     <span>${stat.completedStudents}/${stat.totalStudents} students completed</span>
                 </div>
             </div>
