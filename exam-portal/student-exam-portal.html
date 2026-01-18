@@ -596,13 +596,51 @@
         <div id="myResultsView" style="display: none;">
             <div class="dashboard-header">
                 <h2>My Exam Results</h2>
-                <p>View all your completed exam results</p>
+                <p>View your mid-semester and final semester results</p>
+            </div>
+            
+            <!-- Results Tab Navigation -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; border-bottom: 2px solid #e0e0e0; padding-bottom: 10px; flex-wrap: wrap;">
+                <button id="allResultsTab" onclick="showAllResults()" class="btn btn-secondary" style="width: auto; padding: 10px 20px;">📊 All Results</button>
+                <button id="midSemesterResultsTab" onclick="showMidSemesterResults()" class="btn btn-warning" style="width: auto; padding: 10px 20px;">📋 Mid-Semester Results</button>
+                <button id="finalSemesterResultsTab" onclick="showFinalSemesterResults()" class="btn btn-success" style="width: auto; padding: 10px 20px;">🎓 Final Semester Results</button>
             </div>
             
             <div class="dashboard-content">
-                <div id="allResultsList">
-                    <!-- All results will be loaded here -->
+                <!-- All Results Section -->
+                <div id="allResultsSection">
+                    <div id="allResultsList">
+                        <!-- All results will be loaded here -->
+                    </div>
                 </div>
+                
+                <!-- Mid-Semester Results Section -->
+                <div id="midSemesterResultsSection" style="display: none;">
+                    <div style="background: #fffbf0; border-left: 4px solid #ffc107; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                        <h3 style="color: #856404; margin-bottom: 10px;">📋 Mid-Semester Results</h3>
+                        <p style="color: #666; font-size: 14px; margin: 0;">BFT 1, Mid CS Exams, Mid Course Exercise, and Quizzes from mid-semester period</p>
+                    </div>
+                    <div id="midSemesterResultsList">
+                        <p class="empty-state">Loading mid-semester results...</p>
+                    </div>
+                </div>
+                
+                <!-- Final Semester Results Section -->
+                <div id="finalSemesterResultsSection" style="display: none;">
+                    <div style="background: #f0fff4; border-left: 4px solid #28a745; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                        <h3 style="color: #155724; margin-bottom: 10px;">🎓 Final Semester Results</h3>
+                        <p style="color: #666; font-size: 14px; margin: 0;">Complete final semester results including mid-semester + final exams + all accumulated quizzes</p>
+                    </div>
+                    <div id="finalSemesterResultsList">
+                        <p class="empty-state">Loading final semester results...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Auto-refresh indicator -->
+            <div id="resultsRefreshIndicator" style="text-align: center; margin-top: 20px; padding: 10px; color: #666; font-size: 12px;">
+                <span id="lastRefreshTime">Last updated: Just now</span>
+                <button onclick="refreshAllResults()" class="btn btn-primary" style="margin-left: 15px; padding: 5px 15px; font-size: 12px;">🔄 Refresh</button>
             </div>
         </div>
         

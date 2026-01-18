@@ -70,6 +70,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load all results
     loadAllResults();
+    
+    // Auto-refresh results every 30 seconds if on results tab
+    setInterval(() => {
+        const myResultsView = document.getElementById('myResultsView');
+        if (myResultsView && myResultsView.style.display !== 'none') {
+            refreshAllResults();
+        }
+    }, 30000); // 30 seconds
 });
 
 // Load available exams for student
@@ -1748,11 +1756,91 @@ function showResultsTab() {
     loadAllResults();
 }
 
+// Show all results section
+function showAllResults() {
+    document.getElementById('allResultsSection').style.display = 'block';
+    document.getElementById('midSemesterResultsSection').style.display = 'none';
+    document.getElementById('finalSemesterResultsSection').style.display = 'none';
+    
+    // Update tab buttons
+    const allTab = document.getElementById('allResultsTab');
+    const midTab = document.getElementById('midSemesterResultsTab');
+    const finalTab = document.getElementById('finalSemesterResultsTab');
+    
+    if (allTab) {
+        allTab.classList.remove('btn-secondary');
+        allTab.classList.add('btn-primary');
+    }
+    if (midTab) {
+        midTab.classList.remove('btn-primary');
+        midTab.classList.add('btn-secondary');
+    }
+    if (finalTab) {
+        finalTab.classList.remove('btn-primary');
+        finalTab.classList.add('btn-secondary');
+    }
+    
+    loadAllResults();
+}
+
+// Show mid-semester results section
+function showMidSemesterResults() {
+    document.getElementById('allResultsSection').style.display = 'none';
+    document.getElementById('midSemesterResultsSection').style.display = 'block';
+    document.getElementById('finalSemesterResultsSection').style.display = 'none';
+    
+    // Update tab buttons
+    const allTab = document.getElementById('allResultsTab');
+    const midTab = document.getElementById('midSemesterResultsTab');
+    const finalTab = document.getElementById('finalSemesterResultsTab');
+    
+    if (allTab) {
+        allTab.classList.remove('btn-primary');
+        allTab.classList.add('btn-secondary');
+    }
+    if (midTab) {
+        midTab.classList.remove('btn-secondary');
+        midTab.classList.add('btn-warning', 'btn-primary');
+    }
+    if (finalTab) {
+        finalTab.classList.remove('btn-primary');
+        finalTab.classList.add('btn-secondary');
+    }
+    
+    loadMidSemesterResults();
+}
+
+// Show final semester results section
+function showFinalSemesterResults() {
+    document.getElementById('allResultsSection').style.display = 'none';
+    document.getElementById('midSemesterResultsSection').style.display = 'none';
+    document.getElementById('finalSemesterResultsSection').style.display = 'block';
+    
+    // Update tab buttons
+    const allTab = document.getElementById('allResultsTab');
+    const midTab = document.getElementById('midSemesterResultsTab');
+    const finalTab = document.getElementById('finalSemesterResultsTab');
+    
+    if (allTab) {
+        allTab.classList.remove('btn-primary');
+        allTab.classList.add('btn-secondary');
+    }
+    if (midTab) {
+        midTab.classList.remove('btn-primary');
+        midTab.classList.add('btn-secondary');
+    }
+    if (finalTab) {
+        finalTab.classList.remove('btn-secondary');
+        finalTab.classList.add('btn-success', 'btn-primary');
+    }
+    
+    loadFinalSemesterResults();
+}
+
 // Load all exam results for student
 async function loadAllResults() {
     const currentUser = getCurrentUser();
     if (!currentUser || currentUser.role !== 'student') {
-        console.error('Unauthorized access attempt to load results');
         return;
     }
     
@@ -1800,16 +1888,19 @@ async function loadAllResults() {
         });
         
         displayAllResults(attempts, examMap);
+        updateLastRefreshTime();
         
     } catch (error) {
-        console.error('Error loading all results:', error);
-        showError('Failed to load results. Please refresh the page and try again.', 'Error Loading Results');
+        const resultsListEl = document.getElementById('allResultsList');
+        if (resultsListEl) {
+            resultsListEl.innerHTML = '<p class="empty-state">Failed to load results. Please refresh the page and try again.</p>';
+        }
     }
 }
 
 // Display all results
-function displayAllResults(attempts, examMap) {
-    const resultsListEl = document.getElementById('allResultsList');
+function displayAllResults(attempts, examMap, targetElement = null) {
+    const resultsListEl = targetElement || document.getElementById('allResultsList');
     if (!resultsListEl) return;
     
     const gradeColors = {
@@ -1875,22 +1966,148 @@ function displayAllResults(attempts, examMap) {
     }).join('');
 }
 
-// Format class name
-function formatClassName(classId) {
-    const classNames = {
-        'signals-basic': 'SIGNALS BASIC',
-        'signals-b-iii-b-ii': 'SIGNALS B III – B II',
-        'signals-b-ii-b-i': 'SIGNALS B II – B I',
-        'superintendent': 'SUPERINTENDENT',
-        'pre-qualifying': 'PRE-QUALIFYING',
-        'regimental-basic': 'REGIMENTAL BASIC',
-        'regimental-b-iii-b-ii': 'REGIMENTAL B III – B II',
-        'regimental-b-ii-b-i': 'REGIMENTAL B II – B I',
-        'rso-rsi': 'RSO / RSI',
-        'electronic-warfare-course': 'ELECTRONIC WARFARE COURSE',
-        'tactical-drone-course': 'TACTICAL DRONE COURSE'
-    };
-    return classNames[classId] || classId;
+// Load mid-semester results
+async function loadMidSemesterResults() {
+    const currentUser = getCurrentUser();
+    if (!currentUser || currentUser.role !== 'student') {
+        return;
+    }
+    
+    const midSemesterList = document.getElementById('midSemesterResultsList');
+    if (!midSemesterList) return;
+    
+    try {
+        const client = getSupabaseClient();
+        if (!client) {
+            midSemesterList.innerHTML = '<p class="empty-state">Unable to load results. Please refresh the page.</p>';
+            return;
+        }
+        
+        // Get all completed attempts for mid-semester exam types
+        const { data: attempts, error } = await client
+            .from('student_exam_attempts')
+            .select('*')
+            .eq('student_id', currentUser.id)
+            .in('status', ['submitted', 'auto_submitted', 'time_expired'])
+            .order('submitted_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (!attempts || attempts.length === 0) {
+            midSemesterList.innerHTML = '<p class="empty-state">No mid-semester results available yet.</p>';
+            return;
+        }
+        
+        // Get exam details
+        const examIds = [...new Set(attempts.map(a => a.exam_id))];
+        const { data: exams } = await client
+            .from('exams')
+            .select('*')
+            .in('id', examIds);
+        
+        const examMap = {};
+        (exams || []).forEach(exam => {
+            examMap[exam.id] = exam;
+        });
+        
+        // Filter for mid-semester exam types: bft_1, mid_cs_exam, mid_course_exercise, quiz, quiz_manual
+        const midSemesterTypes = ['bft_1', 'mid_cs_exam', 'mid_course_exercise', 'quiz', 'quiz_manual'];
+        const midSemesterAttempts = attempts.filter(attempt => {
+            const exam = examMap[attempt.exam_id];
+            return exam && midSemesterTypes.includes(exam.exam_type);
+        });
+        
+        if (midSemesterAttempts.length === 0) {
+            midSemesterList.innerHTML = '<p class="empty-state">No mid-semester results available yet.</p>';
+            return;
+        }
+        
+        displayAllResults(midSemesterAttempts, examMap, midSemesterList);
+        updateLastRefreshTime();
+        
+    } catch (error) {
+        midSemesterList.innerHTML = '<p class="empty-state">Failed to load mid-semester results. Please refresh the page.</p>';
+    }
+}
+
+// Load final semester results (all results including mid-semester)
+async function loadFinalSemesterResults() {
+    const currentUser = getCurrentUser();
+    if (!currentUser || currentUser.role !== 'student') {
+        return;
+    }
+    
+    const finalSemesterList = document.getElementById('finalSemesterResultsList');
+    if (!finalSemesterList) return;
+    
+    try {
+        const client = getSupabaseClient();
+        if (!client) {
+            finalSemesterList.innerHTML = '<p class="empty-state">Unable to load results. Please refresh the page.</p>';
+            return;
+        }
+        
+        // Get all completed attempts (final semester includes everything)
+        const { data: attempts, error } = await client
+            .from('student_exam_attempts')
+            .select('*')
+            .eq('student_id', currentUser.id)
+            .in('status', ['submitted', 'auto_submitted', 'time_expired'])
+            .order('submitted_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        if (!attempts || attempts.length === 0) {
+            finalSemesterList.innerHTML = '<p class="empty-state">No final semester results available yet.</p>';
+            return;
+        }
+        
+        // Get exam details
+        const examIds = [...new Set(attempts.map(a => a.exam_id))];
+        const { data: exams } = await client
+            .from('exams')
+            .select('*')
+            .in('id', examIds);
+        
+        const examMap = {};
+        (exams || []).forEach(exam => {
+            examMap[exam.id] = exam;
+        });
+        
+        // Final semester includes ALL exam types (mid-semester + final semester + quizzes)
+        displayAllResults(attempts, examMap, finalSemesterList);
+        updateLastRefreshTime();
+        
+    } catch (error) {
+        finalSemesterList.innerHTML = '<p class="empty-state">Failed to load final semester results. Please refresh the page.</p>';
+    }
+}
+
+// Refresh all results
+async function refreshAllResults() {
+    const allSection = document.getElementById('allResultsSection');
+    const midSection = document.getElementById('midSemesterResultsSection');
+    const finalSection = document.getElementById('finalSemesterResultsSection');
+    
+    if (allSection && allSection.style.display !== 'none') {
+        await loadAllResults();
+    } else if (midSection && midSection.style.display !== 'none') {
+        await loadMidSemesterResults();
+    } else if (finalSection && finalSection.style.display !== 'none') {
+        await loadFinalSemesterResults();
+    }
+    
+    updateLastRefreshTime();
+}
+
+// Update last refresh time display
+function updateLastRefreshTime() {
+    const refreshTimeEl = document.getElementById('lastRefreshTime');
+    if (refreshTimeEl) {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+        refreshTimeEl.textContent = `Last updated: ${timeString}`;
+    }
 }
 
 // Go back to exams list
