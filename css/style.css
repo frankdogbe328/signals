@@ -610,10 +610,12 @@ body {
 }
 
 .mobile-menu-content {
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+    padding: 20px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 15px !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .mobile-menu-user {
