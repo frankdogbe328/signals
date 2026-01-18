@@ -1121,17 +1121,6 @@ async function loadAnalytics() {
         materials = materials.filter(m => registeredSubjects.includes(m.course));
     }
     
-    // Get users and progress
-    if (typeof getUsersFromSupabase === 'function') {
-        try {
-            users = await getUsersFromSupabase({});
-        } catch (err) {
-            users = JSON.parse(localStorage.getItem('users') || '[]');
-        }
-    } else {
-        users = JSON.parse(localStorage.getItem('users') || '[]');
-    }
-    
     if (typeof getProgressFromSupabase === 'function') {
         try {
             const progressData = await getProgressFromSupabase({});
