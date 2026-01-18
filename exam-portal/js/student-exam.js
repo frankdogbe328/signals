@@ -2452,7 +2452,16 @@ function formatExamTypeForStudent(examType) {
     return types[examType] || examType;
 }
 
-// Make function globally accessible
+// Make functions globally accessible for onclick handlers
 if (typeof window !== 'undefined') {
+    // Tab navigation functions - required for onclick handlers in HTML
+    window.showExamsTab = showExamsTab;
+    window.showResultsTab = showResultsTab;
+    window.showAllResults = showAllResults;
+    window.showMidSemesterResults = showMidSemesterResults;
+    window.showFinalSemesterResults = showFinalSemesterResults;
+    
+    // Other functions
     window.exportMyResultPDF = exportMyResultPDF;
+    window.refreshAllResults = refreshAllResults;
 }
