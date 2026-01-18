@@ -330,8 +330,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Display lecturer name with Welcome
     const lecturerNameEl = document.getElementById('lecturerName');
+    const mobileLecturerNameEl = document.getElementById('mobileLecturerName');
     if (lecturerNameEl) {
         lecturerNameEl.textContent = `Welcome, ${currentUser.name}`;
+    }
+    if (mobileLecturerNameEl) {
+        mobileLecturerNameEl.textContent = `Welcome, ${currentUser.name}`;
     }
     
     // Load lecturer's registered subjects
