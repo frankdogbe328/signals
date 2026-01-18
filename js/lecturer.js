@@ -169,17 +169,29 @@ function formatClassName(classId) {
     const classNames = {
         'signals-basic': 'SIGNALS BASIC',
         'signals-b-iii-b-ii': 'SIGNALS B III – B II',
-        'signals-b-ii-b-i': 'SIGNALS B II – B I',
+        'signals-b-ii-b-i': 'SIGNALS B II – B I',  // Capital I throughout
         'superintendent': 'SUPERINTENDENT',
         'pre-qualifying': 'PRE-QUALIFYING',
         'regimental-basic': 'REGIMENTAL BASIC',
-        'regimental-b-iii-b-ii': 'REGIMENTAL B III – B II',
-        'regimental-b-ii-b-i': 'REGIMENTAL B II – B I',
+        'regimental-b-iii-b-ii': 'REGIMENTAL B III – B II',  // Capital I throughout
+        'regimental-b-ii-b-i': 'REGIMENTAL B II – B I',  // Capital I throughout
         'rso-rsi': 'RSO / RSI',
         'electronic-warfare-course': 'ELECTRONIC WARFARE COURSE',
         'tactical-drone-course': 'TACTICAL DRONE COURSE'
     };
-    return classNames[classId] || classId;
+    
+    // Fallback: Ensure capital I in class names if not in mapping
+    if (!classNames[classId]) {
+        // Replace lowercase 'i' with uppercase 'I' in roman numerals (B ii → B II, B i → B I, etc.)
+        let formatted = classId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        // Fix roman numerals: ensure 'i' is capitalized when after 'B' (e.g., "B Ii" → "B II", "B I" → "B I")
+        formatted = formatted.replace(/\bB\s+([Ii]{1,3})\b/g, (match, roman) => {
+            return 'B ' + roman.toUpperCase(); // Capitalize all I's in roman numerals after B
+        });
+        return formatted;
+    }
+    
+    return classNames[classId];
 }
 
 // Load and display lecturer's registered subjects grouped by class
