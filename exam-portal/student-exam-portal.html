@@ -803,6 +803,17 @@
     <script src="../js/performance-optimizer.js"></script>
     <script src="js/student-exam.js"></script>
     <script>
+        // Verify functions are loaded
+        if (typeof showExamsTab === 'undefined' || typeof showResultsTab === 'undefined') {
+            console.error('CRITICAL: Tab navigation functions not loaded!');
+            console.error('showExamsTab defined:', typeof showExamsTab !== 'undefined');
+            console.error('showResultsTab defined:', typeof showResultsTab !== 'undefined');
+            console.error('window.showExamsTab defined:', typeof window.showExamsTab !== 'undefined');
+            console.error('window.showResultsTab defined:', typeof window.showResultsTab !== 'undefined');
+        } else {
+            console.log('✓ Tab navigation functions loaded successfully');
+        }
+        
         // Initialize error monitoring for student exam portal
         if (typeof ErrorMonitoring !== 'undefined') {
             ErrorMonitoring.init({
