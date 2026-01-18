@@ -594,6 +594,19 @@ body {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
+    padding: 20px !important;
+}
+
+.mobile-menu.active .mobile-menu-content * {
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+.mobile-menu.active .mobile-menu-link {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
 }
 
 .mobile-menu-content {
