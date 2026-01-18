@@ -482,11 +482,18 @@ body {
     /* Keep nav-user hidden on mobile - in hamburger menu */
     .nav-user {
         display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
     }
     
-    /* Ensure hamburger is visible on small mobile */
+    /* Ensure hamburger is visible on small mobile - Position on RIGHT */
     .hamburger {
         display: flex !important;
+        margin-left: auto !important; /* Push to right */
+        order: 3 !important;
         visibility: visible !important;
         opacity: 1 !important;
     }
