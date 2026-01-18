@@ -345,7 +345,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     
     // Load materials (will be filtered by registered subjects)
     loadMaterials();
-    loadAnalytics();
+    
+    // Defer analytics load to prevent blocking initial page render
+    setTimeout(() => {
+        loadAnalytics().catch(err => console.error('Error loading analytics on page load:', err));
+    }, 500);
     
     // Handle upload form
     const uploadForm = document.getElementById('uploadForm');
@@ -1024,25 +1028,93 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
     }
 }
 
+// Debounce and cache for loadAnalytics to prevent freezing
+let analyticsCache = null;
+let analyticsCacheTime = 0;
+const ANALYTICS_CACHE_TTL = 30000; // 30 seconds cache
+let analyticsLoading = false;
+let analyticsLoadingPromise = null;
+
 async function loadAnalytics() {
-    // Get current lecturer's registered subjects
-    const currentUser = getCurrentUser();
-    const registeredSubjects = currentUser.courses || [];
-    
-    let materials = [];
-    let users = [];
-    let progress = {};
-    
-    // Try Supabase first
-    if (typeof getMaterialsFromSupabase === 'function') {
-        try {
-            materials = await getMaterialsFromSupabase({});
-        } catch (err) {
-            materials = JSON.parse(localStorage.getItem('materials') || '[]');
-        }
-    } else {
-        materials = JSON.parse(localStorage.getItem('materials') || '[]');
+    // Prevent multiple simultaneous loads
+    if (analyticsLoading && analyticsLoadingPromise) {
+        return analyticsLoadingPromise;
     }
+    
+    // Check cache first
+    const now = Date.now();
+    if (analyticsCache && (now - analyticsCacheTime) < ANALYTICS_CACHE_TTL) {
+        console.log('Using cached analytics data');
+        updateAnalyticsDisplay(analyticsCache);
+        return Promise.resolve(analyticsCache);
+    }
+    
+    analyticsLoading = true;
+    analyticsLoadingPromise = (async () => {
+        try {
+            // Use Performance Optimizer if available to batch queries
+            const optimizeQuery = window.PerformanceOptimizer && window.PerformanceOptimizer.optimizedQuery;
+            
+            // Get current lecturer's registered subjects
+            const currentUser = getCurrentUser();
+            const registeredSubjects = currentUser.courses || [];
+            
+            let materials = [];
+            let users = [];
+            let progress = {};
+            
+            // Batch queries using Performance Optimizer if available
+            if (optimizeQuery) {
+                try {
+                    [materials, users] = await Promise.all([
+                        optimizeQuery(() => getMaterialsFromSupabase({}), 'materials', 60000),
+                        optimizeQuery(() => getUsersFromSupabase({}), 'users', 60000)
+                    ]);
+                } catch (err) {
+                    console.error('Optimized query error:', err);
+                    // Fallback to normal queries
+                    if (typeof getMaterialsFromSupabase === 'function') {
+                        try {
+                            materials = await getMaterialsFromSupabase({});
+                        } catch (e) {
+                            materials = JSON.parse(localStorage.getItem('materials') || '[]');
+                        }
+                    } else {
+                        materials = JSON.parse(localStorage.getItem('materials') || '[]');
+                    }
+                    
+                    if (typeof getUsersFromSupabase === 'function') {
+                        try {
+                            users = await getUsersFromSupabase({});
+                        } catch (e) {
+                            users = JSON.parse(localStorage.getItem('users') || '[]');
+                        }
+                    } else {
+                        users = JSON.parse(localStorage.getItem('users') || '[]');
+                    }
+                }
+            } else {
+                // Fallback: Normal queries
+                if (typeof getMaterialsFromSupabase === 'function') {
+                    try {
+                        materials = await getMaterialsFromSupabase({});
+                    } catch (err) {
+                        materials = JSON.parse(localStorage.getItem('materials') || '[]');
+                    }
+                } else {
+                    materials = JSON.parse(localStorage.getItem('materials') || '[]');
+                }
+                
+                if (typeof getUsersFromSupabase === 'function') {
+                    try {
+                        users = await getUsersFromSupabase({});
+                    } catch (err) {
+                        users = JSON.parse(localStorage.getItem('users') || '[]');
+                    }
+                } else {
+                    users = JSON.parse(localStorage.getItem('users') || '[]');
+                }
+            }
     
     // Filter materials to only show courses/subjects the lecturer is registered for
     if (registeredSubjects.length > 0) {
@@ -1285,23 +1357,35 @@ function loadMaterialStats(materials, students, progress) {
 
 function showAnalytics(tab) {
     // Hide all tabs
-    document.querySelectorAll('.analytics-tab').forEach(t => t.style.display = 'none');
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+    const tabs = document.querySelectorAll('.analytics-tab');
+    const buttons = document.querySelectorAll('.tab-btn');
     
-    // Show selected tab
-    if (tab === 'overview') {
-        document.getElementById('overviewTab').style.display = 'block';
-        document.querySelectorAll('.tab-btn')[0].classList.add('active');
-    } else if (tab === 'class-progress') {
-        document.getElementById('classProgressTab').style.display = 'block';
-        document.querySelectorAll('.tab-btn')[1].classList.add('active');
-    } else if (tab === 'material-stats') {
-        document.getElementById('materialStatsTab').style.display = 'block';
-        document.querySelectorAll('.tab-btn')[2].classList.add('active');
+    // Batch DOM updates
+    requestAnimationFrame(() => {
+        tabs.forEach(t => t.style.display = 'none');
+        buttons.forEach(btn => btn.classList.remove('active'));
+        
+        // Show selected tab
+        if (tab === 'overview') {
+            const overviewTab = document.getElementById('overviewTab');
+            if (overviewTab) overviewTab.style.display = 'block';
+            if (buttons[0]) buttons[0].classList.add('active');
+        } else if (tab === 'class-progress') {
+            const classProgressTab = document.getElementById('classProgressTab');
+            if (classProgressTab) classProgressTab.style.display = 'block';
+            if (buttons[1]) buttons[1].classList.add('active');
+        } else if (tab === 'material-stats') {
+            const materialStatsTab = document.getElementById('materialStatsTab');
+            if (materialStatsTab) materialStatsTab.style.display = 'block';
+            if (buttons[2]) buttons[2].classList.add('active');
+        }
+    });
+    
+    // Reload analytics data only if cache is stale (debounced)
+    const now = Date.now();
+    if (!analyticsCache || (now - analyticsCacheTime) >= ANALYTICS_CACHE_TTL) {
+        loadAnalytics().catch(err => console.error('Error loading analytics:', err));
     }
-    
-    // Reload analytics data
-    loadAnalytics();
 }
 
 async function loadMaterials() {
