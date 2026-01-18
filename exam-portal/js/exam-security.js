@@ -747,29 +747,41 @@ function handleVisibilityChange() {
 function preventNavigation() {
     window.addEventListener('beforeunload', handleBeforeUnload);
     
-    // Enhanced back button prevention with warning and auto-submit
+    // Enhanced back button prevention with 3-strike system: 1st = warning, 2nd = warning, 3rd = auto-submit
     let backButtonAttempts = 0;
     window.addEventListener('popstate', function(e) {
         if (securityEnabled) {
             backButtonAttempts++;
             
             if (backButtonAttempts === 1) {
-                // First attempt: Show warning
+                // First attempt: Show first warning
                 e.preventDefault();
                 window.history.pushState(null, null, window.location.href);
                 
                 if (typeof showError === 'function') {
-                    showError('⚠️ WARNING: Going back will auto-submit your exam!\n\nIf you go back again, your exam will be automatically submitted with your current answers.\n\nStay on this page to continue your exam.', 'Back Button Warning');
+                    showError('⚠️ FIRST WARNING: Using the back button during an exam is not allowed!\n\nIf you try to go back again, you will receive a final warning.\n\nStay on this page to continue your exam.', 'Back Button Warning');
                 } else {
-                    alert('⚠️ WARNING: Going back will auto-submit your exam!\n\nIf you go back again, your exam will be automatically submitted with your current answers.');
+                    alert('⚠️ FIRST WARNING: Using the back button during an exam is not allowed!\n\nIf you try to go back again, you will receive a final warning.\n\nStay on this page to continue your exam.');
                 }
-            } else if (backButtonAttempts >= 2) {
-                // Second attempt: Auto-submit exam
+            } else if (backButtonAttempts === 2) {
+                // Second attempt: Show final warning
                 e.preventDefault();
                 window.history.pushState(null, null, window.location.href);
                 
                 if (typeof showError === 'function') {
-                    showError('Exam auto-submitted due to back button usage. Your answers have been saved.', 'Exam Auto-Submitted');
+                    showError('🚨 FINAL WARNING: You are trying to use the back button again!\n\nIf you try to go back one more time, your exam will be automatically submitted with your current answers.\n\nThis may be considered malpractice/cheating. Stay on this page to continue your exam.', 'Final Back Button Warning');
+                } else {
+                    alert('🚨 FINAL WARNING: You are trying to use the back button again!\n\nIf you try to go back one more time, your exam will be automatically submitted with your current answers.\n\nThis may be considered malpractice/cheating. Stay on this page to continue your exam.');
+                }
+            } else if (backButtonAttempts >= 3) {
+                // Third attempt: Auto-submit exam (malpractice detected)
+                e.preventDefault();
+                window.history.pushState(null, null, window.location.href);
+                
+                if (typeof showError === 'function') {
+                    showError('❌ EXAM AUTO-SUBMITTED\n\nYour exam has been automatically submitted because you tried to use the back button multiple times during the exam.\n\nThis behavior is considered malpractice/cheating. Your current answers have been saved and submitted.', 'Exam Auto-Submitted');
+                } else {
+                    alert('❌ EXAM AUTO-SUBMITTED\n\nYour exam has been automatically submitted because you tried to use the back button multiple times during the exam.\n\nThis behavior is considered malpractice/cheating. Your current answers have been saved and submitted.');
                 }
                 
                 // Auto-submit the exam
