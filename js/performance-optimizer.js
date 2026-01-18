@@ -150,15 +150,14 @@ class PerformanceOptimizer {
                     request.reject(error);
                 })
                 .finally(() => {
+                    clearTimeout(timeoutId);
                     this.activeRequests.delete(requestId);
                     
-                    // Yield to browser between requests to prevent jamming
-                    await new Promise(resolve => setTimeout(resolve, this.requestDelay));
-                    this.processQueue();
+                    // Add delay before processing next request
+                    setTimeout(() => {
+                        this.processQueue();
+                    }, this.requestDelay);
                 });
-            
-            // Small delay to prevent overwhelming
-            await new Promise(resolve => setTimeout(resolve, 10));
         }
         
         this.isProcessingQueue = false;
