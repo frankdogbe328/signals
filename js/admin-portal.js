@@ -118,7 +118,6 @@ async function loadAllStudents() {
         
         if (error) {
             showError('Failed to load students. Please refresh the page.', 'Loading Error');
-            showError('Failed to load students. Please refresh the page.', 'Loading Error');
             return;
         }
         
