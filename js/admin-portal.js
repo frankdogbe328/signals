@@ -599,14 +599,15 @@ async function releaseMidSemesterResults() {
         // Build query with class filter - Mid-semester is STANDALONE
         // Mid-semester includes: BFT 1, Mid Exams, Mid Exercise, and Quizzes done during mid-semester
         // Mark as mid-semester released (standalone, not included in final)
+        // IMPORTANT: Release ALL mid-semester exams regardless of previous release status
+        // This ensures manually entered scores are also included in the release
         let query = supabase
             .from('exams')
             .update({ 
                 results_released: true,
                 mid_semester_released: true  // Mark as mid-semester standalone
             })
-            .in('exam_type', ['bft_1', 'mid_cs_exam', 'mid_course_exercise', 'quiz', 'quiz_manual'])
-            .eq('results_released', false);
+            .in('exam_type', ['bft_1', 'mid_cs_exam', 'mid_course_exercise', 'quiz', 'quiz_manual']);
         
         // Filter by class if not "all"
         if (selectedClass !== 'all') {
