@@ -431,14 +431,25 @@ body {
         display: none !important;
     }
     
-    /* Show hamburger menu on mobile - MUST use !important to override base style */
+    /* Show hamburger menu on mobile - Position on RIGHT side */
     .hamburger {
         display: flex !important;
-        margin-left: auto;
-        order: 2;
+        margin-left: auto !important; /* Push to right */
+        order: 3 !important; /* Make sure it's last */
         z-index: 1001;
         visibility: visible !important;
         opacity: 1 !important;
+        position: relative;
+    }
+    
+    /* Ensure nav-user is completely hidden on mobile */
+    .nav-user {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        width: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
     }
 }
 

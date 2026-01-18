@@ -581,7 +581,9 @@
                 <div class="mobile-menu-user" id="mobileStudentName"></div>
                 
                 <!-- Navigation Links -->
-                <a href="/student-dashboard.html" class="btn btn-secondary mobile-menu-link" onclick="toggleMobileMenu();">📚 LMS Portal</a>
+                <button onclick="window.location.href='/student-dashboard.html'; toggleMobileMenu();" class="btn btn-secondary mobile-menu-link" style="width: 100%; padding: 14px 20px; font-size: 15px; min-height: 48px; margin: 0; border-radius: 8px; font-weight: 600; cursor: pointer; background-color: #6c757d; color: white; border: none; text-align: center;">
+                    📚 LMS Portal
+                </button>
                 
                 <button onclick="showExamsTab(); toggleMobileMenu();" class="btn btn-primary mobile-menu-link">
                     📝 Available Exams
