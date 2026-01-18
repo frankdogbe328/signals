@@ -106,7 +106,6 @@ async function loadAllStudents() {
     try {
         const supabase = getSupabaseClient();
         if (!supabase) {
-            console.error('Supabase client not available');
             showError('Database connection not available. Please refresh the page and try again.', 'Connection Error');
             return;
         }
@@ -118,17 +117,14 @@ async function loadAllStudents() {
             .order('created_at', { ascending: false });
         
         if (error) {
-            console.error('Error loading students:', error);
             showError('Failed to load students. Please refresh the page.', 'Loading Error');
             showError('Failed to load students. Please refresh the page.', 'Loading Error');
             return;
         }
         
         allStudents = students || [];
-        console.log(`Loaded ${allStudents.length} students`);
         
     } catch (error) {
-        console.error('Error loading all students:', error);
         showError('An error occurred while loading students. Please try again.', 'Error');
     }
 }
@@ -138,7 +134,6 @@ async function loadStatistics() {
     try {
         const supabase = getSupabaseClient();
         if (!supabase) {
-            console.error('Supabase client not available');
             showError('Database connection not available. Please refresh the page and try again.', 'Connection Error');
             return;
         }
@@ -174,8 +169,7 @@ async function loadStatistics() {
         document.getElementById('resultsReleased').textContent = releasedCount || 0;
         
     } catch (error) {
-        console.error('Error loading statistics:', error);
-        // Statistics errors are non-critical, only log to console
+        // Statistics errors are non-critical - silently fail
     }
 }
 
@@ -201,7 +195,6 @@ async function loadResults() {
     try {
         const supabase = getSupabaseClient();
         if (!supabase) {
-            console.error('Supabase client not available');
             showError('Database connection not available. Please refresh the page and try again.', 'Connection Error');
             return;
         }
@@ -256,7 +249,6 @@ async function loadResults() {
         const { data: grades, error } = await query;
         
         if (error) {
-            console.error('Error loading results:', error);
             showError('Failed to load results. Please try again.', 'Error');
             return;
         }
@@ -277,7 +269,6 @@ async function loadResults() {
         displayResultsGroupedByClass(filteredResults);
         
     } catch (error) {
-        console.error('Error loading results:', error);
         showError('Failed to load results. Please try again.', 'Error');
     }
 }
@@ -562,7 +553,6 @@ async function releaseExamResults(examId) {
             .eq('id', examId);
         
         if (error) {
-            console.error('Error releasing results:', error);
             showError('Failed to release results. Please try again.', 'Error');
             return;
         }
@@ -575,7 +565,6 @@ async function releaseExamResults(examId) {
         }, 500);
         
     } catch (error) {
-        console.error('Error releasing results:', error);
         showError('Failed to release results. Please try again.', 'Error');
     }
 }
@@ -618,7 +607,6 @@ async function releaseMidSemesterResults() {
         const { error, count } = await query;
         
         if (error) {
-            console.error('Error releasing mid-semester results:', error);
             showError('Failed to release mid-semester results. Please try again.', 'Error');
             return;
         }
@@ -632,7 +620,6 @@ async function releaseMidSemesterResults() {
         }, 500);
         
     } catch (error) {
-        console.error('Error releasing mid-semester results:', error);
         showError('Failed to release mid-semester results. Please try again.', 'Error');
     }
 }
@@ -693,7 +680,6 @@ async function releaseFinalSemesterResults() {
         const { error } = await query;
         
         if (error) {
-            console.error('Error releasing final semester results:', error);
             showError('Failed to release final semester results. Please try again.', 'Error');
             return;
         }
@@ -708,7 +694,6 @@ async function releaseFinalSemesterResults() {
         }, 500);
         
     } catch (error) {
-        console.error('Error releasing final semester results:', error);
         showError('Failed to release final semester results. Please try again.', 'Error');
     }
 }
@@ -727,7 +712,6 @@ async function loadFinalGrades() {
     try {
         const supabase = getSupabaseClient();
         if (!supabase) {
-            console.error('Supabase client not available');
             showError('Database connection not available. Please refresh the page and try again.', 'Connection Error');
             return;
         }
@@ -751,7 +735,6 @@ async function loadFinalGrades() {
             `);
         
         if (error) {
-            console.error('Error loading final grades:', error);
             showError('Failed to load final grades. Please refresh the page.', 'Loading Error');
             return;
         }
@@ -823,7 +806,6 @@ async function loadFinalGrades() {
         displayFinalGrades(classGroups);
         
     } catch (error) {
-        console.error('Error loading final grades:', error);
         showError('An error occurred while loading final grades. Please try again.', 'Error');
     }
 }
@@ -1022,7 +1004,6 @@ function getGradeThresholds() {
         try {
             return JSON.parse(saved);
         } catch (e) {
-            console.error('Error parsing grade thresholds:', e);
         }
     }
     return { A: 80, B: 70, C: 60, D: 50 };
@@ -1109,7 +1090,6 @@ async function generateNextStudentIndex(classId) {
             .order('created_at', { ascending: true }); // Order by registration time
         
         if (error) {
-            console.error('Error fetching students:', error);
             // Fallback: try to generate based on count
             const { data: allStudents } = await supabase
                 .from('users')
@@ -1133,7 +1113,6 @@ async function generateNextStudentIndex(classId) {
         return `${prefix}-${String(nextNumber).padStart(3, '0')}`;
         
     } catch (error) {
-        console.error('Error generating student index:', error);
         // Fallback: return a timestamp-based index
         const prefix = getClassIndexPrefix(classId);
         const timestamp = Date.now().toString().slice(-6);
@@ -1282,7 +1261,6 @@ async function updateManualScoreTypeDropdown(classId) {
         }
         
     } catch (error) {
-        console.error('Error updating score type dropdown:', error);
         resetManualScoreTypeDropdown();
     }
 }
@@ -1454,7 +1432,6 @@ async function loadManualScoreStudents() {
         container.innerHTML = html;
         
     } catch (error) {
-        console.error('Error loading manual score students:', error);
         showError('Failed to load students for manual score entry. Please refresh the page.', 'Loading Error');
         container.innerHTML = '<p class="empty-state" style="color: red;">Error loading students</p>';
     }
@@ -1487,7 +1464,6 @@ async function loadBFTStudents() {
             .order('name', { ascending: true });
         
         if (error) {
-            console.error('Error loading students:', error);
             showError('Failed to load students. Please refresh the page.', 'Loading Error');
             showError('Failed to load students. Please refresh the page.', 'Loading Error');
             container.innerHTML = '<p class="empty-state" style="color: red;">Error loading students</p>';
@@ -1598,7 +1574,6 @@ async function loadBFTStudents() {
         container.innerHTML = html;
         
     } catch (error) {
-        console.error('Error loading BFT students:', error);
         showError('Failed to load students for BFT entry. Please refresh the page.', 'Loading Error');
         container.innerHTML = '<p class="empty-state" style="color: red;">Error loading students</p>';
     }
@@ -1633,7 +1608,6 @@ async function findOrCreateAdminUser(supabase) {
             try {
                 hashedPassword = await SecurityUtils.hashPassword(systemAdminData.password);
             } catch (hashError) {
-                console.warn('Password hashing failed:', hashError);
             }
         }
         
@@ -1653,7 +1627,6 @@ async function findOrCreateAdminUser(supabase) {
             return newAdmin.id;
         }
     } catch (err) {
-        console.error('Error creating admin user:', err);
     }
     
     return null;
@@ -1667,7 +1640,6 @@ async function getOrCreateManualExam(classId, examType, subject) {
     // Get admin user ID (for lecturer_id requirement)
     let currentUser = getCurrentUser();
     if (!currentUser || currentUser.role !== 'admin') {
-        console.error('Error: Admin user not found when creating manual exam');
         showError('Admin session expired. Please log out and log back in.', 'Session Error');
         return null;
     }
@@ -1677,7 +1649,6 @@ async function getOrCreateManualExam(classId, examType, subject) {
     let adminUserId = null;
     
     // First, try to find any admin user in the database
-    console.log('Searching for admin user in database...');
     const { data: anyAdmin, error: adminError } = await supabase
         .from('users')
         .select('id')
@@ -1687,10 +1658,8 @@ async function getOrCreateManualExam(classId, examType, subject) {
     
     if (!adminError && anyAdmin) {
         adminUserId = anyAdmin.id;
-        console.log('Using existing admin user from database:', adminUserId);
     } else {
         // No admin user found - create one automatically
-        console.warn('No admin user found in database. Creating system admin user...');
         showInfo('No admin user found. Attempting to create one automatically...', 'System Notice');
         try {
             // Use the helper function to find or create admin user
@@ -1698,7 +1667,6 @@ async function getOrCreateManualExam(classId, examType, subject) {
             
             if (!adminUserId) {
                 // If helper function failed, try lecturer as fallback
-                console.warn('Admin creation failed, trying lecturer as fallback...');
                 showInfo('Admin creation failed. Trying alternative method...', 'System Notice');
                 const { data: anyLecturer, error: lecturerError } = await supabase
                     .from('users')
@@ -1709,21 +1677,18 @@ async function getOrCreateManualExam(classId, examType, subject) {
                 
                 if (!lecturerError && anyLecturer) {
                     adminUserId = anyLecturer.id;
-                    console.log('Using lecturer user as fallback:', adminUserId);
                 } else {
                     showError('No admin user found and unable to create one. Please create an admin user manually using the SQL script.', 'Database Error');
                     return null;
                 }
             }
         } catch (createErr) {
-            console.error('Error creating system admin user:', createErr);
             showError('No admin user found in database. Please run the SQL script to create an admin user before entering scores.', 'Database Error');
             return null;
         }
     }
     
     if (!adminUserId) {
-        console.error('Failed to get or create admin user ID');
         showError('Unable to verify admin user. Please run the SQL script to create an admin user and refresh the page.', 'Database Error');
         return null;
     }
@@ -1736,12 +1701,10 @@ async function getOrCreateManualExam(classId, examType, subject) {
         .maybeSingle();
     
     if (finalCheckError || !finalCheck) {
-        console.error('Admin user ID verification failed:', { adminUserId, error: finalCheckError });
         showError('Admin user verification failed. Please run the SQL script to create an admin user and refresh the page.', 'Database Error');
         return null;
     }
     
-    console.log('Verified admin user ID before creating exam:', adminUserId);
     
     // Check if exam exists
     const { data: existingExam } = await supabase
@@ -1774,21 +1737,16 @@ async function getOrCreateManualExam(classId, examType, subject) {
         .select('id')
         .single();
     
-    if (error) {
-        console.error('Error creating manual exam:', error);
-        console.error('Admin user ID used:', adminUserId);
+        if (error) {
         
         if (error.code === '23503') {
             // Foreign key violation - admin user doesn't exist
-            console.error('Foreign key violation: Admin user ID does not exist in database');
             showError('Admin user not found in database. Please run the SQL script to create an admin user.', 'Database Error');
             
             // Try to find/create admin user again and retry
-            console.log('Attempting to find/create admin user and retry...');
             const retryAdminId = await findOrCreateAdminUser(supabase);
             
             if (retryAdminId && retryAdminId !== adminUserId) {
-                console.log('Retrying with new admin user ID:', retryAdminId);
                 // Retry with the new admin user ID
                 const { data: retryExam, error: retryError } = await supabase
                     .from('exams')
@@ -1807,7 +1765,6 @@ async function getOrCreateManualExam(classId, examType, subject) {
                     .single();
                 
                 if (retryError) {
-                    console.error('Retry also failed:', retryError);
                     showError('Admin user not found in database. Please run the SQL script (CREATE_ADMIN_USER_NOW.sql) to create an admin user and refresh the page.', 'Database Error');
                     return null;
                 }
@@ -1843,7 +1800,6 @@ async function getOrCreateBFTExam(classId, examType) {
     }
     
     if (!currentUser || !currentUser.id) {
-        console.error('Error: Admin user not found when creating BFT exam');
         showError('Admin session expired. Please log out and log back in.', 'Session Error');
         return null;
     }
@@ -1858,7 +1814,6 @@ async function getOrCreateBFTExam(classId, examType) {
             .maybeSingle();
         
         if (userError || !dbUser) {
-            console.warn('Admin user not found in database, searching for any admin user...');
             // Try to find any admin user in the database
             const { data: anyAdmin, error: adminError } = await supabase
                 .from('users')
@@ -1868,13 +1823,11 @@ async function getOrCreateBFTExam(classId, examType) {
                 .maybeSingle();
             
             if (adminError || !anyAdmin) {
-                console.error('No admin user found in database. Please create an admin user first.');
                 showError('No admin user found in database. Please create an admin user before entering scores.', 'Database Error');
                 return null;
             }
             
             adminUserId = anyAdmin.id;
-            console.log('Using existing admin user from database:', adminUserId);
         }
     }
     
@@ -1909,7 +1862,6 @@ async function getOrCreateBFTExam(classId, examType) {
         .single();
     
     if (error) {
-        console.error('Error creating BFT exam:', error);
         if (error.code === '23503') {
             showError('Admin user not found in database. Please run the SQL script (CREATE_ADMIN_USER_NOW.sql) to create an admin user.', 'Database Error');
         } else {
@@ -2021,7 +1973,6 @@ async function saveBFTScore(studentId, studentName, bftNumber) {
         }
         
     } catch (error) {
-        console.error('Error saving BFT score:', error);
         showError('Failed to save BFT score. Please check your connection and try again.', 'Save Error');
     }
 }
@@ -2150,7 +2101,6 @@ async function saveManualScore(studentId, studentName, examType) {
         }
         
     } catch (error) {
-        console.error('Error saving manual score:', error);
         showError('Failed to save manual score. Please check your connection and try again.', 'Save Error');
     }
 }
@@ -2208,7 +2158,6 @@ async function saveAllManualScores(examType) {
                 await saveManualScore(student.id, student.name || student.username, examType);
                 saved++;
             } catch (err) {
-                console.error(`Error saving score for ${student.name}:`, err);
                 errors++;
             }
         }
@@ -2220,7 +2169,6 @@ async function saveAllManualScores(examType) {
         }
         
     } catch (error) {
-        console.error('Error saving all manual scores:', error);
         showError('Failed to save scores. Please try again.', 'Error');
     }
 }
@@ -2299,7 +2247,6 @@ async function saveAllBFTScores(bftNumber) {
                 saved++;
             } catch (err) {
                 errors++;
-                console.error(`Error saving score for ${student.name}:`, err);
             }
         }
         
@@ -2310,7 +2257,6 @@ async function saveAllBFTScores(bftNumber) {
         }
         
     } catch (error) {
-        console.error('Error saving all BFT scores:', error);
         showError('Failed to save scores. Please try again.', 'Error');
     }
 }
@@ -2322,7 +2268,6 @@ async function loadAllUsers() {
     try {
         const supabase = getSupabaseClient();
         if (!supabase) {
-            console.error('Supabase client not available');
             showError('Database connection error. Please refresh the page.', 'Error');
             return;
         }
@@ -2356,7 +2301,6 @@ async function loadAllUsers() {
                      error.message?.includes('phone') || 
                      error.message?.includes('does not exist') ||
                      error.message?.includes('column users.phone'))) {
-            console.warn('Column error detected, retrying with minimal fields:', error.message);
             // Retry with only essential fields
             selectFields = 'id, username, name, email, role, class, courses, created_at';
             query = supabase
@@ -2378,7 +2322,6 @@ async function loadAllUsers() {
         }
         
             if (error) {
-            console.error('Error loading users:', error);
             showError('Failed to load users. Please refresh the page.', 'Loading Error');
             showError(`Failed to load users: ${error.message || 'Unknown error'}. Please try again.`, 'Error');
             return;
@@ -2402,7 +2345,6 @@ async function loadAllUsers() {
         displayUsers(filteredUsers);
         
     } catch (error) {
-        console.error('Error loading users:', error);
         showError(`Failed to load users: ${error.message || 'Unknown error'}. Please try again.`, 'Error');
     }
 }
@@ -2425,7 +2367,6 @@ async function viewAllRegisteredSubjects() {
             .order('username', { ascending: true });
         
         if (error) {
-            console.error('Error loading students:', error);
             showError('Failed to load students. Please refresh the page.', 'Loading Error');
             showError('Failed to load student registrations. Please try again.', 'Error');
             return;
@@ -2710,7 +2651,6 @@ async function assignStudentIndices() {
             .not('class', 'is', null);
         
         if (error) {
-            console.error('Error loading students:', error);
             showError('Failed to load students. Please refresh the page.', 'Loading Error');
             showError('Failed to load students. Please try again.', 'Error');
             return;
@@ -2764,7 +2704,6 @@ async function assignStudentIndices() {
                             .eq('id', student.id);
                         
                         if (updateError) {
-                            console.error(`Error assigning index to ${student.name || student.username}:`, updateError);
                             // Individual errors are logged but not shown to avoid spam
                             errors++;
                         } else {
@@ -2775,7 +2714,6 @@ async function assignStudentIndices() {
                         }
                     }
                 } catch (err) {
-                    console.error(`Error assigning index to ${student.name}:`, err);
                     // Individual errors are logged but not shown to avoid spam
                     errors++;
                 }
@@ -3340,7 +3278,6 @@ async function loadAnalytics() {
     try {
         const supabase = getSupabaseClient();
         if (!supabase) {
-            console.error('Supabase client not available');
             showError('Database connection not available. Please refresh the page and try again.', 'Connection Error');
             return;
         }
@@ -3391,7 +3328,7 @@ async function loadAnalytics() {
         displayGradeDistribution(grades);
         
     } catch (error) {
-        console.error('Error loading analytics:', error);
+        // Analytics errors are non-critical - silently fail
     }
 }
 
@@ -3688,7 +3625,6 @@ async function loadDatabaseStats() {
     try {
         const supabase = getSupabaseClient();
         if (!supabase) {
-            console.error('Supabase client not available');
             showError('Database connection not available. Please refresh the page and try again.', 'Connection Error');
             return;
         }
