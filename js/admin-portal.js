@@ -1130,6 +1130,7 @@ function getExamTypePercentage(examType) {
     const percentages = {
         'opening_exam': 5,
         'quiz': 5,
+        'quiz_manual': 5, // Manual quiz entry (adds to automated quiz)
         'bft': 2.5, // Each BFT is 2.5%, 2 BFTs = 5% total
         'bft_1': 2.5, // BFT 1 is 2.5%
         'bft_2': 2.5, // BFT 2 is 2.5%
@@ -1148,6 +1149,7 @@ function formatExamType(examType) {
     const types = {
         'opening_exam': 'Opening Exam',
         'quiz': 'Quiz',
+        'quiz_manual': 'Quiz (Manual Entry)',
         'bft': 'BFT (Field Exercise - 2x Compulsory)',
         'bft_1': 'BFT 1 (2.5%)',
         'bft_2': 'BFT 2 (2.5%)',
