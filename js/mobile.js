@@ -9,6 +9,9 @@ function toggleMobileMenu() {
     }
 }
 
+// Make toggleMobileMenu globally accessible
+window.toggleMobileMenu = toggleMobileMenu;
+
 // Close mobile menu when clicking outside
 document.addEventListener('click', function(event) {
     const mobileMenu = document.getElementById('mobileMenu');
