@@ -343,15 +343,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Load lecturer's registered subjects
     loadLecturerRegisteredSubjects();
     
-    // Defer materials load to prevent blocking initial page render and navigation
-    setTimeout(() => {
-        loadMaterials().catch(err => console.error('Error loading materials on page load:', err));
-    }, 200);
-    
-    // Defer analytics load further to prevent blocking initial page render
-    setTimeout(() => {
-        loadAnalytics().catch(err => console.error('Error loading analytics on page load:', err));
-    }, 1000);
+    // Load materials (will be filtered by registered subjects)
+    loadMaterials();
+    loadAnalytics();
     
     // Handle upload form
     const uploadForm = document.getElementById('uploadForm');
@@ -1030,211 +1024,107 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
     }
 }
 
-// Debounce and cache for loadAnalytics to prevent freezing
-let analyticsCache = null;
-let analyticsCacheTime = 0;
-const ANALYTICS_CACHE_TTL = 30000; // 30 seconds cache
-let analyticsLoading = false;
-let analyticsLoadingPromise = null;
-
 async function loadAnalytics() {
-    // Prevent multiple simultaneous loads
-    if (analyticsLoading && analyticsLoadingPromise) {
-        return analyticsLoadingPromise;
-    }
+    // Get current lecturer's registered subjects
+    const currentUser = getCurrentUser();
+    const registeredSubjects = currentUser.courses || [];
     
-    // Check cache first
-    const now = Date.now();
-    if (analyticsCache && (now - analyticsCacheTime) < ANALYTICS_CACHE_TTL) {
-        console.log('Using cached analytics data');
-        updateAnalyticsDisplay(analyticsCache);
-        return Promise.resolve(analyticsCache);
-    }
+    let materials = [];
+    let users = [];
+    let progress = {};
     
-    analyticsLoading = true;
-    analyticsLoadingPromise = (async () => {
+    // Try Supabase first
+    if (typeof getMaterialsFromSupabase === 'function') {
         try {
-            // Use Performance Optimizer if available to batch queries
-            const optimizeQuery = window.PerformanceOptimizer && window.PerformanceOptimizer.optimizedQuery;
-            
-            // Get current lecturer's registered subjects
-            const currentUser = getCurrentUser();
-            const registeredSubjects = currentUser.courses || [];
-            
-            let materials = [];
-            let users = [];
-            let progress = {};
-            
-            // Batch queries using Performance Optimizer if available
-            if (optimizeQuery) {
-                try {
-                    [materials, users] = await Promise.all([
-                        optimizeQuery(() => getMaterialsFromSupabase({}), 'materials', 60000),
-                        optimizeQuery(() => getUsersFromSupabase({}), 'users', 60000)
-                    ]);
-                } catch (err) {
-                    console.error('Optimized query error:', err);
-                    // Fallback to normal queries
-                    if (typeof getMaterialsFromSupabase === 'function') {
-                        try {
-                            materials = await getMaterialsFromSupabase({});
-                        } catch (e) {
-                            materials = JSON.parse(localStorage.getItem('materials') || '[]');
-                        }
-                    } else {
-                        materials = JSON.parse(localStorage.getItem('materials') || '[]');
-                    }
-                    
-                    if (typeof getUsersFromSupabase === 'function') {
-                        try {
-                            users = await getUsersFromSupabase({});
-                        } catch (e) {
-                            users = JSON.parse(localStorage.getItem('users') || '[]');
-                        }
-                    } else {
-                        users = JSON.parse(localStorage.getItem('users') || '[]');
-                    }
-                }
-            } else {
-                // Fallback: Normal queries
-                if (typeof getMaterialsFromSupabase === 'function') {
-                    try {
-                        materials = await getMaterialsFromSupabase({});
-                    } catch (err) {
-                        materials = JSON.parse(localStorage.getItem('materials') || '[]');
-                    }
-                } else {
-                    materials = JSON.parse(localStorage.getItem('materials') || '[]');
-                }
-                
-                if (typeof getUsersFromSupabase === 'function') {
-                    try {
-                        users = await getUsersFromSupabase({});
-                    } catch (err) {
-                        users = JSON.parse(localStorage.getItem('users') || '[]');
-                    }
-                } else {
-                    users = JSON.parse(localStorage.getItem('users') || '[]');
-                }
-            }
-            
-            // Get progress (with optimization if available)
-            if (optimizeQuery) {
-                try {
-                    const progressData = await optimizeQuery(() => getProgressFromSupabase({}), 'progress', 30000);
-                    progress = {};
-                    progressData.forEach(p => {
-                        if (!progress[p.user_id]) progress[p.user_id] = {};
-                        progress[p.user_id][p.material_id] = true;
-                    });
-                } catch (err) {
-                    progress = JSON.parse(localStorage.getItem('progress') || '{}');
-                }
-            } else {
-                if (typeof getProgressFromSupabase === 'function') {
-                    try {
-                        const progressData = await getProgressFromSupabase({});
-                        progress = {};
-                        progressData.forEach(p => {
-                            if (!progress[p.user_id]) progress[p.user_id] = {};
-                            progress[p.user_id][p.material_id] = true;
-                        });
-                    } catch (err) {
-                        progress = JSON.parse(localStorage.getItem('progress') || '{}');
-                    }
-                } else {
-                    progress = JSON.parse(localStorage.getItem('progress') || '{}');
-                }
-            }
-            
-            // Filter materials to only show courses/subjects the lecturer is registered for
-            if (registeredSubjects.length > 0) {
-                materials = materials.filter(m => registeredSubjects.includes(m.course));
-            }
-            
-            const allStudents = users.filter(u => u.role === 'student');
-            const activeClasses = [...new Set(materials.map(m => m.class))];
-            
-            // Filter students to only count those registered for subjects the lecturer teaches
-            const relevantStudents = allStudents.filter(student => {
-                if (!student.courses || student.courses.length === 0) return false;
-                const studentHasLecturerSubject = student.courses.some(studentSubject => 
-                    registeredSubjects.includes(studentSubject)
-                );
-                const studentClassHasMaterials = materials.some(m => 
-                    m.class === student.class && student.courses.includes(m.course)
-                );
-                return studentHasLecturerSubject && studentClassHasMaterials;
-            });
-            
-            // Calculate overall completion rate
-            let totalCompletions = 0;
-            let totalPossible = 0;
-            
-            relevantStudents.forEach(student => {
-                const studentMaterials = materials.filter(m => 
-                    m.class === student.class && student.courses && student.courses.includes(m.course)
-                );
-                totalPossible += studentMaterials.length;
-                const studentProgress = progress[student.id] || {};
-                totalCompletions += studentMaterials.filter(m => studentProgress[m.id]).length;
-            });
-            
-            const overallCompletion = totalPossible > 0 
-                ? Math.round((totalCompletions / totalPossible) * 100) 
-                : 0;
-            
-            // Prepare result object
-            const result = {
-                materials,
-                relevantStudents,
-                progress,
-                overallCompletion,
-                activeClasses
-            };
-            
-            // Cache result
-            analyticsCache = result;
-            analyticsCacheTime = Date.now();
-            
-            // Update display using requestAnimationFrame for smooth UI
-            requestAnimationFrame(() => {
-                updateAnalyticsDisplay(result);
-            });
-            
-            return result;
-        } catch (error) {
-            console.error('Error loading analytics:', error);
-            throw error;
-        } finally {
-            analyticsLoading = false;
-            analyticsLoadingPromise = null;
+            materials = await getMaterialsFromSupabase({});
+        } catch (err) {
+            materials = JSON.parse(localStorage.getItem('materials') || '[]');
         }
-    })();
+    } else {
+        materials = JSON.parse(localStorage.getItem('materials') || '[]');
+    }
     
-    return analyticsLoadingPromise;
-}
-
-// Separate function to update display (called after data is ready)
-function updateAnalyticsDisplay(data) {
-    const { materials, relevantStudents, progress, overallCompletion, activeClasses } = data;
+    // Filter materials to only show courses/subjects the lecturer is registered for
+    if (registeredSubjects.length > 0) {
+        materials = materials.filter(m => registeredSubjects.includes(m.course));
+    }
+    
+    // Get users and progress
+    if (typeof getUsersFromSupabase === 'function') {
+        try {
+            users = await getUsersFromSupabase({});
+        } catch (err) {
+            users = JSON.parse(localStorage.getItem('users') || '[]');
+        }
+    } else {
+        users = JSON.parse(localStorage.getItem('users') || '[]');
+    }
+    
+    if (typeof getProgressFromSupabase === 'function') {
+        try {
+            const progressData = await getProgressFromSupabase({});
+            // Convert array to object format
+            progress = {};
+            progressData.forEach(p => {
+                if (!progress[p.user_id]) progress[p.user_id] = {};
+                progress[p.user_id][p.material_id] = true;
+            });
+        } catch (err) {
+            progress = JSON.parse(localStorage.getItem('progress') || '{}');
+        }
+    } else {
+        progress = JSON.parse(localStorage.getItem('progress') || '{}');
+    }
+    
+    const allStudents = users.filter(u => u.role === 'student');
+    const activeClasses = [...new Set(materials.map(m => m.class))];
+    
+    // Filter students to only count those registered for subjects the lecturer teaches
+    // A student is relevant if they are registered for at least one subject the lecturer teaches
+    const relevantStudents = allStudents.filter(student => {
+        if (!student.courses || student.courses.length === 0) return false;
+        
+        // Check if student is registered for any subject the lecturer teaches
+        const studentHasLecturerSubject = student.courses.some(studentSubject => 
+            registeredSubjects.includes(studentSubject)
+        );
+        
+        // Also check if student's class has materials from lecturer
+        const studentClassHasMaterials = materials.some(m => 
+            m.class === student.class && student.courses.includes(m.course)
+        );
+        
+        return studentHasLecturerSubject && studentClassHasMaterials;
+    });
+    
+    // Calculate overall completion rate (only for relevant students)
+    let totalCompletions = 0;
+    let totalPossible = 0;
+    
+    relevantStudents.forEach(student => {
+        const studentMaterials = materials.filter(m => 
+            m.class === student.class && student.courses && student.courses.includes(m.course)
+        );
+        totalPossible += studentMaterials.length;
+        const studentProgress = progress[student.id] || {};
+        totalCompletions += studentMaterials.filter(m => studentProgress[m.id]).length;
+    });
+    
+    const overallCompletion = totalPossible > 0 
+        ? Math.round((totalCompletions / totalPossible) * 100) 
+        : 0;
     
     // Update overview
-    const totalMaterialsEl = document.getElementById('totalMaterialsCount');
-    const totalStudentsEl = document.getElementById('totalStudentsCount');
-    const overallCompletionEl = document.getElementById('overallCompletion');
-    const activeClassesEl = document.getElementById('activeClassesCount');
+    document.getElementById('totalMaterialsCount').textContent = materials.length;
+    document.getElementById('totalStudentsCount').textContent = relevantStudents.length;
+    document.getElementById('overallCompletion').textContent = overallCompletion + '%';
+    document.getElementById('activeClassesCount').textContent = activeClasses.length;
     
-    if (totalMaterialsEl) totalMaterialsEl.textContent = materials.length;
-    if (totalStudentsEl) totalStudentsEl.textContent = relevantStudents.length;
-    if (overallCompletionEl) overallCompletionEl.textContent = overallCompletion + '%';
-    if (activeClassesEl) activeClassesEl.textContent = activeClasses.length;
+    // Load class progress (use relevant students only)
+    loadClassProgress(materials, relevantStudents, progress);
     
-    // Load class progress and material stats (batch DOM updates)
-    requestAnimationFrame(() => {
-        loadClassProgress(materials, relevantStudents, progress);
-        loadMaterialStats(materials, relevantStudents, progress);
-    });
+    // Load material statistics (use relevant students only)
+    loadMaterialStats(materials, relevantStudents, progress);
 }
 
 function loadClassProgress(materials, students, progress) {
@@ -1395,35 +1285,23 @@ function loadMaterialStats(materials, students, progress) {
 
 function showAnalytics(tab) {
     // Hide all tabs
-    const tabs = document.querySelectorAll('.analytics-tab');
-    const buttons = document.querySelectorAll('.tab-btn');
+    document.querySelectorAll('.analytics-tab').forEach(t => t.style.display = 'none');
+    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     
-    // Batch DOM updates
-    requestAnimationFrame(() => {
-        tabs.forEach(t => t.style.display = 'none');
-        buttons.forEach(btn => btn.classList.remove('active'));
-        
-        // Show selected tab
-        if (tab === 'overview') {
-            const overviewTab = document.getElementById('overviewTab');
-            if (overviewTab) overviewTab.style.display = 'block';
-            if (buttons[0]) buttons[0].classList.add('active');
-        } else if (tab === 'class-progress') {
-            const classProgressTab = document.getElementById('classProgressTab');
-            if (classProgressTab) classProgressTab.style.display = 'block';
-            if (buttons[1]) buttons[1].classList.add('active');
-        } else if (tab === 'material-stats') {
-            const materialStatsTab = document.getElementById('materialStatsTab');
-            if (materialStatsTab) materialStatsTab.style.display = 'block';
-            if (buttons[2]) buttons[2].classList.add('active');
-        }
-    });
-    
-    // Reload analytics data only if cache is stale (debounced)
-    const now = Date.now();
-    if (!analyticsCache || (now - analyticsCacheTime) >= ANALYTICS_CACHE_TTL) {
-        loadAnalytics().catch(err => console.error('Error loading analytics:', err));
+    // Show selected tab
+    if (tab === 'overview') {
+        document.getElementById('overviewTab').style.display = 'block';
+        document.querySelectorAll('.tab-btn')[0].classList.add('active');
+    } else if (tab === 'class-progress') {
+        document.getElementById('classProgressTab').style.display = 'block';
+        document.querySelectorAll('.tab-btn')[1].classList.add('active');
+    } else if (tab === 'material-stats') {
+        document.getElementById('materialStatsTab').style.display = 'block';
+        document.querySelectorAll('.tab-btn')[2].classList.add('active');
     }
+    
+    // Reload analytics data
+    loadAnalytics();
 }
 
 async function loadMaterials() {
