@@ -162,7 +162,7 @@ async function getUserFromSupabase(username, password, role) {
                     console.error('  1. Go to: https://emn178.github.io/online-tools/sha256.html');
                     console.error('  2. Enter password: Admin123!');
                     console.error('  3. Copy the hash');
-                    console.error('  4. Run SQL: UPDATE users SET password = \'HASH_HERE\' WHERE username = \'admin\' AND role = \'admin\';');
+                    console.error('  4. Run SQL: UPDATE users SET password = \'HASH_HERE\' WHERE username = \'cbt\' AND role = \'admin\';');
                     console.error('  5. Expected hash should be:', inputHashLower);
                 }
             } else {

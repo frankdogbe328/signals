@@ -101,7 +101,7 @@ async function handleAdminLogin(e) {
             if (!user) {
                 console.log('Admin user not found. Please verify:');
                 console.log('1. SQL script has been run in Supabase');
-                console.log('2. Username is exactly: admin');
+                console.log('2. Username is exactly: cbt');
                 console.log('3. Password is exactly: Admin123!');
                 console.log('4. Role is set to: admin');
                 
