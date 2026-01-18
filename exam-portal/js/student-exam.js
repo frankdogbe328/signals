@@ -1736,7 +1736,7 @@ async function viewResults(examId) {
     }
 }
 
-// Show exams tab
+// Show exams tab - Make globally accessible immediately
 function showExamsTab() {
     document.getElementById('availableExamsView').style.display = 'block';
     const myResultsView = document.getElementById('myResultsView');
@@ -1758,7 +1758,12 @@ function showExamsTab() {
     loadAvailableExams();
 }
 
-// Show results tab
+// Make globally accessible immediately
+if (typeof window !== 'undefined') {
+    window.showExamsTab = showExamsTab;
+}
+
+// Show results tab - Make globally accessible immediately
 function showResultsTab() {
     document.getElementById('availableExamsView').style.display = 'none';
     const myResultsView = document.getElementById('myResultsView');
@@ -1794,7 +1799,12 @@ function showResultsTab() {
     }
 }
 
-// Show all results section
+// Make globally accessible immediately
+if (typeof window !== 'undefined') {
+    window.showResultsTab = showResultsTab;
+}
+
+// Show all results section - Make globally accessible immediately
 function showAllResults() {
     document.getElementById('allResultsSection').style.display = 'block';
     document.getElementById('midSemesterResultsSection').style.display = 'none';
@@ -1821,7 +1831,12 @@ function showAllResults() {
     loadAllResults();
 }
 
-// Show mid-semester results section
+// Make globally accessible immediately
+if (typeof window !== 'undefined') {
+    window.showAllResults = showAllResults;
+}
+
+// Show mid-semester results section - Make globally accessible immediately
 function showMidSemesterResults() {
     document.getElementById('allResultsSection').style.display = 'none';
     document.getElementById('midSemesterResultsSection').style.display = 'block';
@@ -1848,7 +1863,12 @@ function showMidSemesterResults() {
     loadMidSemesterResults();
 }
 
-// Show final semester results section
+// Make globally accessible immediately
+if (typeof window !== 'undefined') {
+    window.showMidSemesterResults = showMidSemesterResults;
+}
+
+// Show final semester results section - Make globally accessible immediately
 function showFinalSemesterResults() {
     document.getElementById('allResultsSection').style.display = 'none';
     document.getElementById('midSemesterResultsSection').style.display = 'none';
@@ -1873,6 +1893,11 @@ function showFinalSemesterResults() {
     }
     
     loadFinalSemesterResults();
+}
+
+// Make globally accessible immediately
+if (typeof window !== 'undefined') {
+    window.showFinalSemesterResults = showFinalSemesterResults;
 }
 
 // Load all exam results for student
