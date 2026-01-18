@@ -172,24 +172,30 @@ async function getUserFromSupabase(username, password, role) {
                 console.warn('CryptoJS not available, trying SecurityUtils');
                 if (typeof SecurityUtils !== 'undefined' && SecurityUtils.verifyPassword) {
                     console.log('Using SecurityUtils.verifyPassword');
-                    passwordMatch = await SecurityUtils.verifyPassword(password, data.password);
+                    // Use trimmedPassword defined above for mobile compatibility
+                    passwordMatch = await SecurityUtils.verifyPassword(trimmedPassword, data.password);
                     console.log('SecurityUtils verification result:', passwordMatch);
                 } else {
                     console.warn('Neither CryptoJS nor SecurityUtils available, trying plaintext comparison');
-                    passwordMatch = data.password === password;
+                    // Try both trimmed and original password for compatibility
+                    passwordMatch = data.password === trimmedPassword || data.password === password;
                     console.log('Password match (plaintext):', passwordMatch);
                 }
             }
         } else {
             // Legacy plaintext password (migration support)
             console.log('Password is not in expected hash format, trying legacy methods');
+            // IMPORTANT: Trim password on mobile - use local variable if not defined above
+            const trimmedPasswordLocal = password.trim();
             // Try hashed comparison first, then fallback to plaintext
             if (typeof SecurityUtils !== 'undefined' && SecurityUtils.hashPassword) {
-                const hashedInput = await SecurityUtils.hashPassword(password);
-                passwordMatch = hashedInput === data.password || data.password === password;
+                const hashedInput = await SecurityUtils.hashPassword(trimmedPasswordLocal);
+                // Try both trimmed and original password for compatibility
+                passwordMatch = hashedInput === data.password || data.password === trimmedPasswordLocal || data.password === password;
                 console.log('Password match (SecurityUtils hash):', passwordMatch);
             } else {
-                passwordMatch = data.password === password;
+                // Try both trimmed and original password for compatibility
+                passwordMatch = data.password === trimmedPasswordLocal || data.password === password;
                 console.log('Password match (plaintext fallback):', passwordMatch);
             }
         }
