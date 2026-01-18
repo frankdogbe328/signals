@@ -579,8 +579,19 @@
         <div id="mobileMenu" class="mobile-menu">
             <div class="mobile-menu-content">
                 <div class="mobile-menu-user" id="mobileStudentName"></div>
-                <a href="/student-dashboard.html" class="btn btn-secondary">📚 LMS Portal</a>
-                <button onclick="logout(); toggleMobileMenu();" class="btn btn-secondary">Logout</button>
+                
+                <!-- Navigation Links -->
+                <a href="/student-dashboard.html" class="btn btn-secondary mobile-menu-link" onclick="toggleMobileMenu();">📚 LMS Portal</a>
+                
+                <button onclick="showExamsTab(); toggleMobileMenu();" class="btn btn-primary mobile-menu-link">
+                    📝 Available Exams
+                </button>
+                
+                <button onclick="showResultsTab(); toggleMobileMenu();" class="btn btn-info mobile-menu-link" style="background-color: #17a2b8; color: white;">
+                    📊 My Results
+                </button>
+                
+                <button onclick="logout(); toggleMobileMenu();" class="btn btn-danger mobile-menu-link" style="background-color: #dc3545; color: white; margin-top: 10px;">Logout</button>
             </div>
         </div>
     </nav>
