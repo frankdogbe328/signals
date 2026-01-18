@@ -1789,7 +1789,9 @@ function showResultsTab() {
     if (finalSemesterResultsTab) finalSemesterResultsTab.style.display = '';
     
     // Initialize with All Results section active (default view)
-    showAllResults();
+    if (typeof showAllResults === 'function') {
+        showAllResults();
+    }
 }
 
 // Show all results section
