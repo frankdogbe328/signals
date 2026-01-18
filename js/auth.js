@@ -52,14 +52,17 @@ async function handleLogin(e) {
     const userTypeInput = document.getElementById('userType');
     const errorMessage = document.getElementById('errorMessage');
     
-    // Sanitize inputs - fix for mobile: trim whitespace including newlines
+    // Sanitize inputs - handle both mobile (with spaces) and laptop (without spaces)
     const rawUsername = usernameInput ? usernameInput.value : '';
     const rawPassword = passwordInput ? passwordInput.value : '';
     
     // Trim whitespace including newlines and special characters that mobile keyboards can add
     const username = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
         SecurityUtils.sanitizeInput(rawUsername.trim()) : rawUsername.trim().replace(/\s+/g, ' ').trim();
-    const password = rawPassword.trim(); // Trim password to handle mobile autocomplete/autocorrect adding spaces
+    
+    // IMPORTANT: Use ORIGINAL password (not trimmed) - verification will handle trimming internally
+    // This ensures laptop login works (no spaces) while mobile (with spaces) is handled in getUserFromSupabase
+    const password = rawPassword; // Keep original - getUserFromSupabase will try both original and trimmed
     
     // Log for debugging (remove in production if sensitive)
     console.log('Login attempt:', { 

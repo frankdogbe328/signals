@@ -135,23 +135,31 @@ async function getUserFromSupabase(username, password, role) {
             console.log('Password is hashed (64 chars SHA256 format). Verifying...');
             
             // For SHA256 hashes, use CryptoJS directly (SecurityUtils might expect bcrypt)
-            // IMPORTANT: Trim password on mobile to handle autocomplete/autocorrect adding spaces
+            // IMPORTANT: Try BOTH original and trimmed password for compatibility (mobile adds spaces, laptop doesn't)
             const trimmedPassword = password.trim();
+            const passwordsToTry = trimmedPassword !== password ? [password, trimmedPassword] : [password];
+            
             const CryptoJS = window.CryptoJS;
             if (CryptoJS) {
                 console.log('Using CryptoJS.SHA256 for verification');
-                console.log('Password before hash (trimmed):', trimmedPassword.length, 'chars');
-                const inputHash = CryptoJS.SHA256(trimmedPassword).toString();
-                console.log('Input password:', password);
-                console.log('Input password hash (SHA256):', inputHash);
-                console.log('Input hash length:', inputHash.length);
-                console.log('Database password hash:', data.password);
-                console.log('Database hash length:', data.password.length);
+                console.log('Trying passwords:', passwordsToTry.length, 'variant(s)');
                 
-                // Compare hashes (case-insensitive for hex)
-                const inputHashLower = inputHash.toLowerCase();
-                const dbHashLower = data.password.toLowerCase();
-                passwordMatch = inputHashLower === dbHashLower;
+                // Try original password first (for laptop compatibility)
+                for (const pwd of passwordsToTry) {
+                    const inputHash = CryptoJS.SHA256(pwd).toString();
+                    const inputHashLower = inputHash.toLowerCase();
+                    const dbHashLower = data.password.toLowerCase();
+                    passwordMatch = inputHashLower === dbHashLower;
+                    
+                    if (passwordMatch) {
+                        console.log('✅ Password match found using:', pwd === password ? 'original' : 'trimmed');
+                        break;
+                    }
+                }
+                
+                if (!passwordMatch) {
+                    console.log('Input password variants tried:', passwordsToTry.length);
+                    console.log('Database password hash:', data.password);
                 
                 console.log('Hash comparison:');
                 console.log('  Input hash (lowercase):', inputHashLower);

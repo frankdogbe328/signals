@@ -174,9 +174,20 @@
         setTimeout(forceHamburgerVisible, 500);
     });
     
-    // Aggressive interval check for mobile (every 1 second)
+    // Interval check for mobile (every 5 seconds to prevent freezing) - reduced from 1 second
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        setInterval(forceHamburgerVisible, 1000);
+        // Only run interval if hamburger is not visible (to prevent unnecessary checks)
+        const intervalId = setInterval(function() {
+            const hamburger = document.querySelector('.hamburger');
+            if (hamburger && window.innerWidth <= 768) {
+                const computedStyle = window.getComputedStyle(hamburger);
+                if (computedStyle.display === 'none' || computedStyle.visibility === 'hidden') {
+                    forceHamburgerVisible();
+                }
+            } else if (window.innerWidth > 768) {
+                clearInterval(intervalId); // Stop interval on desktop
+            }
+        }, 5000); // Reduced from 1000ms to 5000ms (5 seconds) to prevent freezing
     }
     
     // Also use MutationObserver to catch any DOM changes
