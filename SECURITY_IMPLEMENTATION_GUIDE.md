@@ -1,377 +1,340 @@
-# Security Implementation Guide - Next Steps
+# Security Implementation Guide
+## Quick Start - Top Priority Security Features
 
-This guide shows you how to complete the remaining security implementations.
+This guide provides step-by-step instructions for implementing the most critical security features.
 
-## ✅ Completed Steps
+---
 
-1. ✅ Security utilities module created
-2. ✅ Password hashing implemented
-3. ✅ Rate limiting added
-4. ✅ CSRF protection added to login/registration
-5. ✅ File upload validation
-6. ✅ Input sanitization
-7. ✅ Security.js added to all HTML files
+## 🔴 Priority 1: Immediate Implementation
 
-## 🔄 Remaining Steps
+### 1. Add Content Security Policy (CSP) Headers
 
-### Step 1: Complete Session Management Integration
+**For Static HTML files:**
 
-**What to do:** Replace all `getCurrentUser()` calls with `SecurityUtils.getSecureSession()`
+Add this meta tag to the `<head>` section of ALL HTML files (`index.html`, `lecturer-dashboard.html`, `student-dashboard.html`, etc.):
 
-**Files to update:**
-- `js/app.js` - Authentication checks
-- `exam-portal/js/lecturer-exam.js` - Exam portal authentication
-- `exam-portal/js/student-exam.js` - Student exam portal
-- `js/lecturer.js` - Lecturer dashboard
-- `js/student.js` - Student dashboard
-
-**Example:**
-
-**Before:**
-```javascript
-const currentUser = getCurrentUser();
-if (!currentUser) {
-    window.location.href = 'index.html';
-    return;
-}
+```html
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://*.supabase.co; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https: blob:; font-src 'self' data: https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
 ```
 
-**After:**
-```javascript
-let currentUser = null;
-if (typeof SecurityUtils !== 'undefined' && SecurityUtils.getSecureSession) {
-    const session = SecurityUtils.getSecureSession();
-    if (session && session.user) {
-        currentUser = session.user;
-    }
-} else {
-    // Fallback to legacy
-    currentUser = getCurrentUser();
-}
+**For Apache servers:**
 
-if (!currentUser) {
-    window.location.href = 'index.html';
-    return;
-}
+Use the `.htaccess` file provided in the root directory.
+
+**For other servers:**
+
+Configure security headers in your server configuration (Nginx, Cloudflare, etc.).
+
+---
+
+### 2. Enforce HTTPS
+
+**At Hosting Level (Recommended):**
+- Enable "Force HTTPS" in your hosting control panel
+- Use Cloudflare or similar CDN to enforce HTTPS
+- Obtain SSL certificate (free from Let's Encrypt)
+
+**Via .htaccess (Apache only):**
+- Already included in the `.htaccess` file provided
+
+---
+
+### 3. Server-Side Rate Limiting
+
+**Option A: Using Supabase Row Level Security (RLS)**
+
+Create a rate limiting table in Supabase:
+
+```sql
+-- Create rate_limits table
+CREATE TABLE IF NOT EXISTS rate_limits (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    identifier TEXT NOT NULL, -- IP address or user_id
+    endpoint TEXT NOT NULL,
+    attempts INTEGER DEFAULT 1,
+    window_start TIMESTAMP DEFAULT NOW(),
+    blocked_until TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create index for faster lookups
+CREATE INDEX idx_rate_limits_lookup ON rate_limits(identifier, endpoint, window_start);
+
+-- Function to check rate limit
+CREATE OR REPLACE FUNCTION check_rate_limit(
+    p_identifier TEXT,
+    p_endpoint TEXT,
+    p_max_attempts INTEGER DEFAULT 5,
+    p_window_minutes INTEGER DEFAULT 15
+)
+RETURNS BOOLEAN AS $$
+DECLARE
+    v_attempts INTEGER;
+    v_window_start TIMESTAMP;
+    v_blocked_until TIMESTAMP;
+BEGIN
+    -- Check if currently blocked
+    SELECT blocked_until INTO v_blocked_until
+    FROM rate_limits
+    WHERE identifier = p_identifier 
+      AND endpoint = p_endpoint
+      AND blocked_until > NOW()
+    LIMIT 1;
+    
+    IF v_blocked_until IS NOT NULL THEN
+        RETURN FALSE; -- Blocked
+    END IF;
+    
+    -- Get or create rate limit record
+    INSERT INTO rate_limits (identifier, endpoint, attempts, window_start)
+    VALUES (p_identifier, p_endpoint, 1, NOW())
+    ON CONFLICT (identifier, endpoint) 
+    DO UPDATE SET
+        attempts = CASE 
+            WHEN NOW() - rate_limits.window_start < (p_window_minutes || ' minutes')::INTERVAL
+            THEN rate_limits.attempts + 1
+            ELSE 1
+        END,
+        window_start = CASE 
+            WHEN NOW() - rate_limits.window_start < (p_window_minutes || ' minutes')::INTERVAL
+            THEN rate_limits.window_start
+            ELSE NOW()
+        END,
+        updated_at = NOW()
+    RETURNING attempts, window_start INTO v_attempts, v_window_start;
+    
+    -- Block if exceeded max attempts
+    IF v_attempts >= p_max_attempts THEN
+        UPDATE rate_limits
+        SET blocked_until = NOW() + (30 || ' minutes')::INTERVAL
+        WHERE identifier = p_identifier AND endpoint = p_endpoint;
+        RETURN FALSE; -- Blocked
+    END IF;
+    
+    RETURN TRUE; -- Allowed
+END;
+$$ LANGUAGE plpgsql;
+```
+
+**Option B: Using Supabase Edge Functions**
+
+Create an Edge Function that wraps authentication endpoints with rate limiting.
+
+---
+
+### 4. Add Security HTTP Headers
+
+**Already provided in `.htaccess` file:**
+- X-Content-Type-Options: nosniff
+- X-Frame-Options: DENY
+- X-XSS-Protection: 1; mode=block
+- Referrer-Policy: strict-origin-when-cross-origin
+- Strict-Transport-Security (HSTS)
+
+**To use:**
+1. Upload `.htaccess` to your server root directory (if using Apache)
+2. For other servers, configure these headers in your server config
+
+---
+
+## 🟡 Priority 2: Server-Side Validation
+
+### Implement Supabase Database Functions for Validation
+
+**Example: User Registration Validation**
+
+```sql
+-- Function to validate and create user
+CREATE OR REPLACE FUNCTION create_user_validated(
+    p_username TEXT,
+    p_email TEXT,
+    p_password TEXT,
+    p_name TEXT,
+    p_role TEXT DEFAULT 'student'
+)
+RETURNS JSON AS $$
+DECLARE
+    v_user_id UUID;
+    v_validation_errors TEXT[] := ARRAY[]::TEXT[];
+BEGIN
+    -- Validate username (3-20 chars, alphanumeric + underscore)
+    IF NOT (p_username ~ '^[a-zA-Z0-9_]{3,20}$') THEN
+        v_validation_errors := array_append(v_validation_errors, 'Invalid username format');
+    END IF;
+    
+    -- Validate email
+    IF NOT (p_email ~ '^[^\s@]+@[^\s@]+\.[^\s@]+$') THEN
+        v_validation_errors := array_append(v_validation_errors, 'Invalid email format');
+    END IF;
+    
+    -- Validate password length
+    IF LENGTH(p_password) < 8 OR LENGTH(p_password) > 128 THEN
+        v_validation_errors := array_append(v_validation_errors, 'Password must be 8-128 characters');
+    END IF;
+    
+    -- Validate name length
+    IF LENGTH(p_name) < 2 OR LENGTH(p_name) > 100 THEN
+        v_validation_errors := array_append(v_validation_errors, 'Name must be 2-100 characters');
+    END IF;
+    
+    -- Validate role
+    IF p_role NOT IN ('student', 'lecturer', 'admin') THEN
+        v_validation_errors := array_append(v_validation_errors, 'Invalid role');
+    END IF;
+    
+    -- Return errors if any
+    IF array_length(v_validation_errors, 1) > 0 THEN
+        RETURN json_build_object(
+            'success', false,
+            'errors', v_validation_errors
+        );
+    END IF;
+    
+    -- Proceed with user creation (password should already be hashed client-side)
+    -- ... rest of user creation logic ...
+    
+    RETURN json_build_object(
+        'success', true,
+        'user_id', v_user_id
+    );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
 ```
 
 ---
 
-### Step 2: Add Authorization Checks
+## 🟢 Priority 3: Account Lockout
 
-**What to do:** Verify users can only access/modify their own resources
+### Add Account Lockout to Login Flow
 
-**Locations to add checks:**
-
-1. **Exam Management (lecturer-exam.js)**
-   - In `viewExamDetails()` - verify exam belongs to lecturer
-   - In `updateQuestion()` - verify question belongs to lecturer's exam
-   - In `deleteQuestion()` - verify question belongs to lecturer's exam
-
-**Example:**
+**In `js/auth.js`, add after rate limit check:**
 
 ```javascript
-async function viewExamDetails(examId) {
-    // Get exam first
-    const { data: exam } = await client
-        .from('exams')
-        .select('*')
-        .eq('id', examId)
-        .single();
-    
-    // Authorization check
-    const currentUser = getCurrentUser(); // or from secure session
-    if (!currentUser || exam.lecturer_id !== currentUser.id) {
-        showError('You do not have permission to view this exam.', 'Access Denied');
+// Check if account is locked
+const lockoutKey = `accountLockout_${username}`;
+const lockoutData = localStorage.getItem(lockoutKey);
+if (lockoutData) {
+    const lockout = JSON.parse(lockoutData);
+    if (lockout.lockedUntil > Date.now()) {
+        const minutesRemaining = Math.ceil((lockout.lockedUntil - Date.now()) / 60000);
+        errorMessage.textContent = `Account temporarily locked. Please try again in ${minutesRemaining} minute(s).`;
+        errorMessage.classList.add('show');
         return;
-    }
-    
-    // Continue with function...
-}
-```
-
-2. **Material Management (lecturer.js)**
-   - In `updateMaterial()` - verify material belongs to lecturer
-   - In `deleteMaterial()` - verify material belongs to lecturer
-
-**Example:**
-
-```javascript
-async function updateMaterial(materialId, materialData) {
-    // Get material first
-    const material = await getMaterialById(materialId);
-    
-    // Authorization check
-    const currentUser = getCurrentUser();
-    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.verifyResourceOwnership) {
-        if (!SecurityUtils.verifyResourceOwnership(currentUser, material, 'uploaded_by')) {
-            showError('You do not have permission to modify this material.', 'Access Denied');
-            return;
-        }
-    }
-    
-    // Continue with update...
-}
-```
-
-3. **Student Exam Access (student-exam.js)**
-   - Verify student can only see exams for their class
-   - Verify student can only submit their own exam attempts
-
-**Example:**
-
-```javascript
-async function loadExams() {
-    const currentUser = getCurrentUser();
-    if (!currentUser) return;
-    
-    // Get exams only for student's class
-    const { data: exams } = await client
-        .from('exams')
-        .select('*')
-        .eq('class_id', currentUser.class) // Only student's class
-        .eq('is_active', true)
-        .order('created_at', { ascending: false });
-    
-    displayExams(exams || []);
-}
-```
-
----
-
-### Step 3: Add CSRF Protection to Remaining Forms
-
-**What to do:** Add CSRF validation to all form submissions
-
-**Forms that need CSRF protection:**
-- Material upload form (`js/lecturer.js` - `handleUploadForm`)
-- Exam creation form (`exam-portal/js/lecturer-exam.js` - `handleCreateExam`)
-- Question form (`exam-portal/js/lecturer-exam.js` - `handleQuestionFormSubmit`)
-- Lecturer subject registration (`js/lecturer.js` - `registerLecturerForSubject`)
-
-**Example:**
-
-```javascript
-async function handleCreateExam(e) {
-    e.preventDefault();
-    
-    const form = e.target;
-    
-    // Validate CSRF token
-    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validateFormCSRFToken) {
-        if (!SecurityUtils.validateFormCSRFToken(form)) {
-            showError('Security token validation failed. Please refresh the page and try again.', 'Security Error');
-            return;
-        }
-    }
-    
-    // Continue with form processing...
-}
-```
-
-**Note:** CSRF tokens are automatically added to forms by `security.js`. You just need to validate them on submission.
-
----
-
-### Step 4: Enhance Error Handling
-
-**What to do:** Ensure error messages don't leak sensitive information
-
-**Guidelines:**
-- Use generic error messages for authentication failures
-- Don't reveal if username/email exists
-- Don't expose database structure in errors
-- Log detailed errors server-side, show user-friendly messages
-
-**Example:**
-
-**Bad:**
-```javascript
-catch (error) {
-    showError(`Database error: ${error.message}`, 'Error');
-    // Reveals database structure
-}
-```
-
-**Good:**
-```javascript
-catch (error) {
-    console.error('Exam creation error:', error); // Log details
-    showError('Failed to create exam. Please try again.', 'Error');
-    // Generic message for user
-}
-```
-
----
-
-### Step 5: Add Input Validation to All Form Fields
-
-**What to do:** Validate and sanitize ALL user inputs before processing
-
-**Example:**
-
-```javascript
-const examTitle = document.getElementById('examTitle').value;
-const sanitizedTitle = SecurityUtils ? SecurityUtils.sanitizeInput(examTitle) : examTitle.trim();
-
-// Validate length
-if (sanitizedTitle.length < 3 || sanitizedTitle.length > 200) {
-    showError('Exam title must be between 3 and 200 characters.', 'Validation Error');
-    return;
-}
-```
-
----
-
-### Step 6: Implement Logout with Session Cleanup
-
-**What to do:** Ensure secure session cleanup on logout
-
-**Update logout function:**
-
-```javascript
-function logout() {
-    // Clear secure session
-    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.clearSecureSession) {
-        SecurityUtils.clearSecureSession();
-    }
-    
-    // Clear legacy session
-    sessionStorage.removeItem('currentUser');
-    localStorage.removeItem('currentUser');
-    
-    // Clear CSRF token
-    sessionStorage.removeItem('csrfToken');
-    
-    // Redirect to login
-    window.location.href = 'index.html';
-}
-```
-
----
-
-## 🧪 Testing Checklist
-
-After implementing each step, test:
-
-### Session Management
-- [ ] Users are logged out after 8 hours
-- [ ] Session expires correctly
-- [ ] Users can't access protected pages without valid session
-- [ ] Legacy sessions still work (during migration)
-
-### Authorization
-- [ ] Lecturers can only see their own exams
-- [ ] Lecturers can only modify their own materials
-- [ ] Students can only see exams for their class
-- [ ] Students can only submit their own exam attempts
-- [ ] Error messages shown for unauthorized access
-
-### CSRF Protection
-- [ ] Forms include CSRF tokens
-- [ ] Form submission fails without valid token
-- [ ] Tokens are unique per session
-- [ ] Tokens refresh on page reload
-
-### Input Validation
-- [ ] XSS attempts are blocked
-- [ ] SQL injection attempts fail safely
-- [ ] File uploads are validated
-- [ ] Long inputs are truncated/rejected
-
----
-
-## 📝 Quick Implementation Template
-
-Here's a template you can use for any protected function:
-
-```javascript
-async function protectedFunction(resourceId) {
-    // 1. Check authentication
-    let currentUser = null;
-    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.getSecureSession) {
-        const session = SecurityUtils.getSecureSession();
-        currentUser = session ? session.user : null;
     } else {
-        currentUser = getCurrentUser();
+        // Lockout expired, clear it
+        localStorage.removeItem(lockoutKey);
     }
+}
+
+// After failed login attempt:
+const failedAttempts = parseInt(localStorage.getItem(`failedAttempts_${username}`) || '0');
+localStorage.setItem(`failedAttempts_${username}`, (failedAttempts + 1).toString());
+
+if (failedAttempts + 1 >= 5) {
+    // Lock account for 30 minutes
+    const lockoutUntil = Date.now() + (30 * 60 * 1000); // 30 minutes
+    localStorage.setItem(lockoutKey, JSON.stringify({
+        lockedUntil: lockoutUntil,
+        lockedAt: Date.now()
+    }));
+    errorMessage.textContent = 'Too many failed attempts. Account locked for 30 minutes.';
+    errorMessage.classList.add('show');
+    return;
+}
+
+// On successful login, clear failed attempts
+localStorage.removeItem(`failedAttempts_${username}`);
+localStorage.removeItem(lockoutKey);
+```
+
+**Note:** For production, implement this server-side using Supabase RLS or Edge Functions.
+
+---
+
+## 🔵 Priority 4: Audit Logging
+
+### Create Audit Log Table
+
+```sql
+CREATE TABLE IF NOT EXISTS audit_logs (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID,
+    username TEXT,
+    action TEXT NOT NULL, -- 'login', 'logout', 'upload', 'delete', etc.
+    resource_type TEXT, -- 'material', 'user', 'exam', etc.
+    resource_id UUID,
+    ip_address TEXT,
+    user_agent TEXT,
+    success BOOLEAN DEFAULT true,
+    error_message TEXT,
+    metadata JSONB,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Create indexes
+CREATE INDEX idx_audit_logs_user ON audit_logs(user_id, created_at);
+CREATE INDEX idx_audit_logs_action ON audit_logs(action, created_at);
+CREATE INDEX idx_audit_logs_created ON audit_logs(created_at DESC);
+```
+
+### JavaScript Function to Log Actions
+
+```javascript
+async function logAuditAction(action, resourceType = null, resourceId = null, success = true, errorMessage = null, metadata = {}) {
+    const currentUser = getCurrentUser();
     
-    if (!currentUser) {
-        showError('You must be logged in to perform this action.', 'Authentication Required');
-        window.location.href = 'index.html';
-        return;
-    }
+    const logData = {
+        user_id: currentUser?.id || null,
+        username: currentUser?.username || 'anonymous',
+        action: action,
+        resource_type: resourceType,
+        resource_id: resourceId,
+        success: success,
+        error_message: errorMessage,
+        metadata: metadata
+    };
     
-    // 2. Get resource
-    const resource = await getResourceById(resourceId);
-    if (!resource) {
-        showError('Resource not found.', 'Error');
-        return;
-    }
-    
-    // 3. Check authorization
-    if (typeof SecurityUtils !== 'undefined' && SecurityUtils.verifyResourceOwnership) {
-        if (!SecurityUtils.verifyResourceOwnership(currentUser, resource)) {
-            showError('You do not have permission to access this resource.', 'Access Denied');
-            return;
+    // Try to log to Supabase if available
+    if (typeof window.supabaseClient !== 'undefined') {
+        try {
+            await window.supabaseClient
+                .from('audit_logs')
+                .insert(logData);
+        } catch (err) {
+            console.error('Failed to log audit action:', err);
+            // Fallback to localStorage for critical logs
+            const logs = JSON.parse(localStorage.getItem('audit_logs') || '[]');
+            logs.push({ ...logData, timestamp: Date.now() });
+            localStorage.setItem('audit_logs', JSON.stringify(logs.slice(-100))); // Keep last 100
         }
-    }
-    
-    // 4. Sanitize inputs (if any)
-    // const input = SecurityUtils ? SecurityUtils.sanitizeInput(userInput) : userInput.trim();
-    
-    // 5. Perform action
-    try {
-        // Your code here
-    } catch (error) {
-        console.error('Error in protectedFunction:', error); // Log details
-        showError('An error occurred. Please try again.', 'Error'); // Generic message
     }
 }
 ```
 
 ---
 
-## 🚀 Priority Order
+## 📋 Implementation Checklist
 
-Implement in this order for maximum security impact:
-
-1. **Session Management** (High Priority)
-   - Prevents unauthorized access
-   - Quick to implement
-   - High security value
-
-2. **Authorization Checks** (High Priority)
-   - Prevents data breaches
-   - Protects user privacy
-   - Critical for exam system
-
-3. **CSRF Protection** (Medium Priority)
-   - Prevents cross-site attacks
-   - Already partially implemented
-   - Complete remaining forms
-
-4. **Error Handling** (Medium Priority)
-   - Prevents information leakage
-   - Improves user experience
-   - Easy to implement
-
-5. **Enhanced Input Validation** (Low Priority)
-   - Defense in depth
-   - Already mostly implemented
-   - Fine-tune edge cases
+- [ ] Add CSP headers to all HTML files
+- [ ] Upload `.htaccess` file (if using Apache)
+- [ ] Enable HTTPS enforcement
+- [ ] Implement server-side rate limiting (RLS or Edge Functions)
+- [ ] Add account lockout functionality
+- [ ] Create audit_logs table in Supabase
+- [ ] Add audit logging calls to critical operations
+- [ ] Test all security features
+- [ ] Review `SECURITY_ANALYSIS.md` for additional recommendations
 
 ---
 
-## 📞 Need Help?
+## 📚 Additional Resources
 
-If you encounter issues:
-
-1. Check browser console for errors
-2. Verify `security.js` is loaded (check Network tab)
-3. Ensure SecurityUtils is available: `console.log(typeof SecurityUtils)`
-4. Check session storage: `console.log(sessionStorage.getItem('secureSession'))`
+- See `SECURITY_ANALYSIS.md` for complete security analysis
+- Supabase RLS Documentation: https://supabase.com/docs/guides/auth/row-level-security
+- Supabase Edge Functions: https://supabase.com/docs/guides/functions
+- OWASP Security Guidelines: https://owasp.org/www-project-top-ten/
 
 ---
 
-**Last Updated:** January 2026
+**Note:** Some features require server-side implementation. For Supabase, use RLS policies or Edge Functions for server-side security.
