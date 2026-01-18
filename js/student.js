@@ -417,12 +417,25 @@ async function loadMaterials() {
     isUpdating = true;
     
     const currentUser = getCurrentUser();
-    const registeredCourses = currentUser.courses || [];
-    
-    // If no courses registered, don't show materials
-    if (registeredCourses.length === 0) {
+    if (!currentUser) {
         isUpdating = false;
         return;
+    }
+    
+    const registeredCourses = currentUser.courses || [];
+    
+    // Show/hide materials section based on registered courses
+    const materialsSection = document.getElementById('materialsSection');
+    const noCoursesMessage = document.getElementById('noCoursesMessage');
+    
+    if (registeredCourses.length === 0) {
+        if (materialsSection) materialsSection.style.display = 'none';
+        if (noCoursesMessage) noCoursesMessage.style.display = 'block';
+        isUpdating = false;
+        return;
+    } else {
+        if (materialsSection) materialsSection.style.display = 'block';
+        if (noCoursesMessage) noCoursesMessage.style.display = 'none';
     }
     
     // Try Supabase first, fallback to localStorage
@@ -1011,9 +1024,13 @@ async function downloadTextMaterial(materialId, fileExtension = 'txt') {
     URL.revokeObjectURL(url);
 }
 
-// Make download functions globally accessible
+// Make all functions globally accessible for onclick handlers
+window.viewMaterial = viewMaterial;
 window.downloadFile = downloadFile;
 window.downloadTextMaterial = downloadTextMaterial;
+window.markAsCompleted = markAsCompleted;
+window.closeMaterialModal = closeMaterialModal;
+window.filterMaterials = filterMaterials;
 
 // Close modal when clicking outside
 window.onclick = function(event) {
