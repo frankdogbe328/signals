@@ -124,14 +124,48 @@
             box-shadow: var(--shadow);
         }
         .filter-row {
-            display: flex;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
             gap: 15px;
-            flex-wrap: wrap;
             align-items: end;
         }
         .filter-group {
-            flex: 1;
-            min-width: 200px;
+            display: flex;
+            flex-direction: column;
+        }
+        .filter-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-color);
+            font-size: 14px;
+        }
+        .filter-group input,
+        .filter-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .filter-group input:focus,
+        .filter-group select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.1);
+        }
+        .filter-group small {
+            margin-top: 6px;
+        }
+        @media (min-width: 1024px) {
+            .filter-row {
+                grid-template-columns: 200px 200px 1fr 120px;
+            }
+        }
+        @media (max-width: 1023px) and (min-width: 768px) {
+            .filter-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
         }
         .final-grade-card {
             background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
@@ -268,7 +302,7 @@
                 <div class="filter-row">
                     <div class="filter-group">
                         <label for="manualScoreClass">Class</label>
-                        <select id="manualScoreClass" class="form-control" onchange="loadManualScoreStudents()">
+                        <select id="manualScoreClass" class="form-control">
                             <option value="">Select Class</option>
                             <optgroup label="Signals">
                                 <option value="signals-basic">SIGNALS BASIC</option>
@@ -293,7 +327,7 @@
                     </div>
                     <div class="filter-group">
                         <label for="manualScoreType">Score Type</label>
-                        <select id="manualScoreType" class="form-control" onchange="loadManualScoreStudents()">
+                        <select id="manualScoreType" class="form-control">
                             <option value="">Select Score Type</option>
                             <option value="bft_1">BFT 1 (2.5%)</option>
                             <option value="bft_2">BFT 2 (2.5%)</option>
@@ -305,7 +339,7 @@
                     </div>
                     <div class="filter-group">
                         <label for="manualScoreSubject">Subject</label>
-                        <select id="manualScoreSubject" class="form-control" onchange="loadManualScoreStudents()">
+                        <select id="manualScoreSubject" class="form-control">
                             <option value="">Select Subject</option>
                         </select>
                     </div>
