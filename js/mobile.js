@@ -4,8 +4,56 @@ function toggleMobileMenu() {
     const hamburger = document.querySelector('.hamburger');
     
     if (mobileMenu && hamburger) {
+        const isActive = mobileMenu.classList.contains('active');
+        
         mobileMenu.classList.toggle('active');
         hamburger.classList.toggle('active');
+        
+        // Force visibility when active
+        if (!isActive) {
+            // Menu is opening - ensure content is visible
+            const mobileMenuContent = mobileMenu.querySelector('.mobile-menu-content');
+            if (mobileMenuContent) {
+                // Force all children to be visible
+                const allChildren = mobileMenuContent.querySelectorAll('*');
+                allChildren.forEach(child => {
+                    child.style.display = '';
+                    child.style.visibility = 'visible';
+                    child.style.opacity = '1';
+                });
+                
+                // Force links to be visible
+                const links = mobileMenuContent.querySelectorAll('a, button');
+                links.forEach(link => {
+                    link.style.display = 'block';
+                    link.style.visibility = 'visible';
+                    link.style.opacity = '1';
+                    link.style.width = '100%';
+                });
+            }
+            
+            // Ensure menu container is visible
+            mobileMenu.style.maxHeight = '600px';
+            mobileMenu.style.opacity = '1';
+            mobileMenu.style.overflow = 'visible';
+            mobileMenu.style.visibility = 'visible';
+        } else {
+            // Menu is closing
+            mobileMenu.style.maxHeight = '0';
+            mobileMenu.style.opacity = '0';
+        }
+        
+        console.log('Mobile menu toggled:', {
+            isNowActive: mobileMenu.classList.contains('active'),
+            menuElement: !!mobileMenu,
+            contentElement: !!mobileMenu.querySelector('.mobile-menu-content'),
+            linksCount: mobileMenu.querySelectorAll('.mobile-menu-content a, .mobile-menu-content button').length
+        });
+    } else {
+        console.error('Mobile menu elements not found:', {
+            mobileMenu: !!mobileMenu,
+            hamburger: !!hamburger
+        });
     }
 }
 
