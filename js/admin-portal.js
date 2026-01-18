@@ -53,12 +53,16 @@ document.addEventListener('DOMContentLoaded', function() {
     const manualScoreSubject = document.getElementById('manualScoreSubject');
     
     if (manualScoreClass) {
-        manualScoreClass.addEventListener('change', function() {
+        manualScoreClass.addEventListener('change', async function() {
             const classId = this.value;
             if (classId) {
+                // Update score type dropdown to disable types that already have scores
+                await updateManualScoreTypeDropdown(classId);
                 // Load students when class is selected (no subject needed)
                 loadManualScoreStudents();
             } else {
+                // Reset score type dropdown
+                resetManualScoreTypeDropdown();
                 // Clear container
                 const container = document.getElementById('manualScoreEntryContainer');
                 if (container) {
@@ -1156,6 +1160,116 @@ function formatExamType(examType) {
     return types[examType] || examType;
 }
 
+// Update manual score type dropdown to disable types that already have scores
+async function updateManualScoreTypeDropdown(classId) {
+    const scoreTypeSelect = document.getElementById('manualScoreType');
+    if (!scoreTypeSelect || !classId) {
+        resetManualScoreTypeDropdown();
+        return;
+    }
+    
+    try {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+            resetManualScoreTypeDropdown();
+            return;
+        }
+        
+        const subject = 'Manual Entry';
+        const scoreTypes = ['bft_1', 'bft_2', 'opening_exam', 'mid_course_exercise', 'final_cse_exercise', 'quiz_manual'];
+        
+        // Check which score types already have scores for this class
+        const scoreTypesWithScores = new Set();
+        
+        for (const examType of scoreTypes) {
+            const examId = await getOrCreateManualExam(classId, examType, subject);
+            if (examId) {
+                const { data: existingGrades } = await supabase
+                    .from('exam_grades')
+                    .select('id')
+                    .eq('exam_id', examId)
+                    .limit(1);
+                
+                if (existingGrades && existingGrades.length > 0) {
+                    scoreTypesWithScores.add(examType);
+                }
+            }
+        }
+        
+        // Store original option texts (only once)
+        if (!scoreTypeSelect.originalTexts) {
+            scoreTypeSelect.originalTexts = {};
+            Array.from(scoreTypeSelect.options).forEach(option => {
+                scoreTypeSelect.originalTexts[option.value] = option.textContent;
+            });
+        }
+        
+        // Update dropdown options
+        const currentValue = scoreTypeSelect.value;
+        Array.from(scoreTypeSelect.options).forEach(option => {
+            if (option.value === '') {
+                // Keep placeholder option enabled
+                option.disabled = false;
+                option.textContent = 'Select Score Type';
+                return;
+            }
+            
+            const examType = option.value;
+            const originalText = scoreTypeSelect.originalTexts[option.value] || option.textContent.replace(/[✓⚠️].*/g, '').trim();
+            
+            // Check if this score type already has scores
+            if (scoreTypesWithScores.has(examType)) {
+                option.disabled = true;
+                option.textContent = originalText + ' ✓ (Already Entered)';
+            } else {
+                // For BFT 2, check if BFT 1 has scores
+                if (examType === 'bft_2') {
+                    if (scoreTypesWithScores.has('bft_1')) {
+                        option.disabled = false;
+                        option.textContent = originalText;
+                    } else {
+                        option.disabled = true;
+                        option.textContent = originalText + ' ⚠️ (BFT 1 must be entered first)';
+                    }
+                } else {
+                    // Enable if no scores exist yet
+                    option.disabled = false;
+                    option.textContent = originalText;
+                }
+            }
+        });
+        
+        // If current selection is now disabled, clear it
+        const selectedOption = scoreTypeSelect.options[scoreTypeSelect.selectedIndex];
+        if (selectedOption && selectedOption.disabled && selectedOption.value !== '') {
+            scoreTypeSelect.value = '';
+            const container = document.getElementById('manualScoreEntryContainer');
+            if (container) {
+                container.innerHTML = '<p class="empty-state">This score type has already been entered for this class. Please select a different score type.</p>';
+            }
+        }
+        
+    } catch (error) {
+        console.error('Error updating score type dropdown:', error);
+        resetManualScoreTypeDropdown();
+    }
+}
+
+// Reset manual score type dropdown to default state
+function resetManualScoreTypeDropdown() {
+    const scoreTypeSelect = document.getElementById('manualScoreType');
+    if (!scoreTypeSelect) return;
+    
+    Array.from(scoreTypeSelect.options).forEach(option => {
+        option.disabled = false;
+        if (scoreTypeSelect.originalTexts && scoreTypeSelect.originalTexts[option.value]) {
+            option.textContent = scoreTypeSelect.originalTexts[option.value];
+        } else {
+            option.textContent = option.textContent.replace(/[✓⚠️].*/g, '').trim();
+        }
+    });
+}
+
 // Load students for manual score entry (unified function for all types)
 async function loadManualScoreStudents() {
     const classId = document.getElementById('manualScoreClass')?.value;
@@ -1868,6 +1982,12 @@ async function saveBFTScore(studentId, studentName, bftNumber) {
         loadFinalGrades();
         loadResults();
         
+        // Update score type dropdown to reflect new score entry
+        const classId = document.getElementById('manualScoreClass')?.value;
+        if (classId) {
+            await updateManualScoreTypeDropdown(classId);
+        }
+        
     } catch (error) {
         console.error('Error saving BFT score:', error);
         showError('Failed to save BFT score. Please check your connection and try again.', 'Save Error');
@@ -1991,10 +2111,15 @@ async function saveManualScore(studentId, studentName, examType) {
         loadFinalGrades();
         loadResults();
         
+        // Update score type dropdown to reflect new score entry
+        const classId = document.getElementById('manualScoreClass')?.value;
+        if (classId) {
+            await updateManualScoreTypeDropdown(classId);
+        }
+        
     } catch (error) {
         console.error('Error saving manual score:', error);
         showError('Failed to save manual score. Please check your connection and try again.', 'Save Error');
-        showError('Failed to save manual score. Please try again.', 'Error');
     }
 }
 
