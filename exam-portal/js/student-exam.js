@@ -104,6 +104,9 @@ document.addEventListener('DOMContentLoaded', function() {
     // Setup mobile-friendly button handlers initially
     setupMobileButtonHandlers();
     
+    // Setup tab navigation event listeners (replaces inline onclick handlers)
+    setupTabNavigationListeners();
+    
     // Load available exams
     loadAvailableExams();
     
