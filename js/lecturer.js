@@ -1115,77 +1115,124 @@ async function loadAnalytics() {
                     users = JSON.parse(localStorage.getItem('users') || '[]');
                 }
             }
-    
-    // Filter materials to only show courses/subjects the lecturer is registered for
-    if (registeredSubjects.length > 0) {
-        materials = materials.filter(m => registeredSubjects.includes(m.course));
-    }
-    
-    if (typeof getProgressFromSupabase === 'function') {
-        try {
-            const progressData = await getProgressFromSupabase({});
-            // Convert array to object format
-            progress = {};
-            progressData.forEach(p => {
-                if (!progress[p.user_id]) progress[p.user_id] = {};
-                progress[p.user_id][p.material_id] = true;
+            
+            // Get progress (with optimization if available)
+            if (optimizeQuery) {
+                try {
+                    const progressData = await optimizeQuery(() => getProgressFromSupabase({}), 'progress', 30000);
+                    progress = {};
+                    progressData.forEach(p => {
+                        if (!progress[p.user_id]) progress[p.user_id] = {};
+                        progress[p.user_id][p.material_id] = true;
+                    });
+                } catch (err) {
+                    progress = JSON.parse(localStorage.getItem('progress') || '{}');
+                }
+            } else {
+                if (typeof getProgressFromSupabase === 'function') {
+                    try {
+                        const progressData = await getProgressFromSupabase({});
+                        progress = {};
+                        progressData.forEach(p => {
+                            if (!progress[p.user_id]) progress[p.user_id] = {};
+                            progress[p.user_id][p.material_id] = true;
+                        });
+                    } catch (err) {
+                        progress = JSON.parse(localStorage.getItem('progress') || '{}');
+                    }
+                } else {
+                    progress = JSON.parse(localStorage.getItem('progress') || '{}');
+                }
+            }
+            
+            // Filter materials to only show courses/subjects the lecturer is registered for
+            if (registeredSubjects.length > 0) {
+                materials = materials.filter(m => registeredSubjects.includes(m.course));
+            }
+            
+            const allStudents = users.filter(u => u.role === 'student');
+            const activeClasses = [...new Set(materials.map(m => m.class))];
+            
+            // Filter students to only count those registered for subjects the lecturer teaches
+            const relevantStudents = allStudents.filter(student => {
+                if (!student.courses || student.courses.length === 0) return false;
+                const studentHasLecturerSubject = student.courses.some(studentSubject => 
+                    registeredSubjects.includes(studentSubject)
+                );
+                const studentClassHasMaterials = materials.some(m => 
+                    m.class === student.class && student.courses.includes(m.course)
+                );
+                return studentHasLecturerSubject && studentClassHasMaterials;
             });
-        } catch (err) {
-            progress = JSON.parse(localStorage.getItem('progress') || '{}');
+            
+            // Calculate overall completion rate
+            let totalCompletions = 0;
+            let totalPossible = 0;
+            
+            relevantStudents.forEach(student => {
+                const studentMaterials = materials.filter(m => 
+                    m.class === student.class && student.courses && student.courses.includes(m.course)
+                );
+                totalPossible += studentMaterials.length;
+                const studentProgress = progress[student.id] || {};
+                totalCompletions += studentMaterials.filter(m => studentProgress[m.id]).length;
+            });
+            
+            const overallCompletion = totalPossible > 0 
+                ? Math.round((totalCompletions / totalPossible) * 100) 
+                : 0;
+            
+            // Prepare result object
+            const result = {
+                materials,
+                relevantStudents,
+                progress,
+                overallCompletion,
+                activeClasses
+            };
+            
+            // Cache result
+            analyticsCache = result;
+            analyticsCacheTime = Date.now();
+            
+            // Update display using requestAnimationFrame for smooth UI
+            requestAnimationFrame(() => {
+                updateAnalyticsDisplay(result);
+            });
+            
+            return result;
+        } catch (error) {
+            console.error('Error loading analytics:', error);
+            throw error;
+        } finally {
+            analyticsLoading = false;
+            analyticsLoadingPromise = null;
         }
-    } else {
-        progress = JSON.parse(localStorage.getItem('progress') || '{}');
-    }
+    })();
     
-    const allStudents = users.filter(u => u.role === 'student');
-    const activeClasses = [...new Set(materials.map(m => m.class))];
-    
-    // Filter students to only count those registered for subjects the lecturer teaches
-    // A student is relevant if they are registered for at least one subject the lecturer teaches
-    const relevantStudents = allStudents.filter(student => {
-        if (!student.courses || student.courses.length === 0) return false;
-        
-        // Check if student is registered for any subject the lecturer teaches
-        const studentHasLecturerSubject = student.courses.some(studentSubject => 
-            registeredSubjects.includes(studentSubject)
-        );
-        
-        // Also check if student's class has materials from lecturer
-        const studentClassHasMaterials = materials.some(m => 
-            m.class === student.class && student.courses.includes(m.course)
-        );
-        
-        return studentHasLecturerSubject && studentClassHasMaterials;
-    });
-    
-    // Calculate overall completion rate (only for relevant students)
-    let totalCompletions = 0;
-    let totalPossible = 0;
-    
-    relevantStudents.forEach(student => {
-        const studentMaterials = materials.filter(m => 
-            m.class === student.class && student.courses && student.courses.includes(m.course)
-        );
-        totalPossible += studentMaterials.length;
-        const studentProgress = progress[student.id] || {};
-        totalCompletions += studentMaterials.filter(m => studentProgress[m.id]).length;
-    });
-    
-    const overallCompletion = totalPossible > 0 
-        ? Math.round((totalCompletions / totalPossible) * 100) 
-        : 0;
+    return analyticsLoadingPromise;
+}
+
+// Separate function to update display (called after data is ready)
+function updateAnalyticsDisplay(data) {
+    const { materials, relevantStudents, progress, overallCompletion, activeClasses } = data;
     
     // Update overview
-    document.getElementById('totalMaterialsCount').textContent = materials.length;
-    document.getElementById('totalStudentsCount').textContent = relevantStudents.length;
-    document.getElementById('overallCompletion').textContent = overallCompletion + '%';
-    document.getElementById('activeClassesCount').textContent = activeClasses.length;
+    const totalMaterialsEl = document.getElementById('totalMaterialsCount');
+    const totalStudentsEl = document.getElementById('totalStudentsCount');
+    const overallCompletionEl = document.getElementById('overallCompletion');
+    const activeClassesEl = document.getElementById('activeClassesCount');
     
-    // Load class progress (use relevant students only)
-    loadClassProgress(materials, relevantStudents, progress);
+    if (totalMaterialsEl) totalMaterialsEl.textContent = materials.length;
+    if (totalStudentsEl) totalStudentsEl.textContent = relevantStudents.length;
+    if (overallCompletionEl) overallCompletionEl.textContent = overallCompletion + '%';
+    if (activeClassesEl) activeClassesEl.textContent = activeClasses.length;
     
-    // Load material statistics (use relevant students only)
-    loadMaterialStats(materials, relevantStudents, progress);
+    // Load class progress and material stats (batch DOM updates)
+    requestAnimationFrame(() => {
+        loadClassProgress(materials, relevantStudents, progress);
+        loadMaterialStats(materials, relevantStudents, progress);
+    });
 }
 
 function loadClassProgress(materials, students, progress) {
