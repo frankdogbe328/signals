@@ -76,9 +76,32 @@
         setTimeout(forceMobileNavFix, 100);
     });
     
-    // Also run periodically on mobile (every 2 seconds) to catch any late-loading issues
+    // Run periodically on mobile (every 10 seconds instead of 2 to prevent lag) - only if needed
+    let intervalId = null;
     if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
-        setInterval(forceMobileNavFix, 2000);
+        // Only run interval if hamburger is not visible (smart check to prevent unnecessary work)
+        intervalId = setInterval(function() {
+            const hamburger = document.querySelector('.hamburger');
+            const navUser = document.querySelector('.nav-user');
+            if (window.innerWidth <= 800) {
+                // Only apply fix if nav-user is still visible (fix hasn't worked yet)
+                if (navUser) {
+                    const computedStyle = window.getComputedStyle(navUser);
+                    if (computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden') {
+                        forceMobileNavFix();
+                    } else {
+                        // Fix has worked, check less frequently or stop
+                        if (hamburger && window.getComputedStyle(hamburger).display !== 'none') {
+                            // Both conditions met, reduce to checking every 30 seconds
+                            if (intervalId) {
+                                clearInterval(intervalId);
+                                intervalId = setInterval(forceMobileNavFix, 30000); // Every 30 seconds once fixed
+                            }
+                        }
+                    }
+                }
+            }
+        }, 10000); // Reduced from 2000ms to 10000ms (10 seconds) to prevent lag
     }
     
     console.log('✅ Mobile nav force fix script loaded');

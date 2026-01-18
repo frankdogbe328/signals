@@ -67,20 +67,10 @@
         };
     }
     
-    // Also check periodically when menu might be opened
-    let lastCheck = 0;
-    setInterval(function() {
-        const now = Date.now();
-        if (now - lastCheck > 500) { // Check every 500ms
-            lastCheck = now;
-            const mobileMenu = document.getElementById('mobileMenu');
-            if (mobileMenu && mobileMenu.classList.contains('active')) {
-                forceMobileMenuVisibility();
-            }
-        }
-    }, 500);
+    // REMOVED: Aggressive 500ms interval - was causing freezing/lagging
+    // MutationObserver below handles menu visibility changes efficiently
     
-    // Also check when menu class changes (MutationObserver)
+    // Check when menu class changes (MutationObserver) - this is enough!
     const mobileMenu = document.getElementById('mobileMenu');
     if (mobileMenu) {
         const observer = new MutationObserver(function(mutations) {
