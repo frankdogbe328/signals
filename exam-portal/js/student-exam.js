@@ -9,25 +9,22 @@
     // Pre-define functions on window immediately - will be overwritten with actual implementations
     // These stubs ensure functions exist for event listeners, even if script hasn't fully loaded
     window.showExamsTab = function() {
-        console.warn('showExamsTab: Stub function called. Real function should be defined by now.');
-        // Try to call real function if it exists
-        const realFn = window.showExamsTab._real || (function() {
-            console.error('showExamsTab: Real function never loaded!');
+        // Check if real function is stored
+        if (window.showExamsTab._real && typeof window.showExamsTab._real === 'function') {
+            window.showExamsTab._real();
+        } else {
+            console.error('showExamsTab: Real function not yet loaded!');
             alert('Page is still loading. Please wait a moment and try again.');
-        });
-        if (realFn !== window.showExamsTab) {
-            realFn();
         }
     };
     
     window.showResultsTab = function() {
-        console.warn('showResultsTab: Stub function called. Real function should be defined by now.');
-        const realFn = window.showResultsTab._real || (function() {
-            console.error('showResultsTab: Real function never loaded!');
+        // Check if real function is stored
+        if (window.showResultsTab._real && typeof window.showResultsTab._real === 'function') {
+            window.showResultsTab._real();
+        } else {
+            console.error('showResultsTab: Real function not yet loaded!');
             alert('Page is still loading. Please wait a moment and try again.');
-        });
-        if (realFn !== window.showResultsTab) {
-            realFn();
         }
     };
     
