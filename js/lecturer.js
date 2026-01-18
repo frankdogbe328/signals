@@ -343,9 +343,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Load lecturer's registered subjects
     loadLecturerRegisteredSubjects();
     
-    // Load materials (will be filtered by registered subjects)
-    loadMaterials();
-    loadAnalytics();
+    // Load materials and analytics asynchronously without blocking navigation
+    // Use .catch() to prevent unhandled promise rejections
+    loadMaterials().catch(err => console.error('Error loading materials:', err));
+    loadAnalytics().catch(err => console.error('Error loading analytics:', err));
     
     // Handle upload form
     const uploadForm = document.getElementById('uploadForm');
