@@ -1,0 +1,43 @@
+# Test and Debug Files - Should NOT be on GitHub
+FEATURE_TESTING_GUIDE.md
+TESTING_GUIDE.md
+docs/PERFORMANCE_TEST_REPORT.md
+exam-portal/Excel-Question-Template-Sample.csv
+exam-portal/Excel-Question-Template.csv
+exam-portal/Word-Question-Template-Sample.txt
+exam-portal/supabase-clear-test-data.sql
+lms/CLEAR_ALL_DATA_FOR_TESTING.sql
+
+# Test HTML files
+test-*.html
+*-test.html
+
+# Debug JavaScript files
+*-debug.js
+*debug*.js
+check-console-errors.js
+test-system.js
+
+# Sensitive information (if any)
+*.key
+*.secret
+*.env
+.env.local
+.env.production
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tmp
+*.temp
+*.log
