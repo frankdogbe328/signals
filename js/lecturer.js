@@ -363,13 +363,25 @@ document.addEventListener('DOMContentLoaded', async function() {
         mobileLecturerNameEl.textContent = `Welcome, ${currentUser.name}`;
     }
     
-    // Load lecturer's registered subjects
+    // Load lecturer's registered subjects (critical - needed immediately)
     loadLecturerRegisteredSubjects();
     
-    // Load materials and analytics asynchronously without blocking navigation
+    // Step 1: Load materials (critical - needed for upload form)
     // Use .catch() to prevent unhandled promise rejections
     loadMaterials().catch(err => console.error('Error loading materials:', err));
-    loadAnalytics().catch(err => console.error('Error loading analytics:', err));
+    
+    // Step 1: Defer analytics loading (non-critical - can wait until page is interactive)
+    // Analytics is heavy (fetches materials, users, progress) - defer until idle
+    if ('requestIdleCallback' in window) {
+        requestIdleCallback(() => {
+            loadAnalytics().catch(err => console.error('Error loading analytics:', err));
+        }, { timeout: 2000 }); // Fallback to setTimeout after 2s if no idle time
+    } else {
+        // Fallback for browsers without requestIdleCallback
+        setTimeout(() => {
+            loadAnalytics().catch(err => console.error('Error loading analytics:', err));
+        }, 500); // Wait 500ms after page load
+    }
     
     // Handle upload form
     const uploadForm = document.getElementById('uploadForm');
@@ -470,14 +482,24 @@ async function handleMaterialUpload(e) {
         return;
     }
     
-    const course = document.getElementById('courseSelect').value;
-    const classSelect = document.getElementById('classSelect').value;
-    const title = document.getElementById('materialTitle').value;
-    const type = document.getElementById('materialType').value;
-    const description = document.getElementById('materialDescription').value;
-    const category = document.getElementById('materialCategory').value;
-    const sequence = parseInt(document.getElementById('materialSequence').value) || 999;
+    // Step 2: Cache DOM queries - avoid repeated lookups
+    const uploadFormEl = document.getElementById('uploadForm');
+    const courseSelectEl = document.getElementById('courseSelect');
+    const classSelectEl = document.getElementById('classSelect');
+    const titleEl = document.getElementById('materialTitle');
+    const typeEl = document.getElementById('materialType');
+    const descriptionEl = document.getElementById('materialDescription');
+    const categoryEl = document.getElementById('materialCategory');
+    const sequenceEl = document.getElementById('materialSequence');
     const submitBtn = document.getElementById('submitBtn');
+    
+    const course = courseSelectEl.value;
+    const classSelect = classSelectEl.value;
+    const title = titleEl.value;
+    const type = typeEl.value;
+    const description = descriptionEl.value;
+    const category = categoryEl.value;
+    const sequence = parseInt(sequenceEl.value) || 999;
     const originalBtnText = submitBtn.textContent;
     
     // Sanitize inputs
@@ -712,7 +734,7 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
         return false;
     }
     
-    const editingId = document.getElementById('uploadForm').dataset.editingId;
+    const editingId = uploadFormEl.dataset.editingId;
     
     // Use Supabase Storage URL if available, otherwise fall back to base64
     const materialData = {
@@ -837,7 +859,7 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
                 }
                 success = true;
             }
-            delete document.getElementById('uploadForm').dataset.editingId;
+            delete uploadFormEl.dataset.editingId;
             document.getElementById('submitBtn').textContent = 'Upload Material';
             document.getElementById('cancelBtn').style.display = 'none';
         } else {
@@ -858,13 +880,13 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
     if (success) {
         // Clear editing state if succeeded
         if (editingId) {
-            delete document.getElementById('uploadForm').dataset.editingId;
+            delete uploadFormEl.dataset.editingId;
             document.getElementById('submitBtn').textContent = 'Upload Material';
             document.getElementById('cancelBtn').style.display = 'none';
         }
         
         // Reset form
-        document.getElementById('uploadForm').reset();
+        uploadFormEl.reset();
         document.getElementById('fileUploadGroup').style.display = 'none';
         document.getElementById('contentGroup').style.display = 'block';
         document.getElementById('filePreview').innerHTML = '';
@@ -901,7 +923,7 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
         return false;
     }
     
-    const editingId = document.getElementById('uploadForm').dataset.editingId;
+    const editingId = uploadFormEl.dataset.editingId;
     const submitBtn = document.getElementById('submitBtn');
     const originalBtnText = submitBtn ? submitBtn.textContent : 'Upload Material';
     
@@ -999,7 +1021,7 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
                 }
                 success = true;
             }
-            delete document.getElementById('uploadForm').dataset.editingId;
+            delete uploadFormEl.dataset.editingId;
             if (submitBtn) {
                 submitBtn.textContent = 'Upload Material';
             }
@@ -1027,7 +1049,7 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
     if (success) {
         // Clear editing state
         if (editingId) {
-            delete document.getElementById('uploadForm').dataset.editingId;
+            delete uploadFormEl.dataset.editingId;
             if (submitBtn) {
                 submitBtn.textContent = 'Upload Material';
             }
@@ -1035,7 +1057,7 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
         }
         
         // Reset form
-        document.getElementById('uploadForm').reset();
+        uploadFormEl.reset();
         document.getElementById('fileUploadGroup').style.display = 'none';
         document.getElementById('contentGroup').style.display = 'block';
         document.getElementById('filePreview').innerHTML = '';
