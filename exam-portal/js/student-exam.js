@@ -1898,9 +1898,10 @@ function showExamsTab() {
 
 // Make globally accessible immediately - replace stub with real function
 if (typeof window !== 'undefined') {
-    window.showExamsTab._real = showExamsTab;
-    window.showExamsTab = showExamsTab; // Replace stub with real function
-    console.log('✓ showExamsTab function defined');
+    // Store real function first, then replace stub
+    const realFn = showExamsTab;
+    window.showExamsTab = realFn; // Replace stub with real function
+    console.log('✓ showExamsTab function defined and assigned');
 }
 
 // Show results tab - Make globally accessible immediately
@@ -1941,9 +1942,10 @@ function showResultsTab() {
 
 // Make globally accessible immediately - replace stub with real function
 if (typeof window !== 'undefined') {
-    window.showResultsTab._real = showResultsTab;
-    window.showResultsTab = showResultsTab; // Replace stub with real function
-    console.log('✓ showResultsTab function defined');
+    // Store real function first, then replace stub
+    const realFn = showResultsTab;
+    window.showResultsTab = realFn; // Replace stub with real function
+    console.log('✓ showResultsTab function defined and assigned');
 }
 
 // Show all results section - Make globally accessible immediately
@@ -2619,16 +2621,24 @@ function formatExamTypeForStudent(examType) {
     return types[examType] || examType;
 }
 
-// Make functions globally accessible for onclick handlers
+// Final assignment of remaining functions to window (if not already assigned above)
+// Note: showExamsTab, showResultsTab, showAllResults, etc. are already assigned
+// immediately after their function definitions above
 if (typeof window !== 'undefined') {
-    // Tab navigation functions - required for onclick handlers in HTML
-    window.showExamsTab = showExamsTab;
-    window.showResultsTab = showResultsTab;
-    window.showAllResults = showAllResults;
-    window.showMidSemesterResults = showMidSemesterResults;
-    window.showFinalSemesterResults = showFinalSemesterResults;
+    // Only assign functions that aren't already assigned above
+    if (typeof window.exportMyResultPDF === 'undefined' && typeof exportMyResultPDF === 'function') {
+        window.exportMyResultPDF = exportMyResultPDF;
+    }
+    if (typeof window.refreshAllResults === 'undefined' && typeof refreshAllResults === 'function') {
+        window.refreshAllResults = refreshAllResults;
+    }
     
-    // Other functions
-    window.exportMyResultPDF = exportMyResultPDF;
-    window.refreshAllResults = refreshAllResults;
+    // Final verification - log if any required functions are missing
+    const requiredFunctions = ['showExamsTab', 'showResultsTab', 'showAllResults', 'showMidSemesterResults', 'showFinalSemesterResults'];
+    const missing = requiredFunctions.filter(fn => typeof window[fn] !== 'function');
+    if (missing.length > 0) {
+        console.warn('⚠️ Missing required functions:', missing);
+    } else {
+        console.log('✓ All tab navigation functions are globally accessible');
+    }
 }
