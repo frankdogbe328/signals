@@ -226,6 +226,40 @@ class PerformanceOptimizer {
         }
         return results;
     }
+    
+    /**
+     * Get performance metrics
+     */
+    getMetrics() {
+        return {
+            cacheSize: this.cache.size,
+            queueLength: this.requestQueue.length,
+            activeRequests: this.activeRequests.size,
+            isProcessing: this.isProcessingQueue
+        };
+    }
+    
+    /**
+     * Emergency cleanup when system is overloaded
+     */
+    emergencyCleanup() {
+        // Clear expired cache
+        this.clearExpiredCache();
+        
+        // Drop low-priority requests if queue is too large
+        if (this.requestQueue.length > 50) {
+            const lowPriority = this.requestQueue.filter(r => r.priority !== 'high');
+            lowPriority.forEach(r => {
+                const index = this.requestQueue.indexOf(r);
+                if (index > -1) {
+                    this.requestQueue.splice(index, 1);
+                    r.reject(new Error('Emergency cleanup: Request dropped'));
+                }
+            });
+        }
+        
+        console.log('🚨 Emergency cleanup performed', this.getMetrics());
+    }
 }
 
 // Create global instance
@@ -235,6 +269,15 @@ window.PerformanceOptimizer = new PerformanceOptimizer();
 setInterval(() => {
     window.PerformanceOptimizer.clearExpiredCache();
 }, 60000);
+
+// Monitor for system overload and perform emergency cleanup
+setInterval(() => {
+    const metrics = window.PerformanceOptimizer.getMetrics();
+    if (metrics.queueLength > 50 || metrics.activeRequests > 10) {
+        console.warn('⚠️ System overload detected:', metrics);
+        window.PerformanceOptimizer.emergencyCleanup();
+    }
+}, 30000); // Check every 30 seconds
 
 // Export for use in other files
 if (typeof module !== 'undefined' && module.exports) {
