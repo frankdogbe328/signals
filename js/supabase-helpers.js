@@ -158,23 +158,9 @@ async function getUserFromSupabase(username, password, role) {
                 }
                 
                 if (!passwordMatch) {
-                    console.log('Input password variants tried:', passwordsToTry.length);
-                    console.log('Database password hash:', data.password);
-                
-                console.log('Hash comparison:');
-                console.log('  Input hash (lowercase):', inputHashLower);
-                console.log('  DB hash (lowercase):', dbHashLower);
-                console.log('  Match:', passwordMatch);
-                
-                if (!passwordMatch) {
-                    console.error('❌ HASHES DO NOT MATCH!');
-                    console.error('This means the password hash in the database is incorrect.');
-                    console.error('To fix:');
-                    console.error('  1. Go to: https://emn178.github.io/online-tools/sha256.html');
-                    console.error('  2. Enter password: Admin123!');
-                    console.error('  3. Copy the hash');
-                    console.error('  4. Run SQL: UPDATE users SET password = \'HASH_HERE\' WHERE username = \'cbt\' AND role = \'admin\';');
-                    console.error('  5. Expected hash should be:', inputHashLower);
+                    console.error('❌ HASHES DO NOT MATCH after trying', passwordsToTry.length, 'variant(s)!');
+                    console.error('Tried both original and trimmed passwords');
+                    console.error('Database password hash:', data.password);
                 }
             } else {
                 console.warn('CryptoJS not available, trying SecurityUtils');
@@ -193,13 +179,21 @@ async function getUserFromSupabase(username, password, role) {
         } else {
             // Legacy plaintext password (migration support)
             console.log('Password is not in expected hash format, trying legacy methods');
-            // IMPORTANT: Trim password on mobile - use local variable if not defined above
+            // IMPORTANT: Try BOTH original and trimmed password (mobile adds spaces, laptop doesn't)
             const trimmedPasswordLocal = password.trim();
+            const passwordsToTryLegacy = trimmedPasswordLocal !== password ? [password, trimmedPasswordLocal] : [password];
+            
             // Try hashed comparison first, then fallback to plaintext
             if (typeof SecurityUtils !== 'undefined' && SecurityUtils.hashPassword) {
-                const hashedInput = await SecurityUtils.hashPassword(trimmedPasswordLocal);
-                // Try both trimmed and original password for compatibility
-                passwordMatch = hashedInput === data.password || data.password === trimmedPasswordLocal || data.password === password;
+                // Try both variants
+                for (const pwd of passwordsToTryLegacy) {
+                    const hashedInput = await SecurityUtils.hashPassword(pwd);
+                    passwordMatch = hashedInput === data.password || data.password === pwd;
+                    if (passwordMatch) {
+                        console.log('✅ Password match found using:', pwd === password ? 'original' : 'trimmed');
+                        break;
+                    }
+                }
                 console.log('Password match (SecurityUtils hash):', passwordMatch);
             } else {
                 // Try both trimmed and original password for compatibility
