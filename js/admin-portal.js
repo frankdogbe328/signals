@@ -602,22 +602,41 @@ async function releaseMidSemesterResults() {
         // IMPORTANT: Release ALL mid-semester exams regardless of previous release status
         // This ensures manually entered scores are also included in the release
         
-        // Build complete query chain in one go - Supabase client handles URL encoding correctly
-        let query = supabase
+        // Fix for 400 error: Fetch exam IDs first, then update individually
+        // This avoids URL encoding issues with .in() filter in update queries
+        const midSemesterTypes = ['bft_1', 'mid_cs_exam', 'mid_course_exercise', 'quiz', 'quiz_manual'];
+        
+        // Step 1: Fetch all exam IDs that match the criteria
+        let selectQuery = supabase
+            .from('exams')
+            .select('id')
+            .in('exam_type', midSemesterTypes);
+        
+        if (selectedClass !== 'all') {
+            selectQuery = selectQuery.eq('class_id', selectedClass);
+        }
+        
+        const { data: exams, error: selectError } = await selectQuery;
+        
+        if (selectError) {
+            showError('Failed to fetch exams for release. Please try again.', 'Error');
+            return;
+        }
+        
+        if (!exams || exams.length === 0) {
+            showError('No mid-semester exams found to release for this class.', 'No Exams');
+            return;
+        }
+        
+        // Step 2: Update each exam individually (more reliable than .in() with .update())
+        const examIds = exams.map(e => e.id);
+        const { error } = await supabase
             .from('exams')
             .update({ 
                 results_released: true,
                 mid_semester_released: true  // Mark as mid-semester standalone
             })
-            .in('exam_type', ['bft_1', 'mid_cs_exam', 'mid_course_exercise', 'quiz', 'quiz_manual']);
-        
-        // Filter by class if not "all"
-        if (selectedClass !== 'all') {
-            query = query.eq('class_id', selectedClass);
-        }
-        
-        // Execute query
-        const { error } = await query;
+            .in('id', examIds);  // Use .in() with id field (more reliable than exam_type)
         
         if (error) {
             showError('Failed to release mid-semester results. Please try again.', 'Error');
