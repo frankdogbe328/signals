@@ -583,8 +583,17 @@ body {
 }
 
 .mobile-menu.active {
-    max-height: 600px; /* Increased to fit navigation links */
-    opacity: 1;
+    max-height: 600px !important; /* Increased to fit navigation links */
+    opacity: 1 !important;
+    overflow: visible !important;
+    display: block !important;
+    visibility: visible !important;
+}
+
+.mobile-menu.active .mobile-menu-content {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .mobile-menu-content {
