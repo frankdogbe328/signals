@@ -355,6 +355,37 @@
                 <a href="/lecturer-dashboard.html" class="btn btn-secondary" style="text-decoration: none; margin-right: 10px;">📚 LMS Portal</a>
                 <button onclick="logout()" class="btn btn-secondary">Logout</button>
             </div>
+            <!-- Hamburger Menu Button for Mobile -->
+            <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+        <!-- Mobile Menu Dropdown -->
+        <div id="mobileMenu" class="mobile-menu">
+            <div class="mobile-menu-content">
+                <div class="mobile-menu-user" id="mobileLecturerName"></div>
+                
+                <!-- Navigation Links -->
+                <button onclick="window.location.href='/lecturer-dashboard.html'; toggleMobileMenu();" class="btn btn-secondary mobile-menu-link" style="width: 100%; padding: 14px 20px; font-size: 15px; min-height: 48px; margin: 0; border-radius: 8px; font-weight: 600; cursor: pointer; background-color: #6c757d; color: white; border: none; text-align: center;">
+                    📚 LMS Portal
+                </button>
+                
+                <button onclick="scrollToExamSection('createExam'); toggleMobileMenu();" class="btn btn-primary mobile-menu-link">
+                    ➕ Create Exam
+                </button>
+                
+                <button onclick="scrollToExamSection('examsList'); toggleMobileMenu();" class="btn btn-secondary mobile-menu-link">
+                    📝 My Exams
+                </button>
+                
+                <button onclick="scrollToExamSection('statistics'); toggleMobileMenu();" class="btn btn-info mobile-menu-link" style="background-color: #17a2b8; color: white;">
+                    📊 Statistics
+                </button>
+                
+                <button onclick="logout(); toggleMobileMenu();" class="btn btn-danger mobile-menu-link" style="background-color: #dc3545; color: white; margin-top: 10px;">Logout</button>
+            </div>
         </div>
     </nav>
     
@@ -366,7 +397,7 @@
         
         <div class="dashboard-content">
             <!-- Create New Exam Section -->
-            <div class="card">
+            <div class="card" id="createExam">
                 <h3>📝 Create New Exam</h3>
                 <form id="examForm" class="exam-form-section">
                     <div class="form-group">
@@ -513,9 +544,9 @@
             </div>
             
             <!-- My Exams Section -->
-            <div class="card">
+            <div class="card" id="examsList">
                 <h3>📋 My Exams</h3>
-                <div id="examsList" class="materials-list">
+                <div id="examsListContent" class="materials-list">
                     <p class="empty-state">No exams created yet</p>
                 </div>
             </div>
