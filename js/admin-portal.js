@@ -2320,9 +2320,8 @@ async function loadAllUsers() {
             error = retryResult.error;
         }
         
-            if (error) {
-            showError('Failed to load users. Please refresh the page.', 'Loading Error');
-            showError(`Failed to load users: ${error.message || 'Unknown error'}. Please try again.`, 'Error');
+        if (error) {
+            showError(`Failed to load users: ${error.message || 'Unknown error'}. Please refresh the page and try again.`, 'Loading Error');
             return;
         }
         
