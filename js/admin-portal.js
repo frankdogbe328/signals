@@ -579,7 +579,7 @@ async function releaseMidSemesterResults() {
     const selectedClass = classSelect.value;
     const className = selectedClass === 'all' ? 'All Classes' : formatClassName(selectedClass);
     
-    if (!confirm(`⚠️ RELEASE MID-SEMESTER RESULTS\n\nClass: ${className}\n\nThis will release results for:\n- BFT 1\n- Mid CS Exams\n- Mid Course Exercise\n- All Quizzes/Tests (accumulated during mid-semester)\n\nStudents will be able to view Quiz 1, Quiz 2, Quiz 3, and all other scores.\n\nThe data will be saved and automatically included in final semester calculations.\n\nAre you sure you want to proceed?`)) {
+    if (!confirm(`⚠️ RELEASE MID-SEMESTER RESULTS\n\nClass: ${className}\n\nThis will release mid-semester results:\n\n📊 System will automatically:\n1. Accumulate ALL scores from database:\n   - BFT 1 (Basic Field Training 1)\n   - Mid CS Exams (Mid Computer Science Exams)\n   - Mid Course Exercise\n   - ALL Quizzes/Tests accumulated during mid-semester (Quiz 1, Quiz 2, Quiz 3, etc.)\n\n2. Calculate and grade everything automatically\n\n3. Release complete mid-semester results to student portal\n\nStudents will see Quiz 1, Quiz 2, Quiz 3, BFT 1, Mid CS Exams, Mid Course Exercise, and all scores with their mid-semester grades.\n\nThe data will be saved and automatically included in final semester calculations.\n\nAre you sure you want to proceed?`)) {
         return;
     }
     
@@ -610,7 +610,7 @@ async function releaseMidSemesterResults() {
             return;
         }
         
-        showSuccess(`✅ Mid-semester results released successfully for ${className}!\n\nStudents can now view:\n- BFT 1 scores\n- Mid CS Exams scores\n- Mid Course Exercise scores\n- All Quizzes/Tests (Quiz 1, Quiz 2, Quiz 3, etc.)\n\nAll data has been saved and will be automatically included in final semester calculations.`, 'Success');
+        showSuccess(`✅ Mid-semester results released successfully for ${className}!\n\nThe system has:\n✓ Accumulated ALL mid-semester scores from database\n✓ Calculated and graded everything automatically\n✓ Released complete mid-semester results to student portal\n\nStudents can now view:\n- Quiz 1, Quiz 2, Quiz 3, and all other quizzes\n- BFT 1 (Basic Field Training 1) scores\n- Mid CS Exams (Mid Computer Science Exams) scores\n- Mid Course Exercise scores\n- Complete mid-semester grades with all scores\n\nAll data has been saved and will be automatically included in final semester calculations.\n\nAll results are now visible in the student portal.`, 'Success');
         
         // Force refresh results display
         setTimeout(() => {
