@@ -1005,26 +1005,31 @@ function getGradeThresholds() {
         } catch (e) {
         }
     }
-    return { A: 80, B: 70, C: 60, D: 50 };
+    // Updated grading scale: 90-100: A, 80-89: B, 70-79: C+, 60-69: C, 50-59: C-, 40-49: D, 0-39: F
+    return { A: 90, B: 80, CPlus: 70, C: 60, CMinus: 50, D: 40, F: 0 };
 }
 
-// Calculate grade from percentage
+// Calculate grade from percentage - Updated grading scale
+// 90-100: A, 80-89: B, 70-79: C+, 60-69: C, 50-59: C-, 40-49: D, 0-39: F
 function calculateGrade(percentage) {
-    const thresholds = getGradeThresholds();
-    if (percentage >= thresholds.A) return 'A';
-    if (percentage >= thresholds.B) return 'B';
-    if (percentage >= thresholds.C) return 'C';
-    if (percentage >= thresholds.D) return 'D';
+    if (percentage >= 90) return 'A';
+    if (percentage >= 80) return 'B';
+    if (percentage >= 70) return 'C+';
+    if (percentage >= 60) return 'C';
+    if (percentage >= 50) return 'C-';
+    if (percentage >= 40) return 'D';
     return 'F';
 }
 
-// Calculate final grade from scaled score
+// Calculate final grade from scaled score - Updated grading scale
+// 90-100: A, 80-89: B, 70-79: C+, 60-69: C, 50-59: C-, 40-49: D, 0-39: F
 function calculateFinalGrade(scaledScore) {
-    const thresholds = getGradeThresholds();
-    if (scaledScore >= thresholds.A) return 'A';
-    if (scaledScore >= thresholds.B) return 'B';
-    if (scaledScore >= thresholds.C) return 'C';
-    if (scaledScore >= thresholds.D) return 'D';
+    if (scaledScore >= 90) return 'A';
+    if (scaledScore >= 80) return 'B';
+    if (scaledScore >= 70) return 'C+';
+    if (scaledScore >= 60) return 'C';
+    if (scaledScore >= 50) return 'C-';
+    if (scaledScore >= 40) return 'D';
     return 'F';
 }
 
@@ -3296,33 +3301,41 @@ async function saveGradeThresholds() {
     }
 }
 
-// Reset grade thresholds
+// Reset grade thresholds - Updated grading scale
 function resetGradeThresholds() {
-    if (!confirm('Reset grade thresholds to default values?')) {
+    if (!confirm('Reset grade thresholds to default values?\n\n90-100: A\n80-89: B\n70-79: C+\n60-69: C\n50-59: C-\n40-49: D\n0-39: F')) {
         return;
     }
     
-    document.getElementById('gradeA').value = 80;
-    document.getElementById('gradeB').value = 70;
-    document.getElementById('gradeC').value = 60;
-    document.getElementById('gradeD').value = 50;
+    // Note: Grade threshold UI may need updating to support C+ and C- grades
+    // For now, using simplified thresholds for UI display
+    document.getElementById('gradeA').value = 90;
+    document.getElementById('gradeB').value = 80;
+    document.getElementById('gradeC').value = 70;
+    document.getElementById('gradeD').value = 40;
     
     localStorage.removeItem('gradeThresholds');
-    showSuccess('Grade thresholds reset to default values.', 'Success');
+    showSuccess('Grade thresholds reset to default values.\n\n90-100: A\n80-89: B\n70-79: C+\n60-69: C\n50-59: C-\n40-49: D\n0-39: F', 'Success');
 }
 
-// Load grade thresholds
+// Load grade thresholds - Updated grading scale
 function loadGradeThresholds() {
     const saved = localStorage.getItem('gradeThresholds');
     if (saved) {
         try {
             const thresholds = JSON.parse(saved);
-            document.getElementById('gradeA').value = thresholds.A || 80;
-            document.getElementById('gradeB').value = thresholds.B || 70;
-            document.getElementById('gradeC').value = thresholds.C || 60;
-            document.getElementById('gradeD').value = thresholds.D || 50;
+            document.getElementById('gradeA').value = thresholds.A || 90;
+            document.getElementById('gradeB').value = thresholds.B || 80;
+            document.getElementById('gradeC').value = thresholds.C || 70;
+            document.getElementById('gradeD').value = thresholds.D || 40;
         } catch (e) {
         }
+    } else {
+        // Set default values if none saved
+        document.getElementById('gradeA').value = 90;
+        document.getElementById('gradeB').value = 80;
+        document.getElementById('gradeC').value = 70;
+        document.getElementById('gradeD').value = 40;
     }
 }
 
