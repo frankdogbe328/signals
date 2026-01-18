@@ -745,75 +745,128 @@ async function loadFinalGrades() {
         }
         
         // Group by class and student, calculate final grades automatically
+        // Mid-semester total contributes 15% to final grade
         const classGroups = {};
+        const midSemesterGrades = {}; // Store mid-semester grades separately to calculate overall average
         
+        // First pass: Separate mid-semester and final semester grades
         (grades || []).forEach(grade => {
             const student = grade.student || {};
             const exam = grade.exam || {};
             const examType = exam.exam_type || 'N/A';
-            
-            // EXCLUDE mid-semester results from final semester calculation
-            // Mid-semester (bft_1, mid_cs_exam, mid_course_exercise) is STANDALONE
-            const midSemesterTypes = ['bft_1', 'mid_cs_exam', 'mid_course_exercise'];
-            if (midSemesterTypes.includes(examType)) {
-                return; // Skip mid-semester exams - they are standalone
-            }
-            
             const classId = student.class || 'unknown';
             const studentId = student.id;
             
-            if (!classGroups[classId]) {
-                classGroups[classId] = {};
-            }
-            
-            if (!classGroups[classId][studentId]) {
-                classGroups[classId][studentId] = {
-                    student: student,
-                    exams: [],
-                    totalScaledScore: 0,
-                    examBreakdown: {} // Track exams by type and lecturer
-                };
-            }
-            
-            // Calculate scaled score if not already calculated
-            const examTypePercentage = getExamTypePercentage(examType);
+            // Mid-semester types: BFT 1, Mid CS Exam, Mid Course Exercise
+            // Note: Quizzes are handled in final semester to avoid double-counting
+            const midSemesterTypes = ['bft_1', 'mid_cs_exam', 'mid_course_exercise'];
+            const isMidSemester = midSemesterTypes.includes(examType);
             
             // For final exams with written scores, use the combined score
-            // If written_score exists, total score = objective_score + written_score
             let finalPercentage = grade.percentage;
             if (grade.written_score !== null && grade.written_score !== undefined && 
                 grade.objective_score !== null && grade.objective_score !== undefined) {
-                // Recalculate percentage from combined scores
                 const totalScore = (grade.objective_score || 0) + (grade.written_score || 0);
                 finalPercentage = (totalScore / exam.total_marks) * 100;
             }
             
-            const scaledScore = grade.scaled_score || (finalPercentage ? (finalPercentage * examTypePercentage / 100) : 0);
-            
-            // Update scaled_score in grade object for display
-            if (!grade.scaled_score && finalPercentage) {
-                grade.scaled_score = scaledScore;
+            if (isMidSemester) {
+                // Store mid-semester grades for overall calculation
+                const key = `${classId}_${studentId}`;
+                if (!midSemesterGrades[key]) {
+                    midSemesterGrades[key] = {
+                        student: student,
+                        grades: [],
+                        totalPercentage: 0,
+                        count: 0
+                    };
+                }
+                midSemesterGrades[key].grades.push({
+                    percentage: finalPercentage || 0,
+                    examType: examType
+                });
+                midSemesterGrades[key].totalPercentage += (finalPercentage || 0);
+                midSemesterGrades[key].count++;
+            } else {
+                // Process final semester exams normally
+                if (!classGroups[classId]) {
+                    classGroups[classId] = {};
+                }
+                
+                if (!classGroups[classId][studentId]) {
+                    classGroups[classId][studentId] = {
+                        student: student,
+                        exams: [],
+                        midSemesterExams: [],
+                        totalScaledScore: 0,
+                        midSemesterContribution: 0, // Will store 15% of mid-semester total
+                        examBreakdown: {}
+                    };
+                }
+                
+                // Calculate scaled score for final semester exams
+                const examTypePercentage = getExamTypePercentage(examType);
+                const scaledScore = grade.scaled_score || (finalPercentage ? (finalPercentage * examTypePercentage / 100) : 0);
+                
+                if (!grade.scaled_score && finalPercentage) {
+                    grade.scaled_score = scaledScore;
+                }
+                
+                classGroups[classId][studentId].exams.push(grade);
+                classGroups[classId][studentId].totalScaledScore += scaledScore;
+                
+                // Track exam breakdown by lecturer
+                const lecturerId = exam.lecturer_id || 'unknown';
+                const lecturerName = exam.lecturer?.name || exam.lecturer?.username || 'Unknown';
+                if (!classGroups[classId][studentId].examBreakdown[lecturerId]) {
+                    classGroups[classId][studentId].examBreakdown[lecturerId] = {
+                        lecturerName: lecturerName,
+                        exams: []
+                    };
+                }
+                classGroups[classId][studentId].examBreakdown[lecturerId].exams.push({
+                    examType: examType,
+                    examTypeDisplay: formatExamType(examType),
+                    percentage: examTypePercentage,
+                    score: grade.percentage || 0,
+                    scaledScore: scaledScore
+                });
             }
+        });
+        
+        // Second pass: Calculate mid-semester overall percentage and add 15% contribution to final
+        Object.keys(midSemesterGrades).forEach(key => {
+            const [classId, studentId] = key.split('_');
+            const midData = midSemesterGrades[key];
             
-            classGroups[classId][studentId].exams.push(grade);
-            classGroups[classId][studentId].totalScaledScore += scaledScore;
+            // Calculate average mid-semester percentage
+            const avgMidSemesterPercentage = midData.count > 0 ? (midData.totalPercentage / midData.count) : 0;
             
-            // Track exam breakdown by lecturer
-            const lecturerId = exam.lecturer_id || 'unknown';
-            const lecturerName = exam.lecturer?.name || exam.lecturer?.username || 'Unknown';
-            if (!classGroups[classId][studentId].examBreakdown[lecturerId]) {
-                classGroups[classId][studentId].examBreakdown[lecturerId] = {
-                    lecturerName: lecturerName,
-                    exams: []
+            // Initialize student data if not exists (for students with only mid-semester grades)
+            if (!classGroups[classId]) {
+                classGroups[classId] = {};
+            }
+            if (!classGroups[classId][studentId]) {
+                classGroups[classId][studentId] = {
+                    student: midData.student,
+                    exams: [],
+                    midSemesterExams: midData.grades,
+                    totalScaledScore: 0,
+                    midSemesterContribution: 0,
+                    examBreakdown: {}
                 };
+            } else {
+                // Add mid-semester exams to the student data
+                classGroups[classId][studentId].midSemesterExams = midData.grades;
             }
-            classGroups[classId][studentId].examBreakdown[lecturerId].exams.push({
-                examType: examType,
-                examTypeDisplay: formatExamType(examType),
-                percentage: examTypePercentage,
-                score: grade.percentage || 0,
-                scaledScore: scaledScore
-            });
+            
+            // Mid-semester total contributes 15% to final grade
+            // Contribution = (Average Mid-Semester %) * 15%
+            classGroups[classId][studentId].midSemesterContribution = avgMidSemesterPercentage * 0.15;
+            classGroups[classId][studentId].midSemesterAverage = avgMidSemesterPercentage;
+            
+            // Add to total scaled score
+            classGroups[classId][studentId].totalScaledScore += classGroups[classId][studentId].midSemesterContribution;
         });
         
         displayFinalGrades(classGroups);
@@ -870,9 +923,9 @@ function displayFinalGrades(classGroups) {
             const finalGrade = calculateFinalGrade(finalScore);
             const gradeClass = `grade-${finalGrade}`;
             
-            // Separate exams into Mid and Final halves
+            // Separate exams for status display
             const midExamTypes = ['bft_1', 'mid_cs_exam', 'mid_course_exercise'];
-            const finalExamTypes = ['opening_exam', 'bft_2', 'final_exam', 'final_cse_exercise', 'quiz', 'gen_assessment'];
+            const finalExamTypes = ['opening_exam', 'bft_2', 'final_exam', 'final_cse_exercise', 'quiz', 'quiz_manual', 'gen_assessment'];
             
             const midExams = studentData.exams.filter(e => {
                 const examType = e.exam?.exam_type || '';
@@ -883,15 +936,11 @@ function displayFinalGrades(classGroups) {
                 return finalExamTypes.includes(examType);
             });
             
-            // Calculate Mid and Final scores separately
-            let midScore = 0;
-            midExams.forEach(exam => {
-                const examType = exam.exam?.exam_type || '';
-                const examTypePercentage = getExamTypePercentage(examType);
-                const scaledScore = exam.scaled_score || (exam.percentage ? (exam.percentage * examTypePercentage / 100) : 0);
-                midScore += scaledScore;
-            });
+            // Mid-semester contribution is already calculated and included in totalScaledScore
+            const midSemesterAvg = studentData.midSemesterAverage || 0;
+            const midSemesterContribution = studentData.midSemesterContribution || 0;
             
+            // Calculate final semester score (excluding mid-semester contribution)
             let finalScoreHalf = 0;
             finalExams.forEach(exam => {
                 const examType = exam.exam?.exam_type || '';
@@ -899,6 +948,9 @@ function displayFinalGrades(classGroups) {
                 const scaledScore = exam.scaled_score || (exam.percentage ? (exam.percentage * examTypePercentage / 100) : 0);
                 finalScoreHalf += scaledScore;
             });
+            
+            // Show mid-semester as the contribution (15% of average)
+            const midScore = midSemesterContribution; // This is already scaled to 15%
             
             // Check release status for Mid and Final separately
             // Handle cases where exam data might be null/undefined
@@ -977,7 +1029,8 @@ function displayFinalGrades(classGroups) {
                     <td style="max-width: 300px;">${breakdownHtml}</td>
                     <td>
                         <div style="margin-bottom: 8px;">
-                            <strong>Mid Half:</strong> ${midScore.toFixed(2)}%<br>
+                            <strong>Mid-Semester (15%):</strong> ${midSemesterAvg > 0 ? midSemesterAvg.toFixed(1) + '% → ' : ''}${midScore.toFixed(2)}%<br>
+                            <small style="color: #666;">${midSemesterAvg > 0 ? `(${midSemesterAvg.toFixed(1)}% × 15% = ${midScore.toFixed(2)}%)` : 'Not calculated'}</small><br>
                             <span style="color: ${midStatusColor}; font-weight: ${midStatus === 'Released' ? 'bold' : 'normal'};">
                                 ${midStatus === 'Released' ? '✓ Released' : midStatus === 'Pending' ? '⏳ Pending' : midStatus}
                             </span>
