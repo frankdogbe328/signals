@@ -629,13 +629,16 @@ body {
 }
 
 .mobile-menu-content .btn {
-    width: 100%;
-    padding: 14px 20px;
-    font-size: 15px;
-    min-height: 48px;
-    margin: 0;
-    border-radius: 8px;
-    font-weight: 600;
+    width: 100% !important;
+    padding: 14px 20px !important;
+    font-size: 15px !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+    border-radius: 8px !important;
+    font-weight: 600 !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 .mobile-menu-content a.btn {
