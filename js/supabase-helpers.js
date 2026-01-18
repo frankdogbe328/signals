@@ -164,10 +164,17 @@ async function getUserFromSupabase(username, password, role) {
                 }
             } else {
                 console.warn('CryptoJS not available, trying SecurityUtils');
+                // Try BOTH original and trimmed password (mobile adds spaces, laptop doesn't)
                 if (typeof SecurityUtils !== 'undefined' && SecurityUtils.verifyPassword) {
                     console.log('Using SecurityUtils.verifyPassword');
-                    // Use trimmedPassword defined above for mobile compatibility
-                    passwordMatch = await SecurityUtils.verifyPassword(trimmedPassword, data.password);
+                    // Try both variants - passwordsToTry already defined above
+                    for (const pwd of passwordsToTry) {
+                        passwordMatch = await SecurityUtils.verifyPassword(pwd, data.password);
+                        if (passwordMatch) {
+                            console.log('✅ Password match found using:', pwd === password ? 'original' : 'trimmed');
+                            break;
+                        }
+                    }
                     console.log('SecurityUtils verification result:', passwordMatch);
                 } else {
                     console.warn('Neither CryptoJS nor SecurityUtils available, trying plaintext comparison');
