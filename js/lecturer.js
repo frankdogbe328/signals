@@ -343,13 +343,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     // Load lecturer's registered subjects
     loadLecturerRegisteredSubjects();
     
-    // Load materials (will be filtered by registered subjects)
-    loadMaterials();
+    // Defer materials load to prevent blocking initial page render and navigation
+    setTimeout(() => {
+        loadMaterials().catch(err => console.error('Error loading materials on page load:', err));
+    }, 200);
     
-    // Defer analytics load to prevent blocking initial page render
+    // Defer analytics load further to prevent blocking initial page render
     setTimeout(() => {
         loadAnalytics().catch(err => console.error('Error loading analytics on page load:', err));
-    }, 500);
+    }, 1000);
     
     // Handle upload form
     const uploadForm = document.getElementById('uploadForm');
