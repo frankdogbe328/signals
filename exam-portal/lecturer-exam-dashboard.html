@@ -963,6 +963,24 @@
             closeHelpModal();
         }
     }
+    
+    // Scroll to exam section function for mobile menu navigation
+    function scrollToExamSection(sectionId) {
+        const section = document.getElementById(sectionId);
+        if (section) {
+            section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            // Try to find by class or other identifier
+            const element = document.querySelector(`.${sectionId}`) || 
+                           document.querySelector(`[data-section="${sectionId}"]`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+    }
+    
+    // Make functions globally accessible
+    window.scrollToExamSection = scrollToExamSection;
     </script>
 </body>
 </html>
