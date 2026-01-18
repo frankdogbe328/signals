@@ -1762,11 +1762,13 @@ function showExamsTab() {
 function showResultsTab() {
     document.getElementById('availableExamsView').style.display = 'none';
     const myResultsView = document.getElementById('myResultsView');
-    if (myResultsView) myResultsView.style.display = 'block';
+    if (myResultsView) {
+        myResultsView.style.display = 'block';
+    }
     document.getElementById('examTakingView').style.display = 'none';
     document.getElementById('resultsView').style.display = 'none';
     
-    // Update tab buttons
+    // Update main tab buttons (Available Exams / My Results)
     const examsTab = document.getElementById('examsTab');
     const resultsTab = document.getElementById('resultsTab');
     if (examsTab && resultsTab) {
@@ -1776,8 +1778,18 @@ function showResultsTab() {
         examsTab.classList.add('btn-secondary');
     }
     
-    // Reload all results
-    loadAllResults();
+    // Ensure results tab buttons are visible and initialize All Results as default
+    // Make sure the tab navigation buttons inside My Results are visible
+    const allResultsTab = document.getElementById('allResultsTab');
+    const midSemesterResultsTab = document.getElementById('midSemesterResultsTab');
+    const finalSemesterResultsTab = document.getElementById('finalSemesterResultsTab');
+    
+    if (allResultsTab) allResultsTab.style.display = '';
+    if (midSemesterResultsTab) midSemesterResultsTab.style.display = '';
+    if (finalSemesterResultsTab) finalSemesterResultsTab.style.display = '';
+    
+    // Initialize with All Results section active (default view)
+    showAllResults();
 }
 
 // Show all results section
