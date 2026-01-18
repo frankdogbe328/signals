@@ -391,11 +391,12 @@ body {
     flex-shrink: 0;
 }
 
-/* Responsive nav logo for mobile */
+/* Responsive nav logo for mobile - Hamburger Menu Implementation */
 @media (max-width: 768px) {
     .navbar {
         padding: 12px 0;
         overflow: hidden; /* Prevent content from extending beyond navbar */
+        position: relative; /* For mobile menu positioning */
     }
     
     .nav-logo {
@@ -408,9 +409,10 @@ body {
     .nav-container {
         padding: 0 12px;
         gap: 8px;
-        flex-wrap: wrap; /* Allow wrapping on mobile */
+        flex-wrap: nowrap; /* Keep on one line for hamburger */
         max-width: 100%;
         width: 100%;
+        position: relative;
     }
     
     .nav-container h1 {
@@ -421,44 +423,20 @@ body {
         flex-shrink: 0;
         gap: 8px;
         min-width: 0;
-        max-width: 60%; /* Prevent logo from taking too much space */
+        flex: 0 0 auto; /* Don't grow, just take needed space */
     }
     
+    /* Hide nav-user on mobile - will be in hamburger menu */
     .nav-user {
-        flex-shrink: 1;
-        gap: 6px;
-        flex-wrap: wrap;
-        justify-content: flex-end;
-        min-width: 0;
-        max-width: 100%; /* Ensure it doesn't extend beyond navbar */
+        display: none !important;
+    }
+    
+    /* Show hamburger menu on mobile */
+    .hamburger {
+        display: flex !important;
         margin-left: auto;
-    }
-    
-    .nav-user span {
-        font-size: 13px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        display: block;
-        flex: 0 0 100%; /* Full width on its own line if needed */
-        text-align: right;
-        order: 1; /* Name appears first */
-    }
-    
-    .nav-user .btn,
-    .nav-user a.btn {
-        padding: 6px 10px;
-        font-size: 12px;
-        white-space: nowrap;
-        flex-shrink: 0;
-        min-width: auto;
-        order: 2; /* Buttons appear after name */
-    }
-    
-    /* Stack buttons vertically on very small screens if needed */
-    .nav-user .btn + .btn {
-        margin-top: 0;
+        order: 2;
+        z-index: 1001;
     }
 }
 
@@ -466,6 +444,7 @@ body {
     .navbar {
         padding: 10px 0;
         overflow: hidden;
+        position: relative;
     }
     
     .nav-logo {
@@ -478,56 +457,23 @@ body {
     .nav-container {
         padding: 0 10px;
         gap: 6px;
-        flex-wrap: wrap;
+        flex-wrap: nowrap;
     }
     
     .nav-brand {
         gap: 6px;
-        flex: 0 1 auto;
-        min-width: 0;
-        max-width: 55%;
-    }
-    
-    .nav-user {
-        gap: 6px;
-        flex: 1 1 auto;
-        justify-content: flex-end;
-        flex-wrap: wrap;
-        min-width: 0;
-        max-width: 100%;
-        margin-left: auto;
-    }
-    
-    .nav-user span {
-        font-size: 11px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 100%;
-        display: block;
-        flex: 0 0 100%;
-        text-align: right;
-        margin-bottom: 2px;
-        order: 1;
-    }
-    
-    .nav-user .btn,
-    .nav-user a.btn {
-        padding: 5px 8px;
-        font-size: 11px;
-        white-space: nowrap;
         flex: 0 0 auto;
-        min-height: 32px;
-        order: 2;
+        min-width: 0;
     }
     
-    /* Ensure buttons fit within navbar width */
-    .nav-user .btn {
-        max-width: calc(50% - 3px); /* Two buttons side by side with gap */
+    /* Keep nav-user hidden on mobile - in hamburger menu */
+    .nav-user {
+        display: none !important;
     }
     
-    .nav-user a.btn {
-        margin-right: 0;
+    /* Ensure hamburger is visible */
+    .hamburger {
+        display: flex !important;
     }
 }
 
@@ -598,21 +544,23 @@ body {
 
 /* Mobile Menu */
 .mobile-menu {
-    display: none;
+    display: block;
     position: absolute;
     top: 100%;
     left: 0;
     right: 0;
     background-color: var(--primary-color);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     max-height: 0;
     overflow: hidden;
-    transition: max-height 0.3s ease;
+    transition: max-height 0.4s ease, opacity 0.3s ease;
+    opacity: 0;
 }
 
 .mobile-menu.active {
-    max-height: 300px;
+    max-height: 400px;
+    opacity: 1;
 }
 
 .mobile-menu-content {
@@ -624,12 +572,35 @@ body {
 
 .mobile-menu-user {
     color: white;
+    font-weight: 600;
+    font-size: 16px;
     padding-bottom: 15px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    text-align: center;
+    word-break: break-word;
 }
 
-.mobile-logout {
+.mobile-menu-content .btn {
     width: 100%;
+    padding: 14px 20px;
+    font-size: 15px;
+    min-height: 48px;
+    margin: 0;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.mobile-menu-content a.btn {
+    text-decoration: none;
+    text-align: center;
+    display: block;
+}
+
+/* Only show mobile menu on mobile */
+@media (min-width: 769px) {
+    .mobile-menu {
+        display: none !important;
+    }
 }
 
 /* Modal Styles */

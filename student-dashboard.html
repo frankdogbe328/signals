@@ -21,6 +21,20 @@
                 <a href="exam-portal/student-exam-portal.html" class="btn btn-primary" style="text-decoration: none; margin-right: 10px;">📝 Exam Portal</a>
                 <button onclick="logout()" class="btn btn-secondary">Logout</button>
             </div>
+            <!-- Hamburger Menu Button for Mobile -->
+            <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+        <!-- Mobile Menu Dropdown -->
+        <div id="mobileMenu" class="mobile-menu">
+            <div class="mobile-menu-content">
+                <div class="mobile-menu-user" id="mobileStudentName"></div>
+                <a href="exam-portal/student-exam-portal.html" class="btn btn-primary">📝 Exam Portal</a>
+                <button onclick="logout(); toggleMobileMenu();" class="btn btn-secondary">Logout</button>
+            </div>
         </div>
     </nav>
     

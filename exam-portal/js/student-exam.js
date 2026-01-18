@@ -56,10 +56,16 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Display student name (sanitized)
     const studentNameEl = document.getElementById('studentName');
-    if (studentNameEl) {
+    const mobileStudentNameEl = document.getElementById('mobileStudentName');
+    if (studentNameEl || mobileStudentNameEl) {
         const displayName = typeof SecurityUtils !== 'undefined' && SecurityUtils.escapeHtml ? 
             SecurityUtils.escapeHtml(currentUser.name) : currentUser.name;
-        studentNameEl.textContent = `Welcome, ${displayName}`;
+        if (studentNameEl) {
+            studentNameEl.textContent = `Welcome, ${displayName}`;
+        }
+        if (mobileStudentNameEl) {
+            mobileStudentNameEl.textContent = `Welcome, ${displayName}`;
+        }
     }
     
     // Setup mobile-friendly button handlers initially
