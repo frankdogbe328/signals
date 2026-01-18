@@ -636,11 +636,6 @@ body {
     margin-bottom: 10px;
 }
 
-.mobile-menu-link {
-    width: 100% !important;
-    margin-bottom: 0 !important;
-}
-
 /* Only show mobile menu on mobile */
 @media (min-width: 769px) {
     .mobile-menu {
