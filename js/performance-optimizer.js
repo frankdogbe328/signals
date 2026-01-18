@@ -17,9 +17,11 @@ class PerformanceOptimizer {
             statistics: 60000    // 1 minute for statistics
         };
         
-        // Rate limiting
+        // Rate limiting - Enhanced to prevent jamming
         this.maxConcurrentRequests = 5;
         this.requestDelay = 100; // 100ms delay between requests
+        this.queueMaxSize = 100; // Maximum queue size to prevent overflow
+        this.autoCleanup = true;
     }
     
     /**
@@ -75,8 +77,23 @@ class PerformanceOptimizer {
     
     /**
      * Queue request to prevent overwhelming the database
+     * Enhanced with queue size limit to prevent jamming
      */
     async queueRequest(requestFn, priority = 'normal') {
+        // Prevent queue overflow
+        if (this.requestQueue.length >= this.queueMaxSize) {
+            console.warn('⚠️ Request queue is full, dropping low-priority requests');
+            // Remove oldest low-priority requests
+            const lowPriority = this.requestQueue.filter(r => r.priority !== 'high');
+            lowPriority.slice(0, 5).forEach(r => {
+                const index = this.requestQueue.indexOf(r);
+                if (index > -1) {
+                    this.requestQueue.splice(index, 1);
+                    r.reject(new Error('Request queue overflow'));
+                }
+            });
+        }
+        
         return new Promise((resolve, reject) => {
             const request = {
                 fn: requestFn,
@@ -99,6 +116,7 @@ class PerformanceOptimizer {
     
     /**
      * Process queued requests with rate limiting
+     * Enhanced with async queue processing to prevent UI blocking
      */
     async processQueue() {
         if (this.isProcessingQueue) return;
@@ -113,22 +131,34 @@ class PerformanceOptimizer {
             
             this.activeRequests.add(requestId);
             
-            // Execute request
+            // Execute request with timeout protection
+            const timeoutId = setTimeout(() => {
+                if (this.activeRequests.has(requestId)) {
+                    this.activeRequests.delete(requestId);
+                    request.reject(new Error('Request timeout after 30 seconds'));
+                    this.processQueue();
+                }
+            }, 30000); // 30 second timeout
+            
             request.fn()
                 .then(result => {
+                    clearTimeout(timeoutId);
                     request.resolve(result);
                 })
                 .catch(error => {
+                    clearTimeout(timeoutId);
                     request.reject(error);
                 })
                 .finally(() => {
                     this.activeRequests.delete(requestId);
                     
-                    // Add delay before processing next request
-                    setTimeout(() => {
-                        this.processQueue();
-                    }, this.requestDelay);
+                    // Yield to browser between requests to prevent jamming
+                    await new Promise(resolve => setTimeout(resolve, this.requestDelay));
+                    this.processQueue();
                 });
+            
+            // Small delay to prevent overwhelming
+            await new Promise(resolve => setTimeout(resolve, 10));
         }
         
         this.isProcessingQueue = false;

@@ -77,13 +77,24 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load all results
     loadAllResults();
     
-    // Auto-refresh results every 30 seconds if on results tab
-    setInterval(() => {
-        const myResultsView = document.getElementById('myResultsView');
-        if (myResultsView && myResultsView.style.display !== 'none') {
-            refreshAllResults();
-        }
-    }, 30000); // 30 seconds
+    // Auto-refresh results every 30 seconds if on results tab - with debouncing to prevent system jams
+    if (typeof window.PerformanceOptimizer !== 'undefined') {
+        // Use debounced refresh to prevent excessive API calls
+        window.PerformanceOptimizer.debounce('auto_refresh_results', () => {
+            const myResultsView = document.getElementById('myResultsView');
+            if (myResultsView && myResultsView.style.display !== 'none') {
+                refreshAllResults();
+            }
+        }, 30000);
+    } else {
+        // Fallback if PerformanceOptimizer not available
+        setInterval(() => {
+            const myResultsView = document.getElementById('myResultsView');
+            if (myResultsView && myResultsView.style.display !== 'none') {
+                refreshAllResults();
+            }
+        }, 30000); // 30 seconds
+    }
 });
 
 // Load available exams for student
@@ -104,10 +115,17 @@ async function loadAvailableExams() {
             return;
         }
         
-        // Get active exams for student's class and registered subjects
-        const { data: exams, error } = await client
-            .from('exams')
-            .select('*')
+        // Use PerformanceOptimizer to prevent system jams during concurrent access
+        const cacheKey = `available_exams_${currentUser.id}_${currentUser.class}`;
+        
+        let exams;
+        if (typeof window.PerformanceOptimizer !== 'undefined') {
+            // Use optimized query with caching (15 second cache)
+            exams = await window.PerformanceOptimizer.optimizedQuery(
+                async () => {
+                    const { data, error } = await client
+                        .from('exams')
+                        .select('*')
             .eq('is_active', true)
             .eq('class_id', currentUser.class)
             .in('subject', registeredSubjects);
