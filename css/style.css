@@ -570,8 +570,10 @@ body {
 .hamburger {
     display: none; /* Hidden on desktop by default */
     flex-direction: column;
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    justify-content: center;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.2) !important;
+    border: 2px solid rgba(255, 255, 255, 0.5) !important;
     border-radius: 5px;
     cursor: pointer;
     padding: 8px;
