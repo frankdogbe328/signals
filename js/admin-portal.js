@@ -579,7 +579,7 @@ async function releaseMidSemesterResults() {
     const selectedClass = classSelect.value;
     const className = selectedClass === 'all' ? 'All Classes' : formatClassName(selectedClass);
     
-    if (!confirm(`⚠️ RELEASE MID-SEMESTER RESULTS\n\nClass: ${className}\n\nThis will release mid-semester results:\n\n📊 System will automatically:\n1. Accumulate ALL scores from database:\n   - BFT 1 (Basic Field Training 1)\n   - Mid CS Exams (Mid Computer Science Exams)\n   - Mid Course Exercise\n   - ALL Quizzes/Tests accumulated during mid-semester (Quiz 1, Quiz 2, Quiz 3, etc.)\n\n2. Calculate and grade everything automatically\n\n3. Release complete mid-semester results to student portal\n\nStudents will see Quiz 1, Quiz 2, Quiz 3, BFT 1, Mid CS Exams, Mid Course Exercise, and all scores with their mid-semester grades.\n\nThe data will be saved and automatically included in final semester calculations.\n\nAre you sure you want to proceed?`)) {
+    if (!confirm(`⚠️ RELEASE MID-SEMESTER RESULTS (STANDALONE)\n\nClass: ${className}\n\nThis will release mid-semester results as a STANDALONE result:\n\n📊 System will automatically:\n1. Accumulate ALL mid-semester scores from database:\n   - BFT 1 (Basic Field Training 1)\n   - Mid CS Exams (Mid Computer Science Exams)\n   - Mid Course Exercise\n   - ALL Quizzes/Tests accumulated during mid-semester (Quiz 1, Quiz 2, Quiz 3, etc.)\n\n2. Calculate and grade everything automatically\n\n3. Release complete mid-semester results to student portal\n\n⚠️ IMPORTANT: Mid-semester is a STANDALONE result and will NOT be included in final semester calculations.\n\nStudents will see Quiz 1, Quiz 2, Quiz 3, BFT 1, Mid CS Exams, Mid Course Exercise, and all scores with their mid-semester grades.\n\nAre you sure you want to proceed?`)) {
         return;
     }
     
@@ -590,11 +590,15 @@ async function releaseMidSemesterResults() {
             return;
         }
         
-        // Build query with class filter - include quizzes in mid-semester
+        // Build query with class filter - Mid-semester is STANDALONE
         // Mid-semester includes: BFT 1, Mid Exams, Mid Exercise, and Quizzes done during mid-semester
+        // Mark as mid-semester released (standalone, not included in final)
         let query = supabase
             .from('exams')
-            .update({ results_released: true })
+            .update({ 
+                results_released: true,
+                mid_semester_released: true  // Mark as mid-semester standalone
+            })
             .in('exam_type', ['bft_1', 'mid_cs_exam', 'mid_course_exercise', 'quiz', 'quiz_manual'])
             .eq('results_released', false);
         
@@ -610,7 +614,7 @@ async function releaseMidSemesterResults() {
             return;
         }
         
-        showSuccess(`✅ Mid-semester results released successfully for ${className}!\n\nThe system has:\n✓ Accumulated ALL mid-semester scores from database\n✓ Calculated and graded everything automatically\n✓ Released complete mid-semester results to student portal\n\nStudents can now view:\n- Quiz 1, Quiz 2, Quiz 3, and all other quizzes\n- BFT 1 (Basic Field Training 1) scores\n- Mid CS Exams (Mid Computer Science Exams) scores\n- Mid Course Exercise scores\n- Complete mid-semester grades with all scores\n\nAll data has been saved and will be automatically included in final semester calculations.\n\nAll results are now visible in the student portal.`, 'Success');
+        showSuccess(`✅ Mid-semester results released successfully for ${className}!\n\nThe system has:\n✓ Accumulated ALL mid-semester scores from database\n✓ Calculated and graded everything automatically\n✓ Released complete mid-semester results to student portal\n\nStudents can now view:\n- Quiz 1, Quiz 2, Quiz 3, and all other mid-semester quizzes\n- BFT 1 (Basic Field Training 1) scores\n- Mid CS Exams (Mid Computer Science Exams) scores\n- Mid Course Exercise scores\n- Complete mid-semester grades with all scores\n\n⚠️ NOTE: Mid-semester is a STANDALONE result and is NOT included in final semester calculations.\n\nAll results are now visible in the student portal.`, 'Success');
         
         // Force refresh results display
         setTimeout(() => {
@@ -640,7 +644,7 @@ async function releaseFinalSemesterResults() {
     const selectedClass = classSelect.value;
     const className = selectedClass === 'all' ? 'All Classes' : formatClassName(selectedClass);
     
-    if (!confirm(`⚠️ RELEASE FINAL SEMESTER RESULTS\n\nClass: ${className}\n\nThis will release complete final semester results:\n\n📊 System will automatically:\n1. Accumulate ALL scores from database:\n   - Mid-semester results (already released): BFT 1, Mid Exams, Mid Exercise\n   - Final semester results: Opening Exams, BFT 2, Final Exams, Final Exercise\n   - ALL Quizzes accumulated throughout entire semester (Quiz 1, Quiz 2, Quiz 3, etc.)\n\n2. Calculate and grade everything automatically\n\n3. Release complete results to student portal\n\nStudents will see Quiz 1, Quiz 2, Quiz 3, BFT 1, Mid Exams, Final Exams, and all scores with their final grade.\n\nAre you sure you want to proceed?`)) {
+    if (!confirm(`⚠️ RELEASE FINAL SEMESTER RESULTS\n\nClass: ${className}\n\nThis will release final semester results:\n\n📊 System will automatically:\n1. Accumulate ALL scores from database:\n   - ALL Quizzes accumulated throughout entire semester (Quiz 1, Quiz 2, Quiz 3, etc.)\n   - Final semester results: Opening Exams, BFT 2, Final Exams, Final Exercise\n\n2. Calculate and grade everything automatically\n\n3. Release complete final semester results to student portal\n\n⚠️ IMPORTANT: Final semester includes ALL quizzes + Final Exams only.\n   Mid-semester results (BFT 1, Mid CS Exams, Mid Course Exercise) are STANDALONE and NOT included.\n\nStudents will see ALL quizzes, Final Exams, and all scores with their final semester grade.\n\nAre you sure you want to proceed?`)) {
         return;
     }
     
@@ -651,11 +655,9 @@ async function releaseFinalSemesterResults() {
             return;
         }
         
-        // Release ALL exam types for final semester (includes mid-semester + final + all quizzes)
-        // This includes: mid-semester (bft_1, mid_cs_exam, mid_course_exercise) + 
-        //                final semester (opening_exam, bft_2, final_exam, final_cse_exercise) + 
-        //                ALL quizzes from entire semester (quiz, quiz_manual, gen_assessment)
-        // Note: Some quizzes may have been released in mid-semester, but we ensure all are marked for semester release
+        // Release final semester results - EXCLUDES mid-semester (which is standalone)
+        // Final semester includes: ALL quizzes throughout entire semester + Final semester exams only
+        // Mid-semester (bft_1, mid_cs_exam, mid_course_exercise) is STANDALONE and NOT included
         let query = supabase
             .from('exams')
             .update({ 
@@ -663,11 +665,9 @@ async function releaseFinalSemesterResults() {
                 semester_results_released: true 
             })
             .in('exam_type', [
-                // Mid-semester (already released, but ensure they're marked for semester)
-                'bft_1', 'mid_cs_exam', 'mid_course_exercise',
-                // Final semester
+                // Final semester exams only (NOT mid-semester)
                 'opening_exam', 'bft_2', 'final_exam', 'final_cse_exercise',
-                // ALL Quizzes accumulated throughout entire semester (includes mid-semester + final semester quizzes)
+                // ALL Quizzes accumulated throughout entire semester (all quizzes, regardless of when taken)
                 'quiz', 'quiz_manual', 'gen_assessment'
             ]);
         
@@ -683,7 +683,7 @@ async function releaseFinalSemesterResults() {
             return;
         }
         
-        showSuccess(`✅ Final semester results released successfully for ${className}!\n\nThe system has:\n✓ Accumulated ALL scores from database\n✓ Calculated and graded everything automatically\n✓ Released complete results to student portal\n\nStudents can now view:\n- Quiz 1, Quiz 2, Quiz 3, and all other quizzes\n- BFT 1, Mid Exams, Mid Exercise scores\n- Final Exams scores (entered by lecturers)\n- Complete final grade with all scores\n\nAll results are now visible in the student portal.`, 'Success');
+        showSuccess(`✅ Final semester results released successfully for ${className}!\n\nThe system has:\n✓ Accumulated ALL final semester scores from database\n✓ Calculated and graded everything automatically\n✓ Released complete final semester results to student portal\n\nStudents can now view:\n- ALL Quizzes throughout entire semester (Quiz 1, Quiz 2, Quiz 3, etc.)\n- Opening Exams scores\n- BFT 2 (Basic Field Training 2) scores\n- Final Exams scores (entered by lecturers)\n- Final Course Exercise scores\n- Complete final semester grade with all scores\n\n⚠️ NOTE: Mid-semester results (BFT 1, Mid CS Exams, Mid Course Exercise) are STANDALONE and shown separately.\n\nAll results are now visible in the student portal.`, 'Success');
         
         // Force refresh results display
         setTimeout(() => {
@@ -744,6 +744,15 @@ async function loadFinalGrades() {
         (grades || []).forEach(grade => {
             const student = grade.student || {};
             const exam = grade.exam || {};
+            const examType = exam.exam_type || 'N/A';
+            
+            // EXCLUDE mid-semester results from final semester calculation
+            // Mid-semester (bft_1, mid_cs_exam, mid_course_exercise) is STANDALONE
+            const midSemesterTypes = ['bft_1', 'mid_cs_exam', 'mid_course_exercise'];
+            if (midSemesterTypes.includes(examType)) {
+                return; // Skip mid-semester exams - they are standalone
+            }
+            
             const classId = student.class || 'unknown';
             const studentId = student.id;
             
@@ -761,7 +770,6 @@ async function loadFinalGrades() {
             }
             
             // Calculate scaled score if not already calculated
-            const examType = exam.exam_type || 'N/A';
             const examTypePercentage = getExamTypePercentage(examType);
             
             // For final exams with written scores, use the combined score
