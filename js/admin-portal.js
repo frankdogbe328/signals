@@ -601,20 +601,25 @@ async function releaseMidSemesterResults() {
         // Mark as mid-semester released (standalone, not included in final)
         // IMPORTANT: Release ALL mid-semester exams regardless of previous release status
         // This ensures manually entered scores are also included in the release
+        
+        // Build base update query
         let query = supabase
             .from('exams')
             .update({ 
                 results_released: true,
                 mid_semester_released: true  // Mark as mid-semester standalone
-            })
-            .in('exam_type', ['bft_1', 'mid_cs_exam', 'mid_course_exercise', 'quiz', 'quiz_manual']);
+            });
+        
+        // Apply exam_type filter using .in() - Supabase client handles URL encoding correctly
+        query = query.in('exam_type', ['bft_1', 'mid_cs_exam', 'mid_course_exercise', 'quiz', 'quiz_manual']);
         
         // Filter by class if not "all"
         if (selectedClass !== 'all') {
             query = query.eq('class_id', selectedClass);
         }
         
-        const { error, count } = await query;
+        // Execute query - count may not be available in update responses
+        const { error } = await query;
         
         if (error) {
             showError('Failed to release mid-semester results. Please try again.', 'Error');
