@@ -3431,7 +3431,7 @@ function loadGradeThresholds() {
 
 // ==================== DATABASE MANAGEMENT ====================
 
-// Load database statistics
+// Load database statistics - Accurate counts from Supabase
 async function loadDatabaseStats() {
     try {
         const supabase = getSupabaseClient();
@@ -3440,54 +3440,83 @@ async function loadDatabaseStats() {
             return;
         }
         
-        // Get user counts - use count property from Supabase response
+        // Get user counts - use count property from Supabase response (head: true for count-only queries)
         const { count: usersCount, error: usersError } = await supabase
             .from('users')
-            .select('id', { count: 'exact', head: true });
+            .select('*', { count: 'exact', head: true });
+        
+        if (usersError) {
+            console.error('Error counting users:', usersError);
+        }
         
         const { count: studentsCount, error: studentsError } = await supabase
             .from('users')
-            .select('id', { count: 'exact', head: true })
+            .select('*', { count: 'exact', head: true })
             .eq('role', 'student');
+        
+        if (studentsError) {
+            console.error('Error counting students:', studentsError);
+        }
         
         const { count: lecturersCount, error: lecturersError } = await supabase
             .from('users')
-            .select('id', { count: 'exact', head: true })
+            .select('*', { count: 'exact', head: true })
             .eq('role', 'lecturer');
         
-        // Get exam counts
+        if (lecturersError) {
+            console.error('Error counting lecturers:', lecturersError);
+        }
+        
+        // Get exam counts - count all exams regardless of status
         const { count: examsCount, error: examsError } = await supabase
             .from('exams')
-            .select('id', { count: 'exact', head: true });
+            .select('*', { count: 'exact', head: true });
         
-        // Get grade counts
+        if (examsError) {
+            console.error('Error counting exams:', examsError);
+        }
+        
+        // Get grade counts - count all exam grades
         const { count: gradesCount, error: gradesError } = await supabase
             .from('exam_grades')
-            .select('id', { count: 'exact', head: true });
+            .select('*', { count: 'exact', head: true });
+        
+        if (gradesError) {
+            console.error('Error counting grades:', gradesError);
+        }
         
         // Get materials count (if table exists)
         let materialsCount = 0;
         try {
             const { count: materialsCountResult, error: materialsError } = await supabase
                 .from('materials')
-                .select('id', { count: 'exact', head: true });
-            if (!materialsError) {
-                materialsCount = materialsCountResult || 0;
+                .select('*', { count: 'exact', head: true });
+            if (!materialsError && materialsCountResult !== null) {
+                materialsCount = materialsCountResult;
             }
         } catch (e) {
-            // Materials table might not exist
+            // Materials table might not exist - that's okay
+            console.warn('Materials table not found:', e);
             materialsCount = 0;
         }
         
-        // Update display - use count from response, fallback to 0 if error
-        document.getElementById('dbTotalUsers').textContent = usersCount || 0;
-        document.getElementById('dbStudents').textContent = studentsCount || 0;
-        document.getElementById('dbLecturers').textContent = lecturersCount || 0;
-        document.getElementById('dbExams').textContent = examsCount || 0;
-        document.getElementById('dbGrades').textContent = gradesCount || 0;
-        document.getElementById('dbMaterials').textContent = materialsCount;
+        // Update display elements - ensure counts are numbers, not null/undefined
+        const totalUsersEl = document.getElementById('dbTotalUsers');
+        const studentsEl = document.getElementById('dbStudents');
+        const lecturersEl = document.getElementById('dbLecturers');
+        const examsEl = document.getElementById('dbExams');
+        const gradesEl = document.getElementById('dbGrades');
+        const materialsEl = document.getElementById('dbMaterials');
+        
+        if (totalUsersEl) totalUsersEl.textContent = (usersCount !== null && usersCount !== undefined) ? usersCount : 0;
+        if (studentsEl) studentsEl.textContent = (studentsCount !== null && studentsCount !== undefined) ? studentsCount : 0;
+        if (lecturersEl) lecturersEl.textContent = (lecturersCount !== null && lecturersCount !== undefined) ? lecturersCount : 0;
+        if (examsEl) examsEl.textContent = (examsCount !== null && examsCount !== undefined) ? examsCount : 0;
+        if (gradesEl) gradesEl.textContent = (gradesCount !== null && gradesCount !== undefined) ? gradesCount : 0;
+        if (materialsEl) materialsEl.textContent = materialsCount || 0;
         
     } catch (error) {
+        console.error('Error loading database statistics:', error);
         showError('Failed to load database statistics. Please refresh the page.', 'Loading Error');
     }
 }
