@@ -580,9 +580,18 @@ async function releaseExamResults(examId) {
     }
 }
 
-// Release Mid Results (BFT1, Mid Exams, Mid Exercise)
-async function releaseMidResults() {
-    if (!confirm('⚠️ RELEASE MID RESULTS\n\nThis will release results for:\n- BFT 1\n- Mid CS Exams\n- Mid Course Exercise\n\nStudents will be able to view their scores for these exams.\n\nAre you sure you want to proceed?')) {
+// Release Mid-Semester Results (BFT1, Mid Exams, Mid Exercise) with class selection
+async function releaseMidSemesterResults() {
+    const classSelect = document.getElementById('midSemesterClass');
+    if (!classSelect) {
+        showError('Class selection not found. Please refresh the page.', 'Error');
+        return;
+    }
+    
+    const selectedClass = classSelect.value;
+    const className = selectedClass === 'all' ? 'All Classes' : formatClassName(selectedClass);
+    
+    if (!confirm(`⚠️ RELEASE MID-SEMESTER RESULTS\n\nClass: ${className}\n\nThis will release results for:\n- BFT 1\n- Mid CS Exams\n- Mid Course Exercise\n\nStudents will be able to view their scores for these exams.\n\nThe data will be saved and included in final semester calculations.\n\nAre you sure you want to proceed?`)) {
         return;
     }
     
@@ -593,20 +602,28 @@ async function releaseMidResults() {
             return;
         }
         
-        // Release mid exam types: bft_1, mid_cs_exam, mid_course_exercise
-        const { error } = await supabase
+        // Build query with class filter
+        let query = supabase
             .from('exams')
             .update({ results_released: true })
             .in('exam_type', ['bft_1', 'mid_cs_exam', 'mid_course_exercise'])
             .eq('results_released', false);
         
+        // Filter by class if not "all"
+        if (selectedClass !== 'all') {
+            query = query.eq('class_id', selectedClass);
+        }
+        
+        const { error, count } = await query;
+        
         if (error) {
-            console.error('Error releasing mid results:', error);
-            showError('Failed to release mid results. Please try again.', 'Error');
+            console.error('Error releasing mid-semester results:', error);
+            showError('Failed to release mid-semester results. Please try again.', 'Error');
             return;
         }
         
-        showSuccess('✅ Mid results released successfully!\n\nStudents can now view their BFT1, Mid Exams, and Mid Exercise scores.', 'Success');
+        showSuccess(`✅ Mid-semester results released successfully for ${className}!\n\nStudents can now view their BFT1, Mid Exams, and Mid Exercise scores.\n\nThe data has been saved and will be included in final semester calculations.`, 'Success');
+        
         // Force refresh results display
         setTimeout(() => {
             loadResults();
@@ -614,53 +631,29 @@ async function releaseMidResults() {
         }, 500);
         
     } catch (error) {
-        console.error('Error releasing mid results:', error);
-        showError('Failed to release mid results. Please try again.', 'Error');
+        console.error('Error releasing mid-semester results:', error);
+        showError('Failed to release mid-semester results. Please try again.', 'Error');
     }
 }
 
-// Release Final Results (Opening exams, BFT2, Final exams, Final exercise, Quizzes)
-async function releaseFinalResults() {
-    if (!confirm('⚠️ RELEASE FINAL RESULTS\n\nThis will release results for:\n- Opening Exams\n- BFT 2\n- Final Exams\n- Final CSE Exercise\n- Quizzes\n- General Assessment\n\nStudents will be able to view their scores for these exams.\n\nAre you sure you want to proceed?')) {
-        return;
-    }
-    
-    try {
-        const supabase = getSupabaseClient();
-        if (!supabase) {
-            showError('Database connection error. Please try again.', 'Error');
-            return;
-        }
-        
-        // Release final exam types: opening_exam, bft_2, final_exam, final_cse_exercise, quiz, gen_assessment
-        const { error } = await supabase
-            .from('exams')
-            .update({ results_released: true })
-            .in('exam_type', ['opening_exam', 'bft_2', 'final_exam', 'final_cse_exercise', 'quiz', 'gen_assessment'])
-            .eq('results_released', false);
-        
-        if (error) {
-            console.error('Error releasing final results:', error);
-            showError('Failed to release final results. Please try again.', 'Error');
-            return;
-        }
-        
-        showSuccess('✅ Final results released successfully!\n\nStudents can now view their Opening Exams, BFT2, Final Exams, Final Exercise, Quizzes, and General Assessment scores.', 'Success');
-        // Force refresh results display
-        setTimeout(() => {
-            loadResults();
-            loadStatistics();
-        }, 500);
-        
-    } catch (error) {
-        console.error('Error releasing final results:', error);
-        showError('Failed to release final results. Please try again.', 'Error');
-    }
+// Legacy function for backward compatibility (kept but redirects to new function)
+async function releaseMidResults() {
+    // Redirect to new function
+    await releaseMidSemesterResults();
 }
 
-// Release Final Semester Results (Admin-only control)
+// Release Final Semester Results with class selection (includes mid-semester + final semester + quizzes)
 async function releaseFinalSemesterResults() {
-    if (!confirm('⚠️ FINAL SEMESTER RESULTS RELEASE\n\nThis will release final semester grades to all students.\n\nStudents will be able to see their:\n- Final semester grade\n- Complete grade breakdown\n\nAre you sure you want to proceed?')) {
+    const classSelect = document.getElementById('finalSemesterClass');
+    if (!classSelect) {
+        showError('Class selection not found. Please refresh the page.', 'Error');
+        return;
+    }
+    
+    const selectedClass = classSelect.value;
+    const className = selectedClass === 'all' ? 'All Classes' : formatClassName(selectedClass);
+    
+    if (!confirm(`⚠️ RELEASE FINAL SEMESTER RESULTS\n\nClass: ${className}\n\nThis will release final semester results including:\n\n📊 Mid-Semester Results (already released):\n- BFT 1\n- Mid CS Exams\n- Mid Course Exercise\n\n🎓 Final Semester Results:\n- Opening Exams\n- BFT 2\n- Final Exams\n- Final CSE Exercise\n\n📝 All Quizzes (accumulated throughout semester)\n- Automated Quizzes\n- Manual Quiz Entries\n\nStudents will be able to view their complete final semester grades.\n\nAre you sure you want to proceed?`)) {
         return;
     }
     
@@ -671,11 +664,31 @@ async function releaseFinalSemesterResults() {
             return;
         }
         
-        // Release semester results for all exams
-        const { error } = await supabase
+        // Release ALL exam types for final semester (includes mid-semester + final + quizzes)
+        // This includes: mid-semester (bft_1, mid_cs_exam, mid_course_exercise) + 
+        //                final semester (opening_exam, bft_2, final_exam, final_cse_exercise) + 
+        //                quizzes (quiz, quiz_manual, gen_assessment)
+        let query = supabase
             .from('exams')
-            .update({ semester_results_released: true })
-            .eq('semester_results_released', false);
+            .update({ 
+                results_released: true,
+                semester_results_released: true 
+            })
+            .in('exam_type', [
+                // Mid-semester (already released, but ensure they're marked for semester)
+                'bft_1', 'mid_cs_exam', 'mid_course_exercise',
+                // Final semester
+                'opening_exam', 'bft_2', 'final_exam', 'final_cse_exercise',
+                // Quizzes (accumulated)
+                'quiz', 'quiz_manual', 'gen_assessment'
+            ]);
+        
+        // Filter by class if not "all"
+        if (selectedClass !== 'all') {
+            query = query.eq('class_id', selectedClass);
+        }
+        
+        const { error } = await query;
         
         if (error) {
             console.error('Error releasing final semester results:', error);
@@ -683,16 +696,29 @@ async function releaseFinalSemesterResults() {
             return;
         }
         
-        showSuccess('✅ Final semester results released successfully!\n\nStudents can now view their final semester grades.', 'Success');
-        loadResults();
-        loadFinalGrades();
-        loadStatistics();
+        showSuccess(`✅ Final semester results released successfully for ${className}!\n\nStudents can now view their complete final semester grades including:\n- All mid-semester results\n- All final semester exams\n- All accumulated quizzes\n\nFinal grades are now visible in the student portal.`, 'Success');
+        
+        // Force refresh results display
+        setTimeout(() => {
+            loadResults();
+            loadFinalGrades();
+            loadStatistics();
+        }, 500);
         
     } catch (error) {
         console.error('Error releasing final semester results:', error);
         showError('Failed to release final semester results. Please try again.', 'Error');
     }
 }
+
+// Legacy function for backward compatibility (kept but redirects to new function)
+async function releaseFinalResults() {
+    // Redirect to new function
+    await releaseFinalSemesterResults();
+}
+
+// This function is now replaced by the new releaseFinalSemesterResults above
+// Keeping this comment for reference
 
 // Load final grades summary by class
 async function loadFinalGrades() {

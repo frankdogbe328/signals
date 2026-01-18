@@ -270,20 +270,112 @@
             </div>
         </div>
         
+        <!-- Mid-Semester Results Release Section -->
+        <div class="card" style="border-left: 4px solid #ffc107; background: #fffbf0;">
+            <h3 style="color: #856404; margin-bottom: 15px;">📊 Mid-Semester Results Release</h3>
+            <p style="color: #666; margin-bottom: 20px;">
+                Release mid-semester results for BFT 1, Mid CS Exams, and Mid Course Exercise. 
+                These results will be visible to students and will be included in the final semester calculations.
+            </p>
+            <div class="filter-section" style="background: #fff; border: 1px solid #ffc107; border-radius: 5px; padding: 15px;">
+                <div class="filter-row">
+                    <div class="filter-group" style="flex: 1;">
+                        <label for="midSemesterClass">Select Class</label>
+                        <select id="midSemesterClass" class="form-control">
+                            <option value="all">All Classes</option>
+                            <optgroup label="Signals">
+                                <option value="signals-basic">SIGNALS BASIC</option>
+                                <option value="signals-b-iii-b-ii">SIGNALS B III – B II</option>
+                                <option value="signals-b-ii-b-i">SIGNALS B II – B I</option>
+                            </optgroup>
+                            <optgroup label="Advanced Courses">
+                                <option value="superintendent">SUPERINTENDENT</option>
+                                <option value="pre-qualifying">PRE-QUALIFYING</option>
+                            </optgroup>
+                            <optgroup label="Regimental">
+                                <option value="regimental-basic">REGIMENTAL BASIC</option>
+                                <option value="regimental-b-iii-b-ii">REGIMENTAL B III – B II</option>
+                                <option value="regimental-b-ii-b-i">REGIMENTAL B II – B I</option>
+                            </optgroup>
+                            <optgroup label="Specialized">
+                                <option value="rso-rsi">RSO / RSI</option>
+                                <option value="electronic-warfare-course">ELECTRONIC WARFARE COURSE</option>
+                                <option value="tactical-drone-course">TACTICAL DRONE COURSE</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="filter-group" style="margin-top: 20px;">
+                        <button onclick="releaseMidSemesterResults()" class="btn btn-warning" style="min-width: 200px; padding: 12px;">
+                            📊 Release Mid-Semester Results
+                        </button>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; padding: 10px; background: #fff3cd; border-radius: 5px; border-left: 3px solid #ffc107;">
+                    <small style="color: #856404;">
+                        <strong>ℹ️ Note:</strong> This will release results for BFT 1, Mid CS Exams, and Mid Course Exercise. 
+                        Students will be able to view these results in their portal, and the data will be saved for final semester calculations.
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <!-- End of Semester Results Release Section -->
+        <div class="card" style="border-left: 4px solid #28a745; background: #f0fff4;">
+            <h3 style="color: #155724; margin-bottom: 15px;">🎓 End of Semester Results Release</h3>
+            <p style="color: #666; margin-bottom: 20px;">
+                Release final semester results. This includes:
+                <strong>Mid-semester results</strong> (already released) + 
+                <strong>Final semester results</strong> (Opening Exams, BFT 2, Final Exams, Final Exercise) + 
+                <strong>All Quizzes</strong> (accumulated throughout the semester).
+            </p>
+            <div class="filter-section" style="background: #fff; border: 1px solid #28a745; border-radius: 5px; padding: 15px;">
+                <div class="filter-row">
+                    <div class="filter-group" style="flex: 1;">
+                        <label for="finalSemesterClass">Select Class</label>
+                        <select id="finalSemesterClass" class="form-control">
+                            <option value="all">All Classes</option>
+                            <optgroup label="Signals">
+                                <option value="signals-basic">SIGNALS BASIC</option>
+                                <option value="signals-b-iii-b-ii">SIGNALS B III – B II</option>
+                                <option value="signals-b-ii-b-i">SIGNALS B II – B I</option>
+                            </optgroup>
+                            <optgroup label="Advanced Courses">
+                                <option value="superintendent">SUPERINTENDENT</option>
+                                <option value="pre-qualifying">PRE-QUALIFYING</option>
+                            </optgroup>
+                            <optgroup label="Regimental">
+                                <option value="regimental-basic">REGIMENTAL BASIC</option>
+                                <option value="regimental-b-iii-b-ii">REGIMENTAL B III – B II</option>
+                                <option value="regimental-b-ii-b-i">REGIMENTAL B II – B I</option>
+                            </optgroup>
+                            <optgroup label="Specialized">
+                                <option value="rso-rsi">RSO / RSI</option>
+                                <option value="electronic-warfare-course">ELECTRONIC WARFARE COURSE</option>
+                                <option value="tactical-drone-course">TACTICAL DRONE COURSE</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div class="filter-group" style="margin-top: 20px;">
+                        <button onclick="releaseFinalSemesterResults()" class="btn btn-success" style="min-width: 200px; padding: 12px;">
+                            🎓 Release Final Semester Results
+                        </button>
+                    </div>
+                </div>
+                <div style="margin-top: 15px; padding: 10px; background: #d4edda; border-radius: 5px; border-left: 3px solid #28a745;">
+                    <small style="color: #155724;">
+                        <strong>ℹ️ Note:</strong> This will release final semester results including all mid-semester results (already released), 
+                        final semester exams (Opening, BFT 2, Final Exams, Final Exercise), and all quizzes accumulated throughout the semester.
+                    </small>
+                </div>
+            </div>
+        </div>
+
         <!-- Results Table -->
         <div class="card">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
                 <div>
                     <h3>All Students & Exam Results <small style="font-size: 14px; color: #666; font-weight: normal;">(Grouped by Class)</small></h3>
                     <small style="color: #666; font-size: 12px;">🔄 Auto-refreshes every 30 seconds | 📊 Tables scroll horizontally when content is wide</small>
-                </div>
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <button onclick="releaseMidResults()" class="btn btn-warning" id="releaseMidBtn" style="display: none;">
-                        📊 Release Mid Results (BFT1, Mid Exams, Mid Exercise)
-                    </button>
-                    <button onclick="releaseFinalResults()" class="btn btn-success" id="releaseFinalBtn" style="display: none;">
-                        🎓 Release Final Results (Opening, BFT2, Final Exams, Final Exercise, Quizzes)
-                    </button>
                 </div>
             </div>
             <div id="resultsContainer">
