@@ -22,7 +22,7 @@
                 <button onclick="logout()" class="btn btn-secondary">Logout</button>
             </div>
             <!-- Hamburger Menu Button for Mobile -->
-            <button class="hamburger" onclick="toggleMobileMenu()" aria-label="Toggle menu">
+            <button class="hamburger" onclick="if(typeof toggleMobileMenu==='function'){toggleMobileMenu();}else{console.error('toggleMobileMenu not found');}" aria-label="Toggle menu" style="pointer-events: auto; touch-action: manipulation; z-index: 10001; position: relative; cursor: pointer;">
                 <span></span>
                 <span></span>
                 <span></span>
