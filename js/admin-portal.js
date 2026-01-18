@@ -288,9 +288,15 @@ function displayResultsGroupedByClass(results) {
         releaseMidBtn.style.display = hasUnreleasedMid ? 'block' : 'none';
     }
     
-    // Check if there are unreleased final results (Opening, BFT2, Final Exams, Final Exercise, Quizzes)
+    // Check if there are unreleased final results (Opening, BFT2, Final Exams, Final Exercise, ALL Quizzes)
+    // EXCLUDE mid-semester (bft_1, mid_cs_exam, mid_course_exercise) - they are standalone
+    const midSemesterTypes = ['bft_1', 'mid_cs_exam', 'mid_course_exercise'];
     const hasUnreleasedFinal = results.some(r => {
         const examType = r.exam?.exam_type;
+        // Skip mid-semester exams - they are standalone
+        if (midSemesterTypes.includes(examType)) {
+            return false;
+        }
         return !r.exam?.results_released && 
                (examType === 'opening_exam' || examType === 'bft_2' || examType === 'final_exam' || 
                 examType === 'final_cse_exercise' || examType === 'quiz' || examType === 'gen_assessment');
