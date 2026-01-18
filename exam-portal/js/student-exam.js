@@ -1,24 +1,37 @@
 // Student Exam Portal JavaScript
 
 // Immediately define global functions on window to ensure they're available for onclick handlers
-if (typeof window !== 'undefined') {
-    // Pre-define functions on window to prevent ReferenceError
+// This prevents "function is not defined" errors when HTML onclick handlers execute
+(function() {
+    'use strict';
+    if (typeof window === 'undefined') return;
+    
+    // Pre-define functions on window immediately - will be overwritten with actual implementations
     window.showExamsTab = function() {
-        console.warn('showExamsTab called before definition - this should not happen');
+        console.error('showExamsTab: Function not yet defined. Script may not have loaded.');
+        alert('Page is still loading. Please wait a moment and try again.');
     };
+    
     window.showResultsTab = function() {
-        console.warn('showResultsTab called before definition - this should not happen');
+        console.error('showResultsTab: Function not yet defined. Script may not have loaded.');
+        alert('Page is still loading. Please wait a moment and try again.');
     };
+    
     window.showAllResults = function() {
-        console.warn('showAllResults called before definition - this should not happen');
+        console.error('showAllResults: Function not yet defined. Script may not have loaded.');
     };
+    
     window.showMidSemesterResults = function() {
-        console.warn('showMidSemesterResults called before definition - this should not happen');
+        console.error('showMidSemesterResults: Function not yet defined. Script may not have loaded.');
     };
+    
     window.showFinalSemesterResults = function() {
-        console.warn('showFinalSemesterResults called before definition - this should not happen');
+        console.error('showFinalSemesterResults: Function not yet defined. Script may not have loaded.');
     };
-}
+    
+    // Log that pre-definitions are set
+    console.log('Student Exam Portal: Global functions pre-defined');
+})();
 
 // Helper function to parse options (handles both JSON arrays and comma-separated strings)
 function parseQuestionOptions(optionsString) {
