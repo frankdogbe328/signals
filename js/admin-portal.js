@@ -2562,7 +2562,6 @@ async function viewAllRegisteredSubjects() {
         });
         
     } catch (error) {
-        console.error('Error loading registered subjects:', error);
         showError('Failed to load registered subjects. Please try again.', 'Error');
     }
 }
@@ -2728,7 +2727,6 @@ async function assignStudentIndices() {
         }
         
     } catch (error) {
-        console.error('Error assigning student indices:', error);
         showError('Failed to assign student indices. Please try again.', 'Error');
     }
 }
@@ -2946,7 +2944,6 @@ async function deleteStudent(studentId, studentName) {
             .eq('id', studentId);
         
         if (error) {
-            console.error('Error deleting student:', error);
             showError('Failed to delete student. Please try again.', 'Error');
             return;
         }
@@ -2957,7 +2954,6 @@ async function deleteStudent(studentId, studentName) {
         loadStatistics();
         
     } catch (error) {
-        console.error('Error deleting student:', error);
         showError('Failed to delete student. Please try again.', 'Error');
     }
 }
@@ -3073,7 +3069,6 @@ async function viewAllRegisteredSubjects() {
         displayRegisteredSubjects(subjectsMap, classSubjectsMap);
         
     } catch (error) {
-        console.error('Error loading registered subjects:', error);
         content.innerHTML = '<p class="empty-state" style="color: red;">Error loading registered subjects. Please try again.</p>';
     }
 }
@@ -3225,7 +3220,6 @@ function exportRegisteredSubjectsToCSV() {
         showSuccess('Registered subjects exported successfully!', 'Success');
         
     } catch (error) {
-        console.error('Error exporting registered subjects:', error);
         showError('Failed to export registered subjects. Please try again.', 'Export Error');
         showError('Failed to export registered subjects. Please try again.', 'Error');
     }
@@ -3288,7 +3282,6 @@ async function loadAnalytics() {
             .select('percentage, grade');
         
         if (error) {
-            console.error('Error loading analytics:', error);
             showError('Failed to load analytics. Please refresh the page.', 'Loading Error');
             return;
         }
@@ -3419,7 +3412,6 @@ async function exportResults() {
         }
         
     } catch (error) {
-        console.error('Error exporting results:', error);
         showError('Failed to export results. Please try again.', 'Export Error');
         showError('Failed to export results. Please try again.', 'Error');
     }
@@ -3582,7 +3574,6 @@ async function saveGradeThresholds() {
         loadFinalGrades();
         
     } catch (error) {
-        console.error('Error saving grade thresholds:', error);
         showError('Failed to save grade thresholds. Please try again.', 'Error');
     }
 }
@@ -3613,7 +3604,6 @@ function loadGradeThresholds() {
             document.getElementById('gradeC').value = thresholds.C || 60;
             document.getElementById('gradeD').value = thresholds.D || 50;
         } catch (e) {
-            console.error('Error loading grade thresholds:', e);
         }
     }
 }
@@ -3677,7 +3667,6 @@ async function loadDatabaseStats() {
         document.getElementById('dbMaterials').textContent = materialsCount;
         
     } catch (error) {
-        console.error('Error loading database stats:', error);
         showError('Failed to load database statistics. Please refresh the page.', 'Loading Error');
     }
 }
@@ -3758,9 +3747,7 @@ async function backupAllData() {
         if (materialsResult.error) {
             const errorMsg = materialsResult.error.message || 'Unknown error';
             if (!errorMsg.includes('does not exist') && !errorMsg.includes('relation')) {
-                console.warn('Materials table error:', errorMsg);
             } else {
-                console.warn('Materials table not found, continuing with empty materials array');
             }
         }
         
@@ -3803,13 +3790,10 @@ async function backupAllData() {
             if (!error) {
                 storageSaved = true;
             } else if (error.message && error.message.includes('Bucket not found')) {
-                console.warn('Supabase storage bucket "backups" does not exist. Backup downloaded only.');
                 showInfo('Backup downloaded successfully. Storage bucket not configured, so backup was not uploaded to cloud.', 'Backup Notice');
             } else if (error.message && error.message !== 'The resource already exists') {
-                console.warn('Could not save to Supabase storage:', error.message);
             }
         } catch (e) {
-            console.warn('Supabase storage not available:', e.message || e);
         }
         
         const successMsg = storageSaved 
@@ -3819,7 +3803,6 @@ async function backupAllData() {
         showSuccess(successMsg, 'Backup Complete');
         
     } catch (error) {
-        console.error('Error creating backup:', error);
         showError('Failed to create backup. Please try again.', 'Backup Error');
         showError(`Failed to create backup: ${error.message || 'Unknown error'}\n\nPlease try again.`, 'Error');
     }
@@ -3875,7 +3858,6 @@ async function backupUsers() {
                 storageSaved = true;
             }
         } catch (e) {
-            console.warn('Supabase storage not available:', e.message || e);
         }
         
         const successMsg = storageSaved 
@@ -3885,7 +3867,6 @@ async function backupUsers() {
         showSuccess(successMsg, 'Backup Complete');
         
     } catch (error) {
-        console.error('Error backing up users:', error);
         showError('Failed to backup users. Please try again.', 'Backup Error');
         showError(`Failed to backup users: ${error.message || 'Unknown error'}`, 'Error');
     }
@@ -3986,7 +3967,6 @@ async function backupExams() {
                 storageSaved = true;
             }
         } catch (e) {
-            console.warn('Supabase storage not available:', e.message || e);
         }
         
         const successMsg = storageSaved 
@@ -3996,7 +3976,6 @@ async function backupExams() {
         showSuccess(successMsg, 'Backup Complete');
         
     } catch (error) {
-        console.error('Error backing up exams:', error);
         showError(`Failed to backup exams: ${error.message || 'Unknown error'}`, 'Error');
     }
 }
@@ -4051,7 +4030,6 @@ async function backupMaterials() {
                 storageSaved = true;
             }
         } catch (e) {
-            console.warn('Supabase storage not available:', e.message || e);
         }
         
         const successMsg = storageSaved 
@@ -4061,7 +4039,6 @@ async function backupMaterials() {
         showSuccess(successMsg, 'Backup Complete');
         
     } catch (error) {
-        console.error('Error backing up materials:', error);
         showError(`Failed to backup materials: ${error.message || 'Unknown error'}`, 'Error');
     }
 }
@@ -4142,7 +4119,6 @@ async function clearTestData() {
         loadAllUsers();
         
     } catch (error) {
-        console.error('Error clearing test data:', error);
         showError('Failed to clear test data. Please try again.', 'Error');
         showError('Failed to clear test data. Please try again.', 'Error');
     }
@@ -4316,7 +4292,6 @@ async function deleteDataByClass() {
         loadStatistics();
         
     } catch (error) {
-        console.error('Error deleting class data:', error);
         showError(`Failed to delete class data: ${error.message}\n\nSome data may have been deleted. Please check the database.`, 'Error');
     }
 }
@@ -4377,7 +4352,6 @@ async function clearAllData() {
                 if (!respError) deletedCounts.responses = allResponses.length;
             }
         } catch (e) {
-            console.warn('Error deleting responses:', e);
         }
         
         try {
@@ -4392,7 +4366,6 @@ async function clearAllData() {
                 if (!gradesError) deletedCounts.grades = allGrades.length;
             }
         } catch (e) {
-            console.warn('Error deleting grades:', e);
         }
         
         try {
@@ -4407,7 +4380,6 @@ async function clearAllData() {
                 if (!attemptsError) deletedCounts.attempts = allAttempts.length;
             }
         } catch (e) {
-            console.warn('Error deleting attempts:', e);
         }
         
         try {
@@ -4422,7 +4394,6 @@ async function clearAllData() {
                 if (!questionsError) deletedCounts.questions = allQuestions.length;
             }
         } catch (e) {
-            console.warn('Error deleting questions:', e);
         }
         
         try {
@@ -4437,7 +4408,6 @@ async function clearAllData() {
                 if (!examsError) deletedCounts.exams = allExams.length;
             }
         } catch (e) {
-            console.warn('Error deleting exams:', e);
         }
         
         // Delete LMS data if tables exist
@@ -4452,7 +4422,6 @@ async function clearAllData() {
                 if (!materialsError) deletedCounts.materials = allMaterials.length;
             }
         } catch (e) {
-            console.warn('Materials table might not exist or error:', e);
         }
         
         try {
@@ -4466,7 +4435,6 @@ async function clearAllData() {
                 if (!progressError) deletedCounts.progress = allProgress.length;
             }
         } catch (e) {
-            console.warn('Progress table might not exist or error:', e);
         }
         
         // Delete users last (may have foreign key constraints)
@@ -4503,13 +4471,11 @@ async function clearAllData() {
                         .delete()
                         .in('id', userIdsToDelete);
                     if (usersError) {
-                        console.error('Error deleting users:', usersError);
                         deletedCounts.users = 'error';
                     }
                 }
             }
         } catch (e) {
-            console.warn('Error deleting users:', e);
         }
         
         const summary = `Data cleared successfully!\n\n` +
@@ -4530,7 +4496,6 @@ async function clearAllData() {
         loadStatistics();
         
     } catch (error) {
-        console.error('Error clearing all data:', error);
         showError(`Failed to clear data: ${error.message}\n\nSome data may have been deleted. Please check the database.`, 'Error');
     }
 }
