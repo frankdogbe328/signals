@@ -105,13 +105,15 @@ function calculateOverallStats(completedExams, allExams) {
         averagePercentage = completedExams.reduce((sum, item) => sum + (item.attempt.percentage || 0), 0) / completedExams.length;
     }
     
-    // Grade distribution
+    // Grade distribution - Updated grading scale
     const gradeDistribution = {
-        A: 0, // 90-100%
-        B: 0, // 80-89%
-        C: 0, // 70-79%
-        D: 0, // 60-69%
-        F: 0  // <60%
+        A: 0,   // 90-100%
+        B: 0,   // 80-89%
+        'C+': 0, // 70-79%
+        C: 0,   // 60-69%
+        'C-': 0, // 50-59%
+        D: 0,   // 40-49%
+        F: 0    // 0-39%
     };
     
     completedExams.forEach(item => {
@@ -121,7 +123,7 @@ function calculateOverallStats(completedExams, allExams) {
         else if (percentage >= 70) gradeDistribution['C+']++;
         else if (percentage >= 60) gradeDistribution.C++;
         else if (percentage >= 50) gradeDistribution['C-']++;
-        else if (percentage >= 60) gradeDistribution.D++;
+        else if (percentage >= 40) gradeDistribution.D++;
         else gradeDistribution.F++;
     });
     
