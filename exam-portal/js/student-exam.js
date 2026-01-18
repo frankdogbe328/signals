@@ -29,18 +29,30 @@
     };
     
     window.showAllResults = function() {
-        const realFn = window.showAllResults._real;
-        if (realFn) realFn();
+        const realFn = window.showAllResults._real || window.showAllResults;
+        if (realFn && typeof realFn === 'function' && realFn !== window.showAllResults) {
+            realFn();
+        } else {
+            console.error('showAllResults: Real function not yet loaded!');
+        }
     };
     
     window.showMidSemesterResults = function() {
-        const realFn = window.showMidSemesterResults._real;
-        if (realFn) realFn();
+        const realFn = window.showMidSemesterResults._real || window.showMidSemesterResults;
+        if (realFn && typeof realFn === 'function' && realFn !== window.showMidSemesterResults) {
+            realFn();
+        } else {
+            console.error('showMidSemesterResults: Real function not yet loaded!');
+        }
     };
     
     window.showFinalSemesterResults = function() {
-        const realFn = window.showFinalSemesterResults._real;
-        if (realFn) realFn();
+        const realFn = window.showFinalSemesterResults._real || window.showFinalSemesterResults;
+        if (realFn && typeof realFn === 'function' && realFn !== window.showFinalSemesterResults) {
+            realFn();
+        } else {
+            console.error('showFinalSemesterResults: Real function not yet loaded!');
+        }
     };
     
     // Log that pre-definitions are set
@@ -176,11 +188,28 @@ async function loadAvailableExams() {
                     const { data, error } = await client
                         .from('exams')
                         .select('*')
-            .eq('is_active', true)
-            .eq('class_id', currentUser.class)
-            .in('subject', registeredSubjects);
-        
-        if (error) throw error;
+                        .eq('is_active', true)
+                        .eq('class_id', currentUser.class)
+                        .in('subject', registeredSubjects);
+                    
+                    if (error) throw error;
+                    return data;
+                },
+                cacheKey,
+                15000 // 15 second cache
+            );
+        } else {
+            // Fallback if PerformanceOptimizer not available
+            const { data, error } = await client
+                .from('exams')
+                .select('*')
+                .eq('is_active', true)
+                .eq('class_id', currentUser.class)
+                .in('subject', registeredSubjects);
+            
+            if (error) throw error;
+            exams = data;
+        }
         
         // Filter by date - show exams that have started or are available
         // Students can join late but will have less time
@@ -772,30 +801,63 @@ function setupTabNavigationListeners() {
         allResultsTab.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            if (typeof window.showAllResults === 'function') {
-                window.showAllResults();
+            try {
+                if (typeof window.showAllResults === 'function') {
+                    window.showAllResults();
+                } else {
+                    console.error('window.showAllResults is not a function. Type:', typeof window.showAllResults);
+                    alert('Function not loaded. Please refresh the page.');
+                }
+            } catch (error) {
+                console.error('Error in showAllResults:', error);
+                alert('An error occurred. Please check the console for details.');
             }
         });
+        console.log('✓ allResultsTab event listener attached');
+    } else {
+        console.warn('allResultsTab button not found');
     }
     
     if (midSemesterResultsTab) {
         midSemesterResultsTab.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            if (typeof window.showMidSemesterResults === 'function') {
-                window.showMidSemesterResults();
+            try {
+                if (typeof window.showMidSemesterResults === 'function') {
+                    window.showMidSemesterResults();
+                } else {
+                    console.error('window.showMidSemesterResults is not a function. Type:', typeof window.showMidSemesterResults);
+                    alert('Function not loaded. Please refresh the page.');
+                }
+            } catch (error) {
+                console.error('Error in showMidSemesterResults:', error);
+                alert('An error occurred. Please check the console for details.');
             }
         });
+        console.log('✓ midSemesterResultsTab event listener attached');
+    } else {
+        console.warn('midSemesterResultsTab button not found');
     }
     
     if (finalSemesterResultsTab) {
         finalSemesterResultsTab.addEventListener('click', function(e) {
             e.preventDefault();
             e.stopPropagation();
-            if (typeof window.showFinalSemesterResults === 'function') {
-                window.showFinalSemesterResults();
+            try {
+                if (typeof window.showFinalSemesterResults === 'function') {
+                    window.showFinalSemesterResults();
+                } else {
+                    console.error('window.showFinalSemesterResults is not a function. Type:', typeof window.showFinalSemesterResults);
+                    alert('Function not loaded. Please refresh the page.');
+                }
+            } catch (error) {
+                console.error('Error in showFinalSemesterResults:', error);
+                alert('An error occurred. Please check the console for details.');
             }
         });
+        console.log('✓ finalSemesterResultsTab event listener attached');
+    } else {
+        console.warn('finalSemesterResultsTab button not found');
     }
     
     console.log('✓ Tab navigation event listeners attached');
@@ -1975,9 +2037,12 @@ function showAllResults() {
     loadAllResults();
 }
 
-// Make globally accessible immediately
+// Make globally accessible immediately - replace stub with real function
 if (typeof window !== 'undefined') {
-    window.showAllResults = showAllResults;
+    const realFn = showAllResults;
+    window.showAllResults._real = realFn;
+    window.showAllResults = realFn; // Replace stub with real function
+    console.log('✓ showAllResults function defined and assigned');
 }
 
 // Show mid-semester results section - Make globally accessible immediately
@@ -2007,9 +2072,12 @@ function showMidSemesterResults() {
     loadMidSemesterResults();
 }
 
-// Make globally accessible immediately
+// Make globally accessible immediately - replace stub with real function
 if (typeof window !== 'undefined') {
-    window.showMidSemesterResults = showMidSemesterResults;
+    const realFn = showMidSemesterResults;
+    window.showMidSemesterResults._real = realFn;
+    window.showMidSemesterResults = realFn; // Replace stub with real function
+    console.log('✓ showMidSemesterResults function defined and assigned');
 }
 
 // Show final semester results section - Make globally accessible immediately
