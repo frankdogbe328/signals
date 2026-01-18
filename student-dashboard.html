@@ -34,7 +34,9 @@
                 <div class="mobile-menu-user" id="mobileStudentName"></div>
                 
                 <!-- Navigation Links -->
-                <a href="exam-portal/student-exam-portal.html" class="btn btn-primary mobile-menu-link" onclick="toggleMobileMenu();">📝 Exam Portal</a>
+                <button onclick="window.location.href='exam-portal/student-exam-portal.html'; toggleMobileMenu();" class="btn btn-primary mobile-menu-link" style="width: 100%; padding: 14px 20px; font-size: 15px; min-height: 48px; margin: 0; border-radius: 8px; font-weight: 600; cursor: pointer; background-color: var(--primary-color); color: white; border: none; text-align: center;">
+                    📝 Exam Portal
+                </button>
                 
                 <button onclick="scrollToSection('materialsProgressSection'); toggleMobileMenu();" class="btn btn-secondary mobile-menu-link">
                     📚 Materials Progress
