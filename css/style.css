@@ -1240,6 +1240,10 @@ body {
 
 .material-stats-list {
     margin-top: 20px;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    box-sizing: border-box;
 }
 
 .material-stat-item {
@@ -1248,6 +1252,11 @@ body {
     border-radius: 8px;
     margin-bottom: 15px;
     border-left: 4px solid var(--primary-color);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow: hidden;
+    word-wrap: break-word;
 }
 
 .material-stat-header {
@@ -1255,6 +1264,21 @@ body {
     justify-content: space-between;
     align-items: start;
     margin-bottom: 10px;
+    width: 100%;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.material-stat-header > div:first-child {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+}
+
+.material-stat-header > div:first-child strong {
+    display: block;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 .material-stat-meta {
@@ -1264,12 +1288,15 @@ body {
     font-size: 14px;
     color: var(--text-color);
     opacity: 0.7;
+    flex-wrap: wrap;
 }
 
 .material-stat-rate {
     font-size: 24px;
     font-weight: bold;
     color: var(--primary-color);
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 .material-stat-footer {

@@ -345,6 +345,34 @@ async function handleCreateExam(e) {
     }
     
     try {
+        // Use PerformanceOptimizer for quiz upload
+        if (typeof window.PerformanceOptimizer !== 'undefined') {
+            return await window.PerformanceOptimizer.optimizedQuery(
+                async () => {
+                    const client = getSupabaseClient();
+                    if (!client) {
+                        throw new Error('Supabase client not available');
+                    }
+                    
+                    const { data, error } = await client
+                        .from('exams')
+                        .insert([examData])
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    return data;
+                },
+                `create_exam_${currentUser.id}_${Date.now()}`,
+                5000 // 5 second cache
+            ).then(data => {
+                showSuccess('Exam created successfully!', 'Exam Created');
+                document.getElementById('examForm').reset();
+                loadExams();
+                return data;
+            });
+        }
+        
         const client = getSupabaseClient();
         if (!client) {
             throw new Error('Supabase client not available');
