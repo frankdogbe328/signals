@@ -2726,8 +2726,6 @@ function displayUsers(users) {
                     <td>${className}</td>
                     <td>${registeredDate}</td>
                     <td>
-                        <button onclick="editUser('${user.id}')" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">Edit</button>
-                        <button onclick="resetUserPassword('${user.id}', '${escapeHtml(nameDisplay)}')" class="btn btn-warning" style="padding: 6px 12px; font-size: 12px; margin-right: 5px;">Reset Password</button>
                         ${user.role === 'student' ? `<button onclick="deleteStudent('${user.id}', '${escapeHtml(nameDisplay)}')" class="btn btn-danger" style="padding: 6px 12px; font-size: 12px;">Delete</button>` : ''}
                     </td>
                 </tr>
@@ -2745,53 +2743,10 @@ function displayUsers(users) {
     container.innerHTML = html;
 }
 
-// Edit user information
+// Edit user information - DISABLED
+// This function has been removed to prevent admins from editing user names
 async function editUser(userId) {
-    try {
-        const supabase = getSupabaseClient();
-        if (!supabase) {
-            showError('Database connection error', 'Error');
-            return;
-        }
-        
-        const { data: user, error } = await supabase
-            .from('users')
-            .select('*')
-            .eq('id', userId)
-            .single();
-        
-        if (error || !user) {
-            showError('User not found', 'Error');
-            return;
-        }
-        
-        const newName = prompt('Enter new name:', user.name || '');
-        if (newName === null) return;
-        
-        const newEmail = prompt('Enter new email:', user.email || '');
-        if (newEmail === null) return;
-        
-        const { error: updateError } = await supabase
-            .from('users')
-            .update({
-                name: newName.trim() || null,
-                email: newEmail.trim() || null
-            })
-            .eq('id', userId);
-        
-        if (updateError) {
-            console.error('Error updating user:', updateError);
-            showError('Failed to update user. Please try again.', 'Error');
-            return;
-        }
-        
-        showSuccess('User information updated successfully!', 'Success');
-        loadAllUsers();
-        
-    } catch (error) {
-        console.error('Error editing user:', error);
-        showError('Failed to update user. Please try again.', 'Error');
-    }
+    showError('User editing functionality has been disabled for security reasons.', 'Function Disabled');
 }
 
 // Sort users by Student ID (username)
@@ -2887,29 +2842,10 @@ async function deleteStudent(studentId, studentName) {
     }
 }
 
-// Reset user password
+// Reset user password - DISABLED
+// This function has been removed to prevent admins from resetting passwords
 async function resetUserPassword(userId, userName) {
-    if (!confirm(`Are you sure you want to reset the password for ${userName}?\n\n⚠️ Note: Password reset requires Supabase Admin API access.\n\nFor now, please use the Supabase Dashboard to reset passwords.\n\nWould you like to see instructions?`)) {
-        return;
-    }
-    
-    // Show instructions for password reset
-    const instructions = `
-Password Reset Instructions:
-
-1. Go to your Supabase Dashboard
-2. Navigate to Authentication > Users
-3. Find the user: ${userName}
-4. Click on the user to edit
-5. Click "Reset Password" or "Send Password Reset Email"
-
-Alternatively, you can use the Supabase Admin API in your backend:
-- supabase.auth.admin.updateUserById(userId, { password: newPassword })
-
-For security reasons, password reset from the admin portal requires backend API access.
-    `;
-    
-    showError(instructions, 'Password Reset Instructions');
+    showError('Password reset functionality has been disabled for security reasons.', 'Function Disabled');
 }
 
 // Generate temporary password
