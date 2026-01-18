@@ -426,30 +426,32 @@ body {
         flex: 0 0 auto; /* Don't grow, just take needed space */
     }
     
-    /* Hide nav-user on mobile - will be in hamburger menu */
-    .nav-user {
-        display: none !important;
-    }
-    
-    /* Show hamburger menu on mobile - Position on RIGHT side */
-    .hamburger {
-        display: flex !important;
-        margin-left: auto !important; /* Push to right */
-        order: 3 !important; /* Make sure it's last */
-        z-index: 1001;
-        visibility: visible !important;
-        opacity: 1 !important;
-        position: relative;
-    }
-    
-    /* Ensure nav-user is completely hidden on mobile */
-    .nav-user {
+    /* HIDE nav-user COMPLETELY on mobile - all navigation goes in hamburger */
+    .nav-user,
+    .nav-user *,
+    .nav-user span,
+    .nav-user .btn,
+    .nav-user a,
+    .nav-user button {
         display: none !important;
         visibility: hidden !important;
         opacity: 0 !important;
         width: 0 !important;
         height: 0 !important;
         overflow: hidden !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+    
+    /* Show hamburger menu on mobile - Position on RIGHT side */
+    .hamburger {
+        display: flex !important;
+        margin-left: auto !important; /* Push to right */
+        order: 999 !important; /* Make sure it's last */
+        z-index: 1001 !important;
+        visibility: visible !important;
+        opacity: 1 !important;
+        position: relative !important;
     }
 }
 
