@@ -118,7 +118,9 @@ function calculateOverallStats(completedExams, allExams) {
         const percentage = item.attempt.percentage || 0;
         if (percentage >= 90) gradeDistribution.A++;
         else if (percentage >= 80) gradeDistribution.B++;
-        else if (percentage >= 70) gradeDistribution.C++;
+        else if (percentage >= 70) gradeDistribution['C+']++;
+        else if (percentage >= 60) gradeDistribution.C++;
+        else if (percentage >= 50) gradeDistribution['C-']++;
         else if (percentage >= 60) gradeDistribution.D++;
         else gradeDistribution.F++;
     });
