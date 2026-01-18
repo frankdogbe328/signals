@@ -166,9 +166,11 @@ function findClassesForSubject(subject) {
 
 // Helper function to format class name for display
 function formatClassName(classId) {
+    // Comprehensive class name mapping - ensures capital I throughout for Signals and Regimental classes
     const classNames = {
+        // New class format (current)
         'signals-basic': 'SIGNALS BASIC',
-        'signals-b-iii-b-ii': 'SIGNALS B III – B II',
+        'signals-b-iii-b-ii': 'SIGNALS B III – B II',  // Capital I throughout
         'signals-b-ii-b-i': 'SIGNALS B II – B I',  // Capital I throughout
         'superintendent': 'SUPERINTENDENT',
         'pre-qualifying': 'PRE-QUALIFYING',
@@ -177,21 +179,32 @@ function formatClassName(classId) {
         'regimental-b-ii-b-i': 'REGIMENTAL B II – B I',  // Capital I throughout
         'rso-rsi': 'RSO / RSI',
         'electronic-warfare-course': 'ELECTRONIC WARFARE COURSE',
-        'tactical-drone-course': 'TACTICAL DRONE COURSE'
+        'tactical-drone-course': 'TACTICAL DRONE COURSE',
+        // Old class format (legacy support)
+        'signal-basic-beginner': 'Signal Basic - Beginner',
+        'signal-basic-ii-intermediate': 'Signal Basic II - Intermediate',  // Capital I
+        'signal-basic-i-advanced': 'Signal Basic I - Advanced',  // Capital I
+        'regimental-basic-beginner': 'Regimental Basic - Beginner',
+        'regimental-basic-ii-intermediate': 'Regimental Basic II - Intermediate',  // Capital I
+        'regimental-basic-i-advanced': 'Regimental Basic I - Advanced',  // Capital I
+        'electronic-warfare': 'Electronic Warfare',
+        'upgrading-telecom': 'Upgrading - Telecom',
+        'upgrading-rf': 'Upgrading - RF',
+        'drone-operators': 'Practical Drone Operators Course'
     };
     
-    // Fallback: Ensure capital I in class names if not in mapping
-    if (!classNames[classId]) {
-        // Replace lowercase 'i' with uppercase 'I' in roman numerals (B ii → B II, B i → B I, etc.)
-        let formatted = classId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-        // Fix roman numerals: ensure 'i' is capitalized when after 'B' (e.g., "B Ii" → "B II", "B I" → "B I")
-        formatted = formatted.replace(/\bB\s+([Ii]{1,3})\b/g, (match, roman) => {
-            return 'B ' + roman.toUpperCase(); // Capitalize all I's in roman numerals after B
-        });
-        return formatted;
+    // If class ID is in mapping, return it
+    if (classNames[classId]) {
+        return classNames[classId];
     }
     
-    return classNames[classId];
+    // Fallback: Ensure capital I in roman numerals for Signals and Regimental classes
+    let formatted = classId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    // Fix roman numerals: ensure 'i' is capitalized when after 'B' (e.g., "B Ii" → "B II", "B I" → "B I")
+    formatted = formatted.replace(/\bB\s+([Ii]{1,3})\b/g, (match, roman) => {
+        return 'B ' + roman.toUpperCase(); // Capitalize all I's in roman numerals after B
+    });
+    return formatted;
 }
 
 // Load and display lecturer's registered subjects grouped by class
@@ -1639,19 +1652,7 @@ function formatDate(dateString) {
     });
 }
 
-function formatClassName(classId) {
-    const classNames = {
-        'signal-basic-beginner': 'Signal Basic - Beginner',
-        'signal-basic-ii-intermediate': 'Signal Basic II - Intermediate',
-        'signal-basic-i-advanced': 'Signal Basic I - Advanced',
-        'regimental-basic-beginner': 'Regimental Basic - Beginner',
-        'regimental-basic-ii-intermediate': 'Regimental Basic II - Intermediate',
-        'regimental-basic-i-advanced': 'Regimental Basic I - Advanced',
-        'electronic-warfare': 'Electronic Warfare',
-        'upgrading-telecom': 'Upgrading - Telecom',
-        'upgrading-rf': 'Upgrading - RF',
-        'drone-operators': 'Practical Drone Operators Course'
-    };
-    return classNames[classId] || classId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-}
+// NOTE: formatClassName is defined earlier in this file (line ~168)
+// This duplicate function has been removed to prevent conflicts
+// All class name formatting now uses the main formatClassName function above
 
