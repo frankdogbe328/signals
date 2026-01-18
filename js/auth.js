@@ -85,6 +85,27 @@ async function handleLogin(e) {
         return;
     }
     
+    // Priority 1: Account Lockout - Check if account is locked
+    const lockoutKey = `accountLockout_${username}`;
+    const lockoutData = localStorage.getItem(lockoutKey);
+    if (lockoutData) {
+        const lockout = JSON.parse(lockoutData);
+        if (lockout.lockedUntil > Date.now()) {
+            const minutesRemaining = Math.ceil((lockout.lockedUntil - Date.now()) / 60000);
+            errorMessage.textContent = `Account temporarily locked due to too many failed attempts. Please try again in ${minutesRemaining} minute(s).`;
+            errorMessage.classList.add('show');
+            
+            // Log lockout check
+            if (typeof logAuditAction === 'function') {
+                logAuditAction('login_attempt', null, null, false, 'Account locked', { username: username });
+            }
+            return;
+        } else {
+            // Lockout expired, clear it
+            localStorage.removeItem(lockoutKey);
+        }
+    }
+    
     // Rate limiting check
     if (typeof SecurityUtils !== 'undefined' && SecurityUtils.checkRateLimit) {
         const rateLimitKey = `login_${username}`;
@@ -244,8 +265,87 @@ async function handleLogin(e) {
             }, 100);
         }
     } else {
-        errorMessage.textContent = 'Invalid username, password, or role';
-        errorMessage.classList.add('show');
+        // Priority 1: Account Lockout - Track failed login attempts
+        const failedAttemptsKey = `failedAttempts_${username}`;
+        const failedAttempts = parseInt(localStorage.getItem(failedAttemptsKey) || '0');
+        const newFailedAttempts = failedAttempts + 1;
+        localStorage.setItem(failedAttemptsKey, newFailedAttempts.toString());
+        
+        // Lock account after 5 failed attempts for 30 minutes
+        if (newFailedAttempts >= 5) {
+            const lockoutUntil = Date.now() + (30 * 60 * 1000); // 30 minutes
+            localStorage.setItem(lockoutKey, JSON.stringify({
+                lockedUntil: lockoutUntil,
+                lockedAt: Date.now(),
+                failedAttempts: newFailedAttempts
+            }));
+            errorMessage.textContent = 'Too many failed login attempts. Account locked for 30 minutes for security.';
+            errorMessage.classList.add('show');
+            
+            // Log account lockout
+            if (typeof logAuditAction === 'function') {
+                logAuditAction('account_locked', 'user', null, false, 'Account locked after 5 failed attempts', { username: username, attempts: newFailedAttempts });
+            }
+        } else {
+            const attemptsRemaining = 5 - newFailedAttempts;
+            errorMessage.textContent = `Invalid username, password, or role. ${attemptsRemaining} attempt(s) remaining before account lockout.`;
+            errorMessage.classList.add('show');
+        }
+        
+        // Log failed login attempt
+        if (typeof logAuditAction === 'function') {
+            logAuditAction('login_attempt', null, null, false, 'Invalid credentials', { username: username, attempts: newFailedAttempts });
+        }
     }
 }
 
+// Priority 1: Audit Logging Function
+async function logAuditAction(action, resourceType = null, resourceId = null, success = true, errorMessage = null, metadata = {}) {
+    const currentUser = getCurrentUser();
+    
+    const logData = {
+        user_id: currentUser?.id || null,
+        username: currentUser?.username || 'anonymous',
+        action: action,
+        resource_type: resourceType,
+        resource_id: resourceId,
+        success: success,
+        error_message: errorMessage,
+        metadata: metadata,
+        ip_address: null, // Could be added if IP tracking is needed
+        user_agent: navigator.userAgent,
+        timestamp: new Date().toISOString()
+    };
+    
+    // Try to log to Supabase if available
+    if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        try {
+            const { error } = await window.supabaseClient
+                .from('audit_logs')
+                .insert(logData);
+            
+            if (error) {
+                console.error('Failed to log audit action to Supabase:', error);
+                // Fallback to localStorage
+                const logs = JSON.parse(localStorage.getItem('audit_logs') || '[]');
+                logs.push(logData);
+                // Keep only last 100 logs to prevent storage bloat
+                localStorage.setItem('audit_logs', JSON.stringify(logs.slice(-100)));
+            }
+        } catch (err) {
+            console.error('Failed to log audit action:', err);
+            // Fallback to localStorage
+            const logs = JSON.parse(localStorage.getItem('audit_logs') || '[]');
+            logs.push(logData);
+            localStorage.setItem('audit_logs', JSON.stringify(logs.slice(-100)));
+        }
+    } else {
+        // Fallback to localStorage if Supabase not available
+        const logs = JSON.parse(localStorage.getItem('audit_logs') || '[]');
+        logs.push(logData);
+        localStorage.setItem('audit_logs', JSON.stringify(logs.slice(-100)));
+    }
+}
+
+// Make logAuditAction globally available
+window.logAuditAction = logAuditAction;
