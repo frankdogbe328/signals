@@ -26,7 +26,7 @@
             console.log('📱 Mobile detected - forcing hamburger visible');
             console.log('Screen width:', window.innerWidth);
             
-            // FORCE hamburger to be visible with maximum priority
+            // FORCE hamburger to be visible with maximum priority and CLICKABLE
             hamburger.style.cssText = `
                 display: flex !important;
                 visibility: visible !important;
@@ -42,7 +42,46 @@
                 border: 2px solid rgba(255, 255, 255, 0.6) !important;
                 border-radius: 5px !important;
                 cursor: pointer !important;
+                pointer-events: auto !important;
+                touch-action: manipulation !important;
+                -webkit-tap-highlight-color: rgba(255, 255, 255, 0.3) !important;
             `;
+            
+            // Ensure hamburger is clickable - remove any event blocking
+            hamburger.style.pointerEvents = 'auto';
+            hamburger.style.touchAction = 'manipulation';
+            
+            // Attach click handler directly if not already attached
+            if (!hamburger.hasAttribute('data-click-handler-attached')) {
+                hamburger.setAttribute('data-click-handler-attached', 'true');
+                
+                // Remove onclick to prevent conflicts, use addEventListener instead
+                hamburger.removeAttribute('onclick');
+                
+                // Add click event listener
+                hamburger.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🍔 Hamburger clicked!');
+                    
+                    if (typeof window.toggleMobileMenu === 'function') {
+                        window.toggleMobileMenu();
+                    } else {
+                        console.error('toggleMobileMenu function not found!');
+                    }
+                }, { passive: false });
+                
+                // Also add touch events for mobile
+                hamburger.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🍔 Hamburger touched!');
+                    
+                    if (typeof window.toggleMobileMenu === 'function') {
+                        window.toggleMobileMenu();
+                    }
+                }, { passive: false });
+            }
             
             // Ensure all spans inside hamburger are visible
             const spans = hamburger.querySelectorAll('span');
