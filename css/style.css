@@ -515,8 +515,9 @@ body {
 .hamburger {
     display: none; /* Hidden on desktop, shown on mobile via media query */
     flex-direction: column;
-    background: none;
-    border: none;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 5px;
     cursor: pointer;
     padding: 8px;
     gap: 5px;
@@ -526,6 +527,17 @@ body {
     justify-content: center;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
+    transition: all 0.3s;
+}
+
+.hamburger:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.hamburger:active {
+    transform: scale(0.95);
+    background: rgba(255, 255, 255, 0.3);
 }
 
 .hamburger span {
@@ -534,6 +546,7 @@ body {
     background-color: white;
     border-radius: 3px;
     transition: all 0.3s;
+    display: block; /* Ensure spans are visible */
 }
 
 .hamburger.active span:nth-child(1) {
