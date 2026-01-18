@@ -135,10 +135,13 @@ async function getUserFromSupabase(username, password, role) {
             console.log('Password is hashed (64 chars SHA256 format). Verifying...');
             
             // For SHA256 hashes, use CryptoJS directly (SecurityUtils might expect bcrypt)
+            // IMPORTANT: Trim password on mobile to handle autocomplete/autocorrect adding spaces
+            const trimmedPassword = password.trim();
             const CryptoJS = window.CryptoJS;
             if (CryptoJS) {
                 console.log('Using CryptoJS.SHA256 for verification');
-                const inputHash = CryptoJS.SHA256(password).toString();
+                console.log('Password before hash (trimmed):', trimmedPassword.length, 'chars');
+                const inputHash = CryptoJS.SHA256(trimmedPassword).toString();
                 console.log('Input password:', password);
                 console.log('Input password hash (SHA256):', inputHash);
                 console.log('Input hash length:', inputHash.length);

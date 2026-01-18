@@ -52,9 +52,23 @@ async function handleLogin(e) {
     const userTypeInput = document.getElementById('userType');
     const errorMessage = document.getElementById('errorMessage');
     
-    // Sanitize inputs
-    const username = usernameInput ? SecurityUtils ? SecurityUtils.sanitizeInput(usernameInput.value) : usernameInput.value.trim() : '';
-    const password = passwordInput ? passwordInput.value : '';
+    // Sanitize inputs - fix for mobile: trim whitespace including newlines
+    const rawUsername = usernameInput ? usernameInput.value : '';
+    const rawPassword = passwordInput ? passwordInput.value : '';
+    
+    // Trim whitespace including newlines and special characters that mobile keyboards can add
+    const username = typeof SecurityUtils !== 'undefined' && SecurityUtils.sanitizeInput ? 
+        SecurityUtils.sanitizeInput(rawUsername.trim()) : rawUsername.trim().replace(/\s+/g, ' ').trim();
+    const password = rawPassword.trim(); // Trim password to handle mobile autocomplete/autocorrect adding spaces
+    
+    // Log for debugging (remove in production if sensitive)
+    console.log('Login attempt:', { 
+        usernameLength: username.length, 
+        passwordLength: password.length,
+        userType: userTypeInput ? userTypeInput.value : '',
+        isMobile: window.innerWidth <= 768
+    });
+    
     let userType = userTypeInput ? userTypeInput.value : '';
     
     // Clear previous errors
