@@ -32,8 +32,23 @@
         <div id="mobileMenu" class="mobile-menu">
             <div class="mobile-menu-content">
                 <div class="mobile-menu-user" id="mobileStudentName"></div>
-                <a href="exam-portal/student-exam-portal.html" class="btn btn-primary">📝 Exam Portal</a>
-                <button onclick="logout(); toggleMobileMenu();" class="btn btn-secondary">Logout</button>
+                
+                <!-- Navigation Links -->
+                <a href="exam-portal/student-exam-portal.html" class="btn btn-primary mobile-menu-link" onclick="toggleMobileMenu();">📝 Exam Portal</a>
+                
+                <button onclick="scrollToSection('materialsProgressSection'); toggleMobileMenu();" class="btn btn-secondary mobile-menu-link">
+                    📚 Materials Progress
+                </button>
+                
+                <button onclick="scrollToSection('examProgressSection'); showProgressTab('exams'); toggleMobileMenu();" class="btn btn-secondary mobile-menu-link">
+                    📝 Exam Performance
+                </button>
+                
+                <a href="exam-portal/student-exam-portal.html#results" class="btn btn-info mobile-menu-link" onclick="toggleMobileMenu();" style="background-color: #17a2b8; color: white;">
+                    📊 Check Results
+                </a>
+                
+                <button onclick="logout(); toggleMobileMenu();" class="btn btn-danger mobile-menu-link" style="background-color: #dc3545; color: white; margin-top: 10px;">Logout</button>
             </div>
         </div>
     </nav>
@@ -217,6 +232,18 @@
                 materialsTab.style.borderBottom = '3px solid var(--primary-color)';
             }
         }
+        
+        // Scroll to section function for mobile menu navigation
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        }
+        
+        // Make functions globally accessible
+        window.showProgressTab = showProgressTab;
+        window.scrollToSection = scrollToSection;
     </script>
     
     <!-- Modal for Messages -->
