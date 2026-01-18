@@ -30,11 +30,32 @@
             hamburger.style.position = 'relative';
             hamburger.style.zIndex = '1001';
             
-            // Ensure nav-user is hidden
+            // Force nav-user to be completely hidden on mobile
             if (navUser) {
                 navUser.style.display = 'none';
                 navUser.style.visibility = 'hidden';
                 navUser.style.opacity = '0';
+                navUser.style.width = '0';
+                navUser.style.height = '0';
+                navUser.style.overflow = 'hidden';
+                navUser.style.position = 'absolute';
+                navUser.style.left = '-9999px';
+                navUser.style.marginLeft = '0';
+                
+                // Hide all children of nav-user too
+                const navUserChildren = navUser.querySelectorAll('*');
+                navUserChildren.forEach(child => {
+                    child.style.display = 'none';
+                    child.style.visibility = 'hidden';
+                    child.style.opacity = '0';
+                });
+            }
+            
+            // Force hamburger to right side
+            if (hamburger) {
+                hamburger.style.marginLeft = 'auto';
+                hamburger.style.order = '999';
+                hamburger.style.position = 'relative';
             }
             
             // Ensure mobile menu content is visible when active
