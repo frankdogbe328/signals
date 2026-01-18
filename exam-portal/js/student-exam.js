@@ -699,6 +699,81 @@ function setupAnswerOptionHandlers(question) {
     }
 }
 
+// Setup tab navigation event listeners (replaces inline onclick handlers)
+function setupTabNavigationListeners() {
+    // Main tab buttons (Available Exams / My Results)
+    const examsTab = document.getElementById('examsTab');
+    const resultsTab = document.getElementById('resultsTab');
+    
+    if (examsTab) {
+        examsTab.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof showExamsTab === 'function') {
+                showExamsTab();
+            } else if (typeof window.showExamsTab === 'function') {
+                window.showExamsTab();
+            } else {
+                console.error('showExamsTab function not available');
+                alert('Page is still loading. Please wait a moment and try again.');
+            }
+        });
+    }
+    
+    if (resultsTab) {
+        resultsTab.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof showResultsTab === 'function') {
+                showResultsTab();
+            } else if (typeof window.showResultsTab === 'function') {
+                window.showResultsTab();
+            } else {
+                console.error('showResultsTab function not available');
+                alert('Page is still loading. Please wait a moment and try again.');
+            }
+        });
+    }
+    
+    // Results tab buttons (All Results / Mid-Semester / Final Semester)
+    const allResultsTab = document.getElementById('allResultsTab');
+    const midSemesterResultsTab = document.getElementById('midSemesterResultsTab');
+    const finalSemesterResultsTab = document.getElementById('finalSemesterResultsTab');
+    
+    if (allResultsTab) {
+        allResultsTab.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof showAllResults === 'function') {
+                showAllResults();
+            } else if (typeof window.showAllResults === 'function') {
+                window.showAllResults();
+            }
+        });
+    }
+    
+    if (midSemesterResultsTab) {
+        midSemesterResultsTab.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof showMidSemesterResults === 'function') {
+                showMidSemesterResults();
+            } else if (typeof window.showMidSemesterResults === 'function') {
+                window.showMidSemesterResults();
+            }
+        });
+    }
+    
+    if (finalSemesterResultsTab) {
+        finalSemesterResultsTab.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof showFinalSemesterResults === 'function') {
+                showFinalSemesterResults();
+            } else if (typeof window.showFinalSemesterResults === 'function') {
+                window.showFinalSemesterResults();
+            }
+        });
+    }
+    
+    console.log('Tab navigation event listeners attached');
+}
+
 // Setup mobile-friendly button handlers (works for both touch and click)
 function setupMobileButtonHandlers() {
     const prevBtn = document.getElementById('prevBtn');
