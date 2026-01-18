@@ -734,7 +734,9 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
         return false;
     }
     
-    const editingId = uploadFormEl.dataset.editingId;
+    // Step 2: Cache DOM query for this function
+    const uploadForm = document.getElementById('uploadForm');
+    const editingId = uploadForm ? uploadForm.dataset.editingId : null;
     
     // Use Supabase Storage URL if available, otherwise fall back to base64
     const materialData = {
