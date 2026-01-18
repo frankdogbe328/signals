@@ -1,5 +1,25 @@
 // Student Exam Portal JavaScript
 
+// Immediately define global functions on window to ensure they're available for onclick handlers
+if (typeof window !== 'undefined') {
+    // Pre-define functions on window to prevent ReferenceError
+    window.showExamsTab = function() {
+        console.warn('showExamsTab called before definition - this should not happen');
+    };
+    window.showResultsTab = function() {
+        console.warn('showResultsTab called before definition - this should not happen');
+    };
+    window.showAllResults = function() {
+        console.warn('showAllResults called before definition - this should not happen');
+    };
+    window.showMidSemesterResults = function() {
+        console.warn('showMidSemesterResults called before definition - this should not happen');
+    };
+    window.showFinalSemesterResults = function() {
+        console.warn('showFinalSemesterResults called before definition - this should not happen');
+    };
+}
+
 // Helper function to parse options (handles both JSON arrays and comma-separated strings)
 function parseQuestionOptions(optionsString) {
     if (!optionsString) return [];
