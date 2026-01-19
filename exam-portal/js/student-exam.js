@@ -13,8 +13,14 @@
         if (window.showExamsTab._real && typeof window.showExamsTab._real === 'function') {
             window.showExamsTab._real();
         } else {
-            console.error('showExamsTab: Real function not yet loaded!');
-            alert('Page is still loading. Please wait a moment and try again.');
+            // If _real is not set, try calling directly (might be the real function already)
+            // But if it's still the stub, show error
+            const funcStr = window.showExamsTab.toString();
+            if (funcStr.includes('Page is still loading')) {
+                console.error('showExamsTab: Real function not yet loaded!');
+                alert('Page is still loading. Please wait a moment and try again.');
+            }
+            // Otherwise, assume it's the real function and will execute normally
         }
     };
     
@@ -23,8 +29,14 @@
         if (window.showResultsTab._real && typeof window.showResultsTab._real === 'function') {
             window.showResultsTab._real();
         } else {
-            console.error('showResultsTab: Real function not yet loaded!');
-            alert('Page is still loading. Please wait a moment and try again.');
+            // If _real is not set, try calling directly (might be the real function already)
+            // But if it's still the stub, show error
+            const funcStr = window.showResultsTab.toString();
+            if (funcStr.includes('Page is still loading')) {
+                console.error('showResultsTab: Real function not yet loaded!');
+                alert('Page is still loading. Please wait a moment and try again.');
+            }
+            // Otherwise, assume it's the real function and will execute normally
         }
     };
     
@@ -1962,6 +1974,7 @@ function showExamsTab() {
 if (typeof window !== 'undefined') {
     // Store real function first, then replace stub
     const realFn = showExamsTab;
+    window.showExamsTab._real = realFn; // Set _real property first
     window.showExamsTab = realFn; // Replace stub with real function
     console.log('✓ showExamsTab function defined and assigned');
 }
@@ -2006,6 +2019,7 @@ function showResultsTab() {
 if (typeof window !== 'undefined') {
     // Store real function first, then replace stub
     const realFn = showResultsTab;
+    window.showResultsTab._real = realFn; // Set _real property first
     window.showResultsTab = realFn; // Replace stub with real function
     console.log('✓ showResultsTab function defined and assigned');
 }
