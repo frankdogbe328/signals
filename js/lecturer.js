@@ -1,3 +1,6 @@
+// Lecturer Portal JavaScript
+// Last updated: 2026-01-19 - Fixed material upload ReferenceError
+
 // Populate subject dropdown for lecturer registration
 function populateLecturerSubjectDropdown() {
     const classSelect = document.getElementById('lecturerClassSelect').value;
