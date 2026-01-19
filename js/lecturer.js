@@ -452,6 +452,11 @@ function previewFile() {
     }
 }
 
+/**
+ * Handles material upload form submission
+ * @param {Event} e - Form submit event
+ * @returns {Promise<void>}
+ */
 async function handleMaterialUpload(e) {
     e.preventDefault();
     
@@ -711,6 +716,21 @@ function getFileTypeFromName(fileName) {
     return typeMap[ext] || 'application/octet-stream';
 }
 
+/**
+ * Saves material with file upload to Supabase Storage
+ * @param {string} course - Course/subject name
+ * @param {string} classSelect - Class ID (e.g., 'signals-basic')
+ * @param {string} title - Material title
+ * @param {string} type - Material type ('file', 'text', 'video')
+ * @param {string} description - Material description
+ * @param {string} category - Material category
+ * @param {number} sequence - Display order/sequence
+ * @param {string|null} fileData - Base64 file data (if no storage URL)
+ * @param {string} fileName - File name
+ * @param {string} fileType - MIME type (e.g., 'application/pdf')
+ * @param {string|null} fileUrl - Supabase Storage URL (if uploaded)
+ * @returns {Promise<boolean>} Success status
+ */
 async function saveMaterialWithFile(course, classSelect, title, type, description, category, sequence, fileData, fileName, fileType, fileUrl) {
     // FIXED: uploadFormEl -> uploadForm (v20260119-0725)
     const currentUser = getCurrentUser();
@@ -909,6 +929,18 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
     }
 }
 
+/**
+ * Saves material without file (text content only)
+ * @param {string} course - Course/subject name
+ * @param {string} classSelect - Class ID
+ * @param {string} title - Material title
+ * @param {string} type - Material type
+ * @param {string} content - Text content
+ * @param {string} description - Material description
+ * @param {string} category - Material category
+ * @param {number} sequence - Display order
+ * @returns {Promise<boolean>} Success status
+ */
 async function saveMaterial(course, classSelect, title, type, content, description, category, sequence) {
     const currentUser = getCurrentUser();
     
