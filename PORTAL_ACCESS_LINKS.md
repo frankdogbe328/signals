@@ -191,8 +191,48 @@ http://YOUR_IP:8000/index.html
 
 **Features:**
 - Landing page with links to all portals
-- Student registration
 - Links to Student, Lecturer, and Admin login pages
+- Links to Student and Lecturer registration pages
+
+---
+
+## 📝 Registration Pages
+
+### Student Registration Page
+**Local:**
+```
+http://localhost:8000/student-register.html
+```
+
+**Network:**
+```
+http://YOUR_IP:8000/student-register.html
+```
+
+**Features:**
+- New student registration
+- Class and course selection
+- No registration code needed
+- Accessible from main page and student login
+
+---
+
+### Lecturer Registration Page
+**Local:**
+```
+http://localhost:8000/lecturer-register.html
+```
+
+**Network:**
+```
+http://YOUR_IP:8000/lecturer-register.html
+```
+
+**Features:**
+- New lecturer registration
+- Requires registration code
+- Restricted access
+- Accessible from main page and lecturer login
 
 ---
 
