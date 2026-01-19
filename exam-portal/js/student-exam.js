@@ -2352,8 +2352,15 @@ async function loadFinalSemesterResults() {
             examMap[exam.id] = exam;
         });
         
-        // Final semester includes ALL exam types (mid-semester + final semester + quizzes)
-        displayAllResults(attempts, examMap, finalSemesterList);
+        // Final semester excludes mid-semester exams (bft_1, mid_cs_exam, mid_course_exercise)
+        // But includes quizzes and final semester exams
+        const midSemesterTypes = ['bft_1', 'mid_cs_exam', 'mid_course_exercise'];
+        const finalSemesterAttempts = attempts.filter(attempt => {
+            const exam = examMap[attempt.exam_id];
+            return exam && !midSemesterTypes.includes(exam.exam_type);
+        });
+        
+        displayAllResults(finalSemesterAttempts, examMap, finalSemesterList);
         updateLastRefreshTime();
         
     } catch (error) {
