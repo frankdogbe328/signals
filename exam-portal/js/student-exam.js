@@ -8,18 +8,69 @@
     
     // Pre-define functions on window immediately - will be overwritten with actual implementations
     // These stubs ensure functions exist for event listeners, even if script hasn't fully loaded
-    // Stub function - will be replaced immediately when real function is defined
+    // Define showExamsTab immediately with full implementation
     window.showExamsTab = function() {
-        // If this stub is still being called, the real function hasn't loaded yet
-        // Just do nothing - the real function will be assigned very soon
-        console.warn('showExamsTab: Function not fully loaded yet - please wait');
+        const availableExamsView = document.getElementById('availableExamsView');
+        const myResultsView = document.getElementById('myResultsView');
+        const examTakingView = document.getElementById('examTakingView');
+        const resultsView = document.getElementById('resultsView');
+        
+        if (availableExamsView) availableExamsView.style.display = 'block';
+        if (myResultsView) myResultsView.style.display = 'none';
+        if (examTakingView) examTakingView.style.display = 'none';
+        if (resultsView) resultsView.style.display = 'none';
+        
+        // Update tab buttons
+        const examsTab = document.getElementById('examsTab');
+        const resultsTab = document.getElementById('resultsTab');
+        if (examsTab && resultsTab) {
+            examsTab.classList.remove('btn-secondary');
+            examsTab.classList.add('btn-primary');
+            resultsTab.classList.remove('btn-primary');
+            resultsTab.classList.add('btn-secondary');
+        }
+        
+        // Reload exams if function exists
+        if (typeof loadAvailableExams === 'function') {
+            loadAvailableExams();
+        }
     };
     
-    // Stub function - will be replaced immediately when real function is defined
+    // Define showResultsTab immediately with full implementation
     window.showResultsTab = function() {
-        // If this stub is still being called, the real function hasn't loaded yet
-        // Just do nothing - the real function will be assigned very soon
-        console.warn('showResultsTab: Function not fully loaded yet - please wait');
+        const availableExamsView = document.getElementById('availableExamsView');
+        const myResultsView = document.getElementById('myResultsView');
+        const examTakingView = document.getElementById('examTakingView');
+        const resultsView = document.getElementById('resultsView');
+        
+        if (availableExamsView) availableExamsView.style.display = 'none';
+        if (myResultsView) myResultsView.style.display = 'block';
+        if (examTakingView) examTakingView.style.display = 'none';
+        if (resultsView) resultsView.style.display = 'none';
+        
+        // Update main tab buttons
+        const examsTab = document.getElementById('examsTab');
+        const resultsTab = document.getElementById('resultsTab');
+        if (examsTab && resultsTab) {
+            resultsTab.classList.remove('btn-secondary');
+            resultsTab.classList.add('btn-primary');
+            examsTab.classList.remove('btn-primary');
+            examsTab.classList.add('btn-secondary');
+        }
+        
+        // Ensure results tab buttons are visible
+        const allResultsTab = document.getElementById('allResultsTab');
+        const midSemesterResultsTab = document.getElementById('midSemesterResultsTab');
+        const finalSemesterResultsTab = document.getElementById('finalSemesterResultsTab');
+        
+        if (allResultsTab) allResultsTab.style.display = '';
+        if (midSemesterResultsTab) midSemesterResultsTab.style.display = '';
+        if (finalSemesterResultsTab) finalSemesterResultsTab.style.display = '';
+        
+        // Initialize with All Results section active
+        if (typeof showAllResults === 'function') {
+            showAllResults();
+        }
     };
     
     window.showAllResults = function() {
@@ -1930,73 +1981,20 @@ async function viewResults(examId) {
     }
 }
 
-// Show exams tab - Function already assigned to window at top of file
+// showExamsTab is already defined at the top of the file on window object
+// This function is kept for backward compatibility but just calls the window function
 function showExamsTab() {
-    // Update the window function with full implementation
-    window.showExamsTab = function() {
-        document.getElementById('availableExamsView').style.display = 'block';
-        const myResultsView = document.getElementById('myResultsView');
-        if (myResultsView) myResultsView.style.display = 'none';
-        document.getElementById('examTakingView').style.display = 'none';
-        document.getElementById('resultsView').style.display = 'none';
-        
-        // Update tab buttons
-        const examsTab = document.getElementById('examsTab');
-        const resultsTab = document.getElementById('resultsTab');
-        if (examsTab && resultsTab) {
-            examsTab.classList.remove('btn-secondary');
-            examsTab.classList.add('btn-primary');
-            resultsTab.classList.remove('btn-primary');
-            resultsTab.classList.add('btn-secondary');
-        }
-        
-        // Reload exams
-        if (typeof loadAvailableExams === 'function') {
-            loadAvailableExams();
-        }
-    };
-    // Call the updated function
-    window.showExamsTab();
+    if (typeof window.showExamsTab === 'function') {
+        window.showExamsTab();
+    }
 }
 
-// Show results tab - Function already assigned to window at top of file
+// showResultsTab is already defined at the top of the file on window object
+// This function is kept for backward compatibility but just calls the window function
 function showResultsTab() {
-    // Update the window function with full implementation
-    window.showResultsTab = function() {
-        document.getElementById('availableExamsView').style.display = 'none';
-        const myResultsView = document.getElementById('myResultsView');
-        if (myResultsView) {
-            myResultsView.style.display = 'block';
-        }
-        document.getElementById('examTakingView').style.display = 'none';
-        document.getElementById('resultsView').style.display = 'none';
-        
-        // Update main tab buttons (Available Exams / My Results)
-        const examsTab = document.getElementById('examsTab');
-        const resultsTab = document.getElementById('resultsTab');
-        if (examsTab && resultsTab) {
-            resultsTab.classList.remove('btn-secondary');
-            resultsTab.classList.add('btn-primary');
-            examsTab.classList.remove('btn-primary');
-            examsTab.classList.add('btn-secondary');
-        }
-        
-        // Ensure results tab buttons are visible and initialize All Results as default
-        const allResultsTab = document.getElementById('allResultsTab');
-        const midSemesterResultsTab = document.getElementById('midSemesterResultsTab');
-        const finalSemesterResultsTab = document.getElementById('finalSemesterResultsTab');
-        
-        if (allResultsTab) allResultsTab.style.display = '';
-        if (midSemesterResultsTab) midSemesterResultsTab.style.display = '';
-        if (finalSemesterResultsTab) finalSemesterResultsTab.style.display = '';
-        
-        // Initialize with All Results section active (default view)
-        if (typeof showAllResults === 'function') {
-            showAllResults();
-        }
-    };
-    // Call the updated function
-    window.showResultsTab();
+    if (typeof window.showResultsTab === 'function') {
+        window.showResultsTab();
+    }
 }
 
 // Show all results section - Make globally accessible immediately
