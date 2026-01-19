@@ -73,30 +73,105 @@
         }
     };
     
+    // Define showAllResults immediately with full implementation
     window.showAllResults = function() {
-        const realFn = window.showAllResults._real || window.showAllResults;
-        if (realFn && typeof realFn === 'function' && realFn !== window.showAllResults) {
-            realFn();
-        } else {
-            console.error('showAllResults: Real function not yet loaded!');
+        const allResultsSection = document.getElementById('allResultsSection');
+        const midSemesterResultsSection = document.getElementById('midSemesterResultsSection');
+        const finalSemesterResultsSection = document.getElementById('finalSemesterResultsSection');
+        
+        if (allResultsSection) allResultsSection.style.display = 'block';
+        if (midSemesterResultsSection) midSemesterResultsSection.style.display = 'none';
+        if (finalSemesterResultsSection) finalSemesterResultsSection.style.display = 'none';
+        
+        // Update tab buttons
+        const allTab = document.getElementById('allResultsTab');
+        const midTab = document.getElementById('midSemesterResultsTab');
+        const finalTab = document.getElementById('finalSemesterResultsTab');
+        
+        if (allTab) {
+            allTab.classList.remove('btn-secondary');
+            allTab.classList.add('btn-primary');
+        }
+        if (midTab) {
+            midTab.classList.remove('btn-primary');
+            midTab.classList.add('btn-secondary');
+        }
+        if (finalTab) {
+            finalTab.classList.remove('btn-primary');
+            finalTab.classList.add('btn-secondary');
+        }
+        
+        // Load results if function exists
+        if (typeof loadAllResults === 'function') {
+            loadAllResults();
         }
     };
     
+    // Define showMidSemesterResults immediately with full implementation
     window.showMidSemesterResults = function() {
-        const realFn = window.showMidSemesterResults._real || window.showMidSemesterResults;
-        if (realFn && typeof realFn === 'function' && realFn !== window.showMidSemesterResults) {
-            realFn();
-        } else {
-            console.error('showMidSemesterResults: Real function not yet loaded!');
+        const allResultsSection = document.getElementById('allResultsSection');
+        const midSemesterResultsSection = document.getElementById('midSemesterResultsSection');
+        const finalSemesterResultsSection = document.getElementById('finalSemesterResultsSection');
+        
+        if (allResultsSection) allResultsSection.style.display = 'none';
+        if (midSemesterResultsSection) midSemesterResultsSection.style.display = 'block';
+        if (finalSemesterResultsSection) finalSemesterResultsSection.style.display = 'none';
+        
+        // Update tab buttons
+        const allTab = document.getElementById('allResultsTab');
+        const midTab = document.getElementById('midSemesterResultsTab');
+        const finalTab = document.getElementById('finalSemesterResultsTab');
+        
+        if (allTab) {
+            allTab.classList.remove('btn-primary');
+            allTab.classList.add('btn-secondary');
+        }
+        if (midTab) {
+            midTab.classList.remove('btn-secondary');
+            midTab.classList.add('btn-warning', 'btn-primary');
+        }
+        if (finalTab) {
+            finalTab.classList.remove('btn-primary');
+            finalTab.classList.add('btn-secondary');
+        }
+        
+        // Load results if function exists
+        if (typeof loadMidSemesterResults === 'function') {
+            loadMidSemesterResults();
         }
     };
     
+    // Define showFinalSemesterResults immediately with full implementation
     window.showFinalSemesterResults = function() {
-        const realFn = window.showFinalSemesterResults._real || window.showFinalSemesterResults;
-        if (realFn && typeof realFn === 'function' && realFn !== window.showFinalSemesterResults) {
-            realFn();
-        } else {
-            console.error('showFinalSemesterResults: Real function not yet loaded!');
+        const allResultsSection = document.getElementById('allResultsSection');
+        const midSemesterResultsSection = document.getElementById('midSemesterResultsSection');
+        const finalSemesterResultsSection = document.getElementById('finalSemesterResultsSection');
+        
+        if (allResultsSection) allResultsSection.style.display = 'none';
+        if (midSemesterResultsSection) midSemesterResultsSection.style.display = 'none';
+        if (finalSemesterResultsSection) finalSemesterResultsSection.style.display = 'block';
+        
+        // Update tab buttons
+        const allTab = document.getElementById('allResultsTab');
+        const midTab = document.getElementById('midSemesterResultsTab');
+        const finalTab = document.getElementById('finalSemesterResultsTab');
+        
+        if (allTab) {
+            allTab.classList.remove('btn-primary');
+            allTab.classList.add('btn-secondary');
+        }
+        if (midTab) {
+            midTab.classList.remove('btn-primary');
+            midTab.classList.add('btn-secondary');
+        }
+        if (finalTab) {
+            finalTab.classList.remove('btn-secondary');
+            finalTab.classList.add('btn-success', 'btn-primary');
+        }
+        
+        // Load results if function exists
+        if (typeof loadFinalSemesterResults === 'function') {
+            loadFinalSemesterResults();
         }
     };
     
@@ -2024,12 +2099,12 @@ function showAllResults() {
     loadAllResults();
 }
 
-// Make globally accessible immediately - replace stub with real function
-if (typeof window !== 'undefined') {
-    const realFn = showAllResults;
-    window.showAllResults._real = realFn;
-    window.showAllResults = realFn; // Replace stub with real function
-    console.log('✓ showAllResults function defined and assigned');
+// showAllResults is already defined at the top of the file on window object
+// This function is kept for backward compatibility but just calls the window function
+function showAllResults() {
+    if (typeof window.showAllResults === 'function') {
+        window.showAllResults();
+    }
 }
 
 // Show mid-semester results section - Make globally accessible immediately
@@ -2059,12 +2134,12 @@ function showMidSemesterResults() {
     loadMidSemesterResults();
 }
 
-// Make globally accessible immediately - replace stub with real function
-if (typeof window !== 'undefined') {
-    const realFn = showMidSemesterResults;
-    window.showMidSemesterResults._real = realFn;
-    window.showMidSemesterResults = realFn; // Replace stub with real function
-    console.log('✓ showMidSemesterResults function defined and assigned');
+// showMidSemesterResults is already defined at the top of the file on window object
+// This function is kept for backward compatibility but just calls the window function
+function showMidSemesterResults() {
+    if (typeof window.showMidSemesterResults === 'function') {
+        window.showMidSemesterResults();
+    }
 }
 
 // Show final semester results section - Make globally accessible immediately
@@ -2094,9 +2169,12 @@ function showFinalSemesterResults() {
     loadFinalSemesterResults();
 }
 
-// Make globally accessible immediately
-if (typeof window !== 'undefined') {
-    window.showFinalSemesterResults = showFinalSemesterResults;
+// showFinalSemesterResults is already defined at the top of the file on window object
+// This function is kept for backward compatibility but just calls the window function
+function showFinalSemesterResults() {
+    if (typeof window.showFinalSemesterResults === 'function') {
+        window.showFinalSemesterResults();
+    }
 }
 
 // Load all exam results for student
