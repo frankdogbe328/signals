@@ -1,0 +1,60 @@
+========================================
+MOBILE ACCESS URLs FOR YOUR SYSTEM
+========================================
+
+YOUR COMPUTER IP: 192.168.2.113
+PORT: 8000
+
+========================================
+MAIN PAGES (Share with Students/Lecturers)
+========================================
+
+Main Landing Page:
+http://192.168.2.113:8000/index.html
+
+Student Login:
+http://192.168.2.113:8000/student-login.html
+
+Lecturer Login:
+http://192.168.2.113:8000/lecturer-login.html
+
+Admin Login:
+http://192.168.2.113:8000/admin-login.html
+
+========================================
+STUDENT PORTALS (After Login)
+========================================
+
+Student LMS Portal:
+http://192.168.2.113:8000/student-dashboard.html
+
+Student Exam Portal:
+http://192.168.2.113:8000/exam-portal/student-exam-portal.html
+
+========================================
+LECTURER PORTALS (After Login)
+========================================
+
+Lecturer LMS Portal:
+http://192.168.2.113:8000/lecturer-dashboard.html
+
+Lecturer Exam Portal:
+http://192.168.2.113:8000/exam-portal/lecturer-exam-dashboard.html
+
+========================================
+ADMIN PORTAL (After Login)
+========================================
+
+Admin Portal:
+http://192.168.2.113:8000/admin-portal.html
+
+========================================
+QUICK START FOR MOBILE
+========================================
+
+1. Make sure phone and computer are on SAME WiFi network
+2. Open browser on phone
+3. Type: http://192.168.2.113:8000
+4. Should see main landing page!
+
+========================================
