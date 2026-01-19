@@ -712,6 +712,7 @@ function getFileTypeFromName(fileName) {
 }
 
 async function saveMaterialWithFile(course, classSelect, title, type, description, category, sequence, fileData, fileName, fileType, fileUrl) {
+    // FIXED: uploadFormEl -> uploadForm (v20260119-0725)
     const currentUser = getCurrentUser();
     
     // Authorization check: Verify user is a lecturer
