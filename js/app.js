@@ -551,26 +551,23 @@ function logout() {
         console.error('Error clearing CSRF token:', e);
     }
     
-    // Redirect based on role and portal type
-    const currentPath = window.location.pathname;
-    const isExamPortal = currentPath.includes('exam-portal');
-    const isAdminPortal = currentPath.includes('admin-portal') || currentPath.includes('admin-login');
-    
-    // Admin always goes to admin login page
-    if (userRole === 'admin' || isAdminPortal) {
+    // Redirect based on role - each role has its own dedicated login page
+    if (userRole === 'admin') {
         window.location.href = 'admin-login.html';
         return;
     }
     
-    // For exam portal, redirect to main login (index.html)
-    // Students and lecturers will see their respective login options
-    if (isExamPortal) {
-        window.location.href = 'index.html';
+    if (userRole === 'lecturer') {
+        window.location.href = 'lecturer-login.html';
         return;
     }
     
-    // For LMS portal, redirect to main login (index.html)
-    // Students and lecturers will see their respective login options
+    if (userRole === 'student') {
+        window.location.href = 'student-login.html';
+        return;
+    }
+    
+    // Fallback to main page if role is unknown
     window.location.href = 'index.html';
 }
 

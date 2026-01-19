@@ -31,7 +31,25 @@
                 </div>
             </div>
             
-            <form id="loginForm" class="login-form">
+            <!-- Portal Selection Buttons -->
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h2 style="color: var(--primary-color); margin-bottom: 20px;">Select Your Portal</h2>
+                
+                <a href="student-login.html" class="btn btn-primary" style="width: 100%; padding: 15px; margin-bottom: 15px; text-decoration: none; display: block; font-size: 16px;">
+                    🎓 Student Portal Login
+                </a>
+                
+                <a href="lecturer-login.html" class="btn" style="width: 100%; padding: 15px; margin-bottom: 15px; text-decoration: none; display: block; font-size: 16px; background: #17a2b8; color: white;">
+                    👨‍🏫 Lecturer Portal Login
+                </a>
+                
+                <a href="admin-login.html" class="btn" style="width: 100%; padding: 15px; margin-bottom: 15px; text-decoration: none; display: block; font-size: 16px; background: #dc3545; color: white;">
+                    👨‍💼 Admin Portal Login
+                </a>
+            </div>
+            
+            <!-- Hidden form for backward compatibility (not used) -->
+            <form id="loginForm" class="login-form" style="display: none;">
                 <div class="form-group">
                     <label for="username">Username</label>
                     <input type="text" id="username" name="username" required autocomplete="username" inputmode="text">

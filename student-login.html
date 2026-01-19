@@ -8,7 +8,7 @@
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
     <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
-    <title>Lecturer Portal Login - Signal Training School</title>
+    <title>Student Portal Login - Signal Training School</title>
     <link rel="icon" type="image/png" href="images/led.jpg">
     <link rel="shortcut icon" type="image/png" href="images/led.jpg">
     <link rel="apple-touch-icon" href="images/led.jpg">
@@ -36,7 +36,7 @@
         }
         .role-badge {
             display: inline-block;
-            background: #17a2b8;
+            background: var(--primary-color);
             color: white;
             padding: 5px 15px;
             border-radius: 20px;
@@ -61,9 +61,9 @@
 <body>
     <div class="login-container">
         <div class="login-header">
-            <h1>👨‍🏫 Lecturer Portal</h1>
-            <p>Login to manage learning materials and create exams</p>
-            <span class="role-badge">LECTURER ACCESS ONLY</span>
+            <h1>🎓 Student Portal</h1>
+            <p>Login to access your learning materials and exam results</p>
+            <span class="role-badge">STUDENT ACCESS ONLY</span>
         </div>
         
         <form id="loginForm">
@@ -77,22 +77,22 @@
                 <input type="password" id="password" name="password" required autocomplete="current-password">
             </div>
             
-            <!-- Hidden field to set user type to lecturer -->
-            <input type="hidden" id="userType" name="userType" value="lecturer">
+            <!-- Hidden field to set user type to student -->
+            <input type="hidden" id="userType" name="userType" value="student">
             
             <!-- Portal type selection -->
             <div class="form-group">
                 <label for="portalType">Select Portal</label>
                 <select id="portalType" name="portalType" required>
-                    <option value="lms">📚 LMS Portal (Upload Materials)</option>
-                    <option value="exam">📝 Exam Portal (Create & Manage Exams)</option>
+                    <option value="lms">📚 LMS Portal (Learning Materials)</option>
+                    <option value="exam">📝 Exam Portal (Take Exams & View Results)</option>
                 </select>
             </div>
             
             <div id="errorMessage" class="error-message"></div>
             
             <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-size: 16px; margin-top: 10px;">
-                Login to Lecturer Portal
+                Login to Student Portal
             </button>
         </form>
         
@@ -101,7 +101,7 @@
         </div>
         
         <div style="text-align: center; margin-top: 20px; font-size: 12px; color: #999;">
-            <p>Not a lecturer? <a href="student-login.html" style="color: var(--primary-color);">Student Login</a> | <a href="admin-login.html" style="color: var(--primary-color);">Admin Login</a></p>
+            <p>Not a student? <a href="lecturer-login.html" style="color: var(--primary-color);">Lecturer Login</a> | <a href="admin-login.html" style="color: var(--primary-color);">Admin Login</a></p>
         </div>
     </div>
     
