@@ -9,49 +9,39 @@
     // Pre-define functions on window immediately - will be overwritten with actual implementations
     // These stubs ensure functions exist for event listeners, even if script hasn't fully loaded
     window.showExamsTab = function() {
-        // Check if real function is stored
-        if (window.showExamsTab._real && typeof window.showExamsTab._real === 'function') {
-            // Store reference to avoid recursion
-            const realFn = window.showExamsTab._real;
-            // Clear _real temporarily to prevent recursion
-            window.showExamsTab._real = null;
-            // Call the real function
-            realFn();
-            // Restore _real
-            window.showExamsTab._real = realFn;
-        } else {
-            // If _real is not set, try calling directly (might be the real function already)
-            // But if it's still the stub, show error
-            const funcStr = window.showExamsTab.toString();
-            if (funcStr.includes('Page is still loading')) {
-                console.error('showExamsTab: Real function not yet loaded!');
-                alert('Page is still loading. Please wait a moment and try again.');
-            }
-            // Otherwise, assume it's the real function and will execute normally
+        // Simple stub - just check if function has been replaced
+        const funcStr = window.showExamsTab.toString();
+        if (funcStr.includes('Page is still loading') || funcStr.includes('_real')) {
+            // Still the stub - wait for real function
+            console.warn('showExamsTab: Function not fully loaded yet');
+            setTimeout(() => {
+                if (typeof window.showExamsTab === 'function') {
+                    const newStr = window.showExamsTab.toString();
+                    if (!newStr.includes('Page is still loading')) {
+                        window.showExamsTab();
+                    }
+                }
+            }, 100);
         }
+        // If function has been replaced, it will execute normally
     };
     
     window.showResultsTab = function() {
-        // Check if real function is stored
-        if (window.showResultsTab._real && typeof window.showResultsTab._real === 'function') {
-            // Store reference to avoid recursion
-            const realFn = window.showResultsTab._real;
-            // Clear _real temporarily to prevent recursion
-            window.showResultsTab._real = null;
-            // Call the real function
-            realFn();
-            // Restore _real
-            window.showResultsTab._real = realFn;
-        } else {
-            // If _real is not set, try calling directly (might be the real function already)
-            // But if it's still the stub, show error
-            const funcStr = window.showResultsTab.toString();
-            if (funcStr.includes('Page is still loading')) {
-                console.error('showResultsTab: Real function not yet loaded!');
-                alert('Page is still loading. Please wait a moment and try again.');
-            }
-            // Otherwise, assume it's the real function and will execute normally
+        // Simple stub - just check if function has been replaced
+        const funcStr = window.showResultsTab.toString();
+        if (funcStr.includes('Page is still loading') || funcStr.includes('_real')) {
+            // Still the stub - wait for real function
+            console.warn('showResultsTab: Function not fully loaded yet');
+            setTimeout(() => {
+                if (typeof window.showResultsTab === 'function') {
+                    const newStr = window.showResultsTab.toString();
+                    if (!newStr.includes('Page is still loading')) {
+                        window.showResultsTab();
+                    }
+                }
+            }, 100);
         }
+        // If function has been replaced, it will execute normally
     };
     
     window.showAllResults = function() {
