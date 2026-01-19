@@ -124,22 +124,39 @@ http://YOUR_IP:8000/admin-portal.html
 
 ## 🔐 Login Pages
 
-### Main Login Page (Students & Lecturers)
+### Student Login Page (Students Only)
 **Local:**
 ```
-http://localhost:8000/index.html
+http://localhost:8000/student-login.html
 ```
 
 **Network:**
 ```
-http://YOUR_IP:8000/index.html
+http://YOUR_IP:8000/student-login.html
 ```
 
 **Features:**
-- Login for students
-- Login for lecturers
-- Registration for new users
-- Portal selection (LMS or Exam)
+- Student-only login (no role selection)
+- Choose LMS Portal or Exam Portal
+- Direct access to student dashboards
+
+---
+
+### Lecturer Login Page (Lecturers Only)
+**Local:**
+```
+http://localhost:8000/lecturer-login.html
+```
+
+**Network:**
+```
+http://YOUR_IP:8000/lecturer-login.html
+```
+
+**Features:**
+- Lecturer-only login (no role selection)
+- Choose LMS Portal or Exam Portal
+- Direct access to lecturer dashboards
 
 ---
 
@@ -155,8 +172,27 @@ http://YOUR_IP:8000/admin-login.html
 ```
 
 **Features:**
-- Dedicated admin login
+- Admin-only login
 - Secure admin access
+- Direct access to admin portal
+
+---
+
+### Main Landing Page
+**Local:**
+```
+http://localhost:8000/index.html
+```
+
+**Network:**
+```
+http://YOUR_IP:8000/index.html
+```
+
+**Features:**
+- Landing page with links to all portals
+- Student registration
+- Links to Student, Lecturer, and Admin login pages
 
 ---
 
@@ -184,12 +220,12 @@ https://your-project-name.vercel.app
 ## 📱 Quick Access Summary
 
 ### For Students:
-1. **Login:** `http://localhost:8000/index.html`
+1. **Login:** `http://localhost:8000/student-login.html`
 2. **Learning Materials:** `http://localhost:8000/student-dashboard.html`
 3. **Exams & Results:** `http://localhost:8000/exam-portal/student-exam-portal.html`
 
 ### For Lecturers:
-1. **Login:** `http://localhost:8000/index.html`
+1. **Login:** `http://localhost:8000/lecturer-login.html`
 2. **Upload Materials:** `http://localhost:8000/lecturer-dashboard.html`
 3. **Create Exams:** `http://localhost:8000/exam-portal/lecturer-exam-dashboard.html`
 
