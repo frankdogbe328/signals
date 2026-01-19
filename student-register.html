@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Security Headers -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://*.supabase.co; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https: blob:; font-src 'self' data: https://cdn.jsdelivr.net; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self';">
+    <meta http-equiv="X-Content-Type-Options" content="nosniff">
+    <meta http-equiv="X-Frame-Options" content="DENY">
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+    <title>Student Registration - Signal Training School</title>
+    <link rel="icon" type="image/png" href="images/led.jpg">
+    <link rel="shortcut icon" type="image/png" href="images/led.jpg">
+    <link rel="apple-touch-icon" href="images/led.jpg">
+    <link rel="stylesheet" href="css/style.css">
+    <style>
+        .student-badge {
+            display: inline-block;
+            background: var(--primary-color);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <!-- Video Background -->
+        <video autoplay muted loop playsinline id="backgroundVideo" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0;">
+            <source src="giff.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="login-box">
+            <div class="logo-section">
+                <h1 class="welcome-title">Student Registration</h1>
+                <img src="images/led.jpg" alt="Signal Training School Logo" class="logo-img" onclick="window.location.href='index.html'" style="cursor: pointer;" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div class="logo-text" style="display: none;">
+                    <h1>🇬🇭 Signal Training School</h1>
+                    <h2>Student Registration</h2>
+                </div>
+                <span class="student-badge">🎓 NEW STUDENT REGISTRATION</span>
+            </div>
+            
+            <form id="registerForm" class="login-form">
+                <h3 id="registerTitle" style="text-align: center; color: var(--primary-color); margin-bottom: 20px;">Student Registration</h3>
+                
+                <div class="form-group">
+                    <label for="regName">Full Name <span style="color: red;">*</span></label>
+                    <input type="text" id="regName" name="name" placeholder="e.g., Lt. John Doe" required autocomplete="name" inputmode="text">
+                </div>
+                
+                <div class="form-group">
+                    <label for="regUsername">Username <span style="color: red;">*</span></label>
+                    <input type="text" id="regUsername" name="username" placeholder="Choose a username" required autocomplete="username" inputmode="text">
+                    <small style="color: #666; font-size: 12px;">Username must be unique</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regEmail">Email Address <span style="color: red;">*</span></label>
+                    <input type="email" id="regEmail" name="email" placeholder="your.email@example.com" required autocomplete="email" inputmode="email">
+                    <small style="color: #666; font-size: 12px;">Used for password reset and notifications</small>
+                </div>
+                
+                <div class="form-group" id="regPhoneGroup">
+                    <label for="regPhone">Phone Number <span style="color: red;">*</span></label>
+                    <input type="tel" id="regPhone" name="phone" placeholder="+233XXXXXXXXX" required autocomplete="tel" inputmode="tel" pattern="^\+233[0-9]{9}$" maxlength="13">
+                    <small style="color: #666; font-size: 12px;">Ghana format: +233XXXXXXXXX (e.g., +233241234567)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regPassword">Password <span style="color: red;">*</span></label>
+                    <div style="position: relative;">
+                        <input type="password" id="regPassword" name="password" placeholder="Choose a password" required autocomplete="new-password" style="padding-right: 45px;">
+                        <span class="password-toggle" onclick="togglePassword('regPassword')" style="position: absolute; right: 15px; top: 12px; cursor: pointer; font-size: 18px; color: #666; user-select: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;">👁️</span>
+                    </div>
+                    <small style="color: #666; font-size: 12px;">Minimum 6 characters</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="regConfirmPassword">Confirm Password <span style="color: red;">*</span></label>
+                    <div style="position: relative;">
+                        <input type="password" id="regConfirmPassword" name="confirmPassword" placeholder="Re-enter password" required autocomplete="new-password" style="padding-right: 45px;">
+                        <span class="password-toggle" onclick="togglePassword('regConfirmPassword')" style="position: absolute; right: 15px; top: 12px; cursor: pointer; font-size: 18px; color: #666; user-select: none; touch-action: manipulation; -webkit-tap-highlight-color: transparent;">👁️</span>
+                    </div>
+                </div>
+                
+                <div class="form-group" id="regClassGroup">
+                    <label for="regClass">Class <span style="color: red;">*</span></label>
+                    <select id="regClass" name="class" required>
+                        <option value="">Select Class</option>
+                        <optgroup label="Signals">
+                            <option value="signals-basic">SIGNALS BASIC</option>
+                            <option value="signals-b-iii-b-ii">SIGNALS B III – B II</option>
+                            <option value="signals-b-ii-b-i">SIGNALS B II – B I</option>
+                        </optgroup>
+                        <optgroup label="Advanced Courses">
+                            <option value="superintendent">SUPERINTENDENT</option>
+                            <option value="pre-qualifying">PRE-QUALIFYING</option>
+                        </optgroup>
+                        <optgroup label="REGIMENTAL">
+                            <option value="regimental-basic">REGIMENTAL BASIC</option>
+                            <option value="regimental-b-iii-b-ii">REGIMENTAL B III – B II</option>
+                            <option value="regimental-b-ii-b-i">REGIMENTAL B II – B I</option>
+                        </optgroup>
+                        <optgroup label="Specialized">
+                            <option value="rso-rsi">RSO / RSI</option>
+                            <option value="electronic-warfare-course">ELECTRONIC WARFARE COURSE</option>
+                            <option value="tactical-drone-course">TACTICAL DRONE COURSE</option>
+                        </optgroup>
+                    </select>
+                </div>
+                
+                <div class="form-group" id="regCourseGroup">
+                    <label for="regCourse">Course (Optional)</label>
+                    <select id="regCourse" name="course">
+                        <option value="">Skip - Register later</option>
+                    </select>
+                    <small style="color: #666; font-size: 12px;">You can register for courses after logging in</small>
+                </div>
+                
+                <!-- Hidden field to set role to student -->
+                <input type="hidden" id="registerRole" name="role" value="student">
+                
+                <button type="submit" class="btn btn-success">Register as Student</button>
+                <button type="button" class="btn btn-secondary" onclick="window.location.href='student-login.html'" style="margin-top: 10px;">Back to Student Login</button>
+                
+                <div id="registerErrorMessage" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Security Utilities (must load first) -->
+    <script src="js/security.js"></script>
+    <script src="js/supabase-config.js"></script>
+    <script src="js/supabase-helpers.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/register.js"></script>
+    
+    <script>
+        // Set registration role to student
+        document.addEventListener('DOMContentLoaded', function() {
+            const registerForm = document.getElementById('registerForm');
+            if (registerForm) {
+                registerForm.dataset.role = 'student';
+            }
+            
+            // Attach class dropdown event listener
+            const regClass = document.getElementById('regClass');
+            if (regClass && typeof updateCoursesForClass === 'function') {
+                regClass.addEventListener('change', updateCoursesForClass);
+            }
+        });
+        
+        // Toggle password visibility
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            const toggle = event.target;
+            
+            if (input && toggle) {
+                if (input.type === 'password') {
+                    input.type = 'text';
+                    toggle.textContent = '🙈';
+                } else {
+                    input.type = 'password';
+                    toggle.textContent = '👁️';
+                }
+            }
+        }
+        
+        // Handle video loading error gracefully
+        function handleVideoError() {
+            const video = document.getElementById('backgroundVideo');
+            const container = document.querySelector('.login-container');
+            if (video) {
+                video.style.display = 'none';
+            }
+            if (container) {
+                container.style.background = 'linear-gradient(135deg, #0066cc 0%, #0052a3 100%)';
+            }
+        }
+        
+        // Check if video loads successfully
+        document.addEventListener('DOMContentLoaded', function() {
+            const video = document.getElementById('backgroundVideo');
+            if (video) {
+                video.addEventListener('error', handleVideoError);
+                video.addEventListener('loadeddata', function() {
+                    const container = document.querySelector('.login-container');
+                    if (container) {
+                        container.style.background = 'transparent';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
