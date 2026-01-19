@@ -861,7 +861,9 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
                 }
                 success = true;
             }
-            delete uploadFormEl.dataset.editingId;
+            if (uploadForm) {
+                delete uploadForm.dataset.editingId;
+            }
             document.getElementById('submitBtn').textContent = 'Upload Material';
             document.getElementById('cancelBtn').style.display = 'none';
         } else {
@@ -881,14 +883,16 @@ async function saveMaterialWithFile(course, classSelect, title, type, descriptio
     
     if (success) {
         // Clear editing state if succeeded
-        if (editingId) {
-            delete uploadFormEl.dataset.editingId;
+        if (editingId && uploadForm) {
+            delete uploadForm.dataset.editingId;
             document.getElementById('submitBtn').textContent = 'Upload Material';
             document.getElementById('cancelBtn').style.display = 'none';
         }
         
         // Reset form
-        uploadFormEl.reset();
+        if (uploadForm) {
+            uploadForm.reset();
+        }
         document.getElementById('fileUploadGroup').style.display = 'none';
         document.getElementById('contentGroup').style.display = 'block';
         document.getElementById('filePreview').innerHTML = '';
@@ -925,7 +929,8 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
         return false;
     }
     
-    const editingId = uploadFormEl.dataset.editingId;
+    const uploadForm = document.getElementById('uploadForm');
+    const editingId = uploadForm ? uploadForm.dataset.editingId : null;
     const submitBtn = document.getElementById('submitBtn');
     const originalBtnText = submitBtn ? submitBtn.textContent : 'Upload Material';
     
@@ -1023,7 +1028,9 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
                 }
                 success = true;
             }
-            delete uploadFormEl.dataset.editingId;
+            if (uploadForm) {
+                delete uploadForm.dataset.editingId;
+            }
             if (submitBtn) {
                 submitBtn.textContent = 'Upload Material';
             }
@@ -1050,8 +1057,8 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
     
     if (success) {
         // Clear editing state
-        if (editingId) {
-            delete uploadFormEl.dataset.editingId;
+        if (editingId && uploadForm) {
+            delete uploadForm.dataset.editingId;
             if (submitBtn) {
                 submitBtn.textContent = 'Upload Material';
             }
@@ -1059,7 +1066,9 @@ async function saveMaterial(course, classSelect, title, type, content, descripti
         }
         
         // Reset form
-        uploadFormEl.reset();
+        if (uploadForm) {
+            uploadForm.reset();
+        }
         document.getElementById('fileUploadGroup').style.display = 'none';
         document.getElementById('contentGroup').style.display = 'block';
         document.getElementById('filePreview').innerHTML = '';
