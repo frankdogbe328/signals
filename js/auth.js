@@ -149,10 +149,13 @@ async function handleLogin(e) {
                 }
             }
             
-            // Update userType to actual role for redirect
+            // Update userType to actual role for redirect (CRITICAL: Use database role, not dropdown)
             if (user) {
-                // Ensure userType can be reassigned (it's declared as 'let' above)
-                userType = user.role || userType;
+                // Always use the actual role from database, not the dropdown selection
+                // This ensures students go to student portal, lecturers to lecturer portal
+                userType = user.role || searchRole || userType;
+                console.log('Login - Actual user role from database:', user.role);
+                console.log('Login - userType set to:', userType);
             }
         } catch (err) {
             console.error('Supabase login error:', err);
