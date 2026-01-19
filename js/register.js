@@ -202,14 +202,23 @@ async function handleRegistration(e) {
     if (typeof SecurityUtils !== 'undefined' && SecurityUtils.validatePasswordStrength) {
         const passwordValidation = SecurityUtils.validatePasswordStrength(password);
         if (!passwordValidation.isValid) {
-            errorMessage.textContent = passwordValidation.reasons.join('. ') + '.';
+            // Show all validation errors
+            let errorText = passwordValidation.reasons.join('. ');
+            if (passwordValidation.warnings && passwordValidation.warnings.length > 0) {
+                errorText += ' ' + passwordValidation.warnings.join(' ');
+            }
+            errorMessage.textContent = errorText + '.';
             errorMessage.classList.add('show');
             return;
         }
+        // Show warnings but don't block registration
+        if (passwordValidation.warnings && passwordValidation.warnings.length > 0) {
+            console.warn('Password strength warning:', passwordValidation.warnings.join(', '));
+        }
     } else {
-        // Fallback validation
-        if (password.length < 8) {
-            errorMessage.textContent = 'Password must be at least 8 characters long';
+        // Fallback validation - minimum 6 characters
+        if (password.length < 6) {
+            errorMessage.textContent = 'Password must be at least 6 characters long';
             errorMessage.classList.add('show');
             return;
         }

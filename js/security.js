@@ -142,34 +142,45 @@ function validateUsername(username) {
 function validatePasswordStrength(password) {
     const reasons = [];
     
-    if (!password || password.length < 8) {
-        reasons.push('Password must be at least 8 characters long');
+    // Minimum length: 6 characters (relaxed from 8)
+    if (!password || password.length < 6) {
+        reasons.push('Password must be at least 6 characters long');
     }
     if (password.length > 128) {
         reasons.push('Password must be less than 128 characters');
     }
+    
+    // Optional but recommended: uppercase, lowercase, number, special character
+    // Only show warnings, don't block registration
+    const warnings = [];
     if (!/[a-z]/.test(password)) {
-        reasons.push('Password must contain at least one lowercase letter');
+        warnings.push('lowercase letter');
     }
     if (!/[A-Z]/.test(password)) {
-        reasons.push('Password must contain at least one uppercase letter');
+        warnings.push('uppercase letter');
     }
     if (!/[0-9]/.test(password)) {
-        reasons.push('Password must contain at least one number');
+        warnings.push('number');
     }
     if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-        reasons.push('Password must contain at least one special character');
+        warnings.push('special character');
     }
     
-    // Check for common weak passwords
-    const commonPasswords = ['password', '12345678', 'qwerty', 'abc123', 'password123'];
-    if (commonPasswords.some(weak => password.toLowerCase().includes(weak))) {
-        reasons.push('Password is too common. Please choose a stronger password');
+    // If password is very weak (only 6 chars and missing multiple requirements), suggest improvement
+    if (password.length === 6 && warnings.length >= 3) {
+        reasons.push('Password is too weak. Consider adding ' + warnings.slice(0, 2).join(' and ') + ' for better security');
+    }
+    
+    // Check for common weak passwords (only block if password is exactly these)
+    const commonPasswords = ['password', '123456', 'qwerty', 'abc123', 'password123', '12345678'];
+    if (commonPasswords.includes(password.toLowerCase())) {
+        reasons.push('Password is too common. Please choose a different password');
     }
     
     return {
         isValid: reasons.length === 0,
-        reasons: reasons
+        reasons: reasons,
+        warnings: warnings.length > 0 ? ['For better security, consider adding: ' + warnings.join(', ')] : []
     };
 }
 
