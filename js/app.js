@@ -530,8 +530,12 @@ function clearCurrentUser() {
     }
 }
 
-// Logout function - Enhanced with complete session cleanup
+// Logout function - Enhanced with complete session cleanup and role-based redirect
 function logout() {
+    // Get current user before clearing session
+    const currentUser = getCurrentUser();
+    const userRole = currentUser ? currentUser.role : null;
+    
     // Clear secure session
     if (typeof SecurityUtils !== 'undefined' && SecurityUtils.clearSecureSession) {
         SecurityUtils.clearSecureSession();
@@ -547,16 +551,26 @@ function logout() {
         console.error('Error clearing CSRF token:', e);
     }
     
-    // Check if we're in the exam portal
+    // Redirect based on role and portal type
     const currentPath = window.location.pathname;
     const isExamPortal = currentPath.includes('exam-portal');
+    const isAdminPortal = currentPath.includes('admin-portal') || currentPath.includes('admin-login');
     
-    if (isExamPortal) {
-        // Redirect to exam portal login
-        window.location.href = 'login.html';
-    } else {
-        // Redirect to main LMS login
-        window.location.href = 'index.html';
+    // Admin always goes to admin login page
+    if (userRole === 'admin' || isAdminPortal) {
+        window.location.href = 'admin-login.html';
+        return;
     }
+    
+    // For exam portal, redirect to main login (index.html)
+    // Students and lecturers will see their respective login options
+    if (isExamPortal) {
+        window.location.href = 'index.html';
+        return;
+    }
+    
+    // For LMS portal, redirect to main login (index.html)
+    // Students and lecturers will see their respective login options
+    window.location.href = 'index.html';
 }
 
