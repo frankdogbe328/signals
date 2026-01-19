@@ -11,7 +11,14 @@
     window.showExamsTab = function() {
         // Check if real function is stored
         if (window.showExamsTab._real && typeof window.showExamsTab._real === 'function') {
-            window.showExamsTab._real();
+            // Store reference to avoid recursion
+            const realFn = window.showExamsTab._real;
+            // Clear _real temporarily to prevent recursion
+            window.showExamsTab._real = null;
+            // Call the real function
+            realFn();
+            // Restore _real
+            window.showExamsTab._real = realFn;
         } else {
             // If _real is not set, try calling directly (might be the real function already)
             // But if it's still the stub, show error
@@ -27,7 +34,14 @@
     window.showResultsTab = function() {
         // Check if real function is stored
         if (window.showResultsTab._real && typeof window.showResultsTab._real === 'function') {
-            window.showResultsTab._real();
+            // Store reference to avoid recursion
+            const realFn = window.showResultsTab._real;
+            // Clear _real temporarily to prevent recursion
+            window.showResultsTab._real = null;
+            // Call the real function
+            realFn();
+            // Restore _real
+            window.showResultsTab._real = realFn;
         } else {
             // If _real is not set, try calling directly (might be the real function already)
             // But if it's still the stub, show error
@@ -2017,10 +2031,10 @@ function showResultsTab() {
 
 // Make globally accessible immediately - replace stub with real function
 if (typeof window !== 'undefined') {
-    // Store real function first, then replace stub
+    // Store real function first
     const realFn = showResultsTab;
-    window.showResultsTab._real = realFn; // Set _real property first
-    window.showResultsTab = realFn; // Replace stub with real function
+    // Replace stub with real function directly (no _real needed after replacement)
+    window.showResultsTab = realFn;
     console.log('✓ showResultsTab function defined and assigned');
 }
 
