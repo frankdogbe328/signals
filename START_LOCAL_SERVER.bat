@@ -1,4 +1,4 @@
-s@echo off
+@echo off
 title Local Web Server - Signal Training School LMS
 color 0A
 echo ========================================
