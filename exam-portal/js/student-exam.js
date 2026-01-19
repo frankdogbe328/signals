@@ -2285,11 +2285,14 @@ async function loadMidSemesterResults() {
             examMap[exam.id] = exam;
         });
         
-        // Filter for mid-semester exam types: bft_1, mid_cs_exam, mid_course_exercise, quiz, quiz_manual
+        // Filter for mid-semester exam types that have been released: bft_1, mid_cs_exam, mid_course_exercise, quiz, quiz_manual
+        // Only show exams where mid_semester_released is true
         const midSemesterTypes = ['bft_1', 'mid_cs_exam', 'mid_course_exercise', 'quiz', 'quiz_manual'];
         const midSemesterAttempts = attempts.filter(attempt => {
             const exam = examMap[attempt.exam_id];
-            return exam && midSemesterTypes.includes(exam.exam_type);
+            return exam && 
+                   midSemesterTypes.includes(exam.exam_type) && 
+                   exam.mid_semester_released === true;
         });
         
         if (midSemesterAttempts.length === 0) {
